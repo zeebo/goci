@@ -1,5 +1,10 @@
 package main
 
-func main() {
+import (
+	"fmt"
+	"github"
+)
 
+func main() {
+	fmt.Printf("%+v\n", github.HookMessage{})
 }
