@@ -13,7 +13,7 @@ type Repository struct {
 	URL, Homepage       string
 	Pledie, Description string
 	Watchers, Forks     int
-	Private             int
+	Private             bool
 	Owner               Author
 }
 

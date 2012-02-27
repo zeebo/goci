@@ -37,7 +37,7 @@ func TestUnserialize(t *testing.T) {
     "description": "You're lookin' at it.",
     "watchers": 5,
     "forks": 2,
-    "private": 1,
+    "private": true,
     "owner": {
       "email": "chris@ozmm.org",
       "name": "defunkt"
@@ -76,7 +76,7 @@ func TestUnserialize(t *testing.T) {
 				Description: "You're lookin' at it.",
 				Watchers:    5,
 				Forks:       2,
-				Private:     1,
+				Private:     true,
 				Owner: Author{
 					Email: "chris@ozmm.org",
 					Name:  "defunkt",

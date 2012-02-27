@@ -34,7 +34,7 @@ const fromGithub = `{
     "description": "You're lookin' at it.",
     "watchers": 5,
     "forks": 2,
-    "private": 1,
+    "private": true,
     "owner": {
       "email": "chris@ozmm.org",
       "name": "defunkt"
