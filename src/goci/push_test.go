@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"net/http"
+	"net/url"
 	"testing"
 )
 
@@ -10,7 +11,7 @@ func TestMalformedJson(t *testing.T) {
 	called := isCalled(false)
 	defer setupErrLogger(&called)()
 
-	body := bytes.NewBufferString(`{foasdf}`)
+	body := bytes.NewBufferString(`payload={foasdf}`)
 	req, err := http.NewRequest("GET", "/", body)
 	if err != nil {
 		t.Fatal(err)
@@ -69,11 +70,15 @@ const fromGithub = `{
 func TestGoodJson(t *testing.T) {
 	defer setupErrLogger(&errorLogger{t})()
 
-	body := bytes.NewBufferString(fromGithub)
-	req, err := http.NewRequest("GET", "/", body)
+	enc := url.Values{
+		"payload": {fromGithub},
+	}
+	body := bytes.NewBufferString(enc.Encode())
+	req, err := http.NewRequest("POST", "/", body)
 	if err != nil {
 		t.Fatal(err)
 	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := NewLoggingRW(t)
 
 	//this shouldn't error

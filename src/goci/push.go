@@ -7,12 +7,9 @@ import (
 )
 
 func handlePush(w http.ResponseWriter, r *http.Request) {
-	dec := json.NewDecoder(r.Body)
-	defer r.Body.Close()
-
 	var p github.HookMessage
-	if err := dec.Decode(&p); err != nil {
-		errLogger.Printf("Error:", err)
+	if err := json.Unmarshal([]byte(r.FormValue("payload")), &p); err != nil {
+		errLogger.Println(err)
 		return
 	}
 
