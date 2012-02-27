@@ -1,10 +1,13 @@
 package main
 
 import (
-	"fmt"
-	"github"
+	"net/http"
+	"os"
 )
 
 func main() {
-	fmt.Printf("%+v\n", github.HookMessage{})
+	http.HandleFunc("/push", handlePush)
+	if err := http.ListenAndServe(":"+os.Getenv("PORT"), nil); err != nil {
+		errLogger.Fatal(err)
+	}
 }
