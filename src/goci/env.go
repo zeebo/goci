@@ -4,25 +4,20 @@ import "os"
 
 type envFlag chan bool
 
-func (i envFlag) IsDone() bool {
+func (i envFlag) Value() (val bool) {
+	val = <-i
+	i <- val
+	return
+}
+
+func (i envFlag) Set(val bool) {
 	select {
-	case <-i:
-		i <- true
-		return true
+	case val := <-i:
+		i <- val
+		panic("double set")
 	default:
 	}
-	return false
-}
-
-func (i envFlag) Wait() {
-	<-i
-	i <- true
-}
-
-func (i envFlag) Finished() {
-	if !i.IsDone() {
-		i <- true
-	}
+	i <- val
 }
 
 var (
@@ -34,7 +29,7 @@ var (
 )
 
 func init() {
-	defer envInit.Finished()
+	defer envInit.Set(true)
 	defer logger.Println("Base environment setup finished.")
 	//set up any environment initialization here
 }

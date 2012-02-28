@@ -67,9 +67,18 @@ func work(repo Repo, commit string, group sync.WaitGroup) {
 		return
 	}
 
-	r.Checkout = Status{
-		Passed: true,
+	r.Checkout.Passed = true
+
+	//list
+	logger.Println(repo, commit, "Listing...")
+	packages, err := repo.Packages()
+	if err != nil {
+		r.List.Error = err.Error()
+		errLogger.Println(repo, commit, "list:", err)
+		return
 	}
+
+	r.List.Passed = true
 
 	//build
 	logger.Println(repo, commit, "Building...")
@@ -93,7 +102,7 @@ func work(repo Repo, commit string, group sync.WaitGroup) {
 
 	//test
 	logger.Println(repo, commit, "Testing...")
-	stdout, stderr, err = repo.Test()
+	stdout, stderr, err = repo.Test(packages)
 	if err != nil {
 		r.Test = Status{
 			Passed: false,

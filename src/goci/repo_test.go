@@ -28,6 +28,12 @@ func TestCloneAndTest(t *testing.T) {
 		t.Fatal("clone:", err)
 	}
 
+	//list
+	packages, err := repo.Packages()
+	if err != nil {
+		t.Fatal("list:", err)
+	}
+
 	//build
 	stdout, stderr, err := repo.Get()
 	if err != nil {
@@ -39,7 +45,7 @@ func TestCloneAndTest(t *testing.T) {
 	t.Log(stdout.String())
 
 	//test
-	stdout, stderr, err = repo.Test()
+	stdout, stderr, err = repo.Test(packages)
 	if err != nil {
 		t.Error("test:", err)
 		t.Log(stdout.String())

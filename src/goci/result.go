@@ -10,6 +10,7 @@ type Result struct {
 	ID       int
 	Repo     string
 	Duration time.Duration
+	List     Status
 	Checkout Status
 	Build    Status
 	Test     Status

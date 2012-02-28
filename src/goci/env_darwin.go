@@ -4,7 +4,7 @@ import "os"
 
 //setup so the tests/app runs locally
 func init() {
-	envInit.Wait()
+	_ = envInit.Value()
 	defer logger.Println("Darwin environment setup finished.")
 
 	goHost = `darwin-amd64`
