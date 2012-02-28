@@ -12,6 +12,7 @@ var workMutex sync.Mutex
 
 func handlePush(w http.ResponseWriter, r *http.Request) {
 	var p github.HookMessage
+	logger.Println("Incoming JSON:", r.FormValue("payload"))
 	if err := json.Unmarshal([]byte(r.FormValue("payload")), &p); err != nil {
 		errLogger.Println("json:", err)
 		return
@@ -48,8 +49,12 @@ func handlePush(w http.ResponseWriter, r *http.Request) {
 }
 
 func work(repo Repo, commit string, group sync.WaitGroup) {
+	logger.Println(repo, commit, "Starting...")
 	defer with(workMutex)()
+	logger.Println(repo, commit, "Running...")
+	defer logger.Println(repo, commit, "Finishing...")
 	defer group.Done()
+
 	now := time.Now()
 	r := Result{
 		Repo: string(repo),
