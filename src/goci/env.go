@@ -26,9 +26,9 @@ func (i envFlag) Finished() {
 }
 
 var (
-	cacheDir  = os.TempDir()
-	goVersion = `weekly.2012-02-22`
-	goHost    = `linux-amd64`
+	cacheDir, _ = os.Getwd()
+	goVersion   = `weekly.2012-02-22`
+	goHost      = `linux-amd64`
 
 	envInit envFlag = make(chan bool, 1)
 )
@@ -37,7 +37,4 @@ func init() {
 	defer envInit.Finished()
 
 	//set up any environment initialization here
-	if err := os.Chmod(cacheDir, 0777); err != nil {
-		panic(err)
-	}
 }
