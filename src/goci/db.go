@@ -15,7 +15,7 @@ var (
 
 func init() {
 	//connect to the database
-	databaseConn, err := sql.Open("postgres", os.Getenv("HEROKU_SHARED_POSTGRESQL_ROSE_URL"))
+	databaseConn, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		panic(err)
 	}
