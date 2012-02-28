@@ -42,7 +42,7 @@ func Root(version string) (goroot string, err error) {
 
 		//extract the tarball
 		path := fmt.Sprintf("http://go.googlecode.com/files/%s.tar.gz", fullVersion)
-		err = Extract(path, fullVersion)
+		err = Extract(path, goroot)
 	}
 
 	//should be done
