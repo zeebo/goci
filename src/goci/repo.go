@@ -48,7 +48,7 @@ func (r Repo) Get() (stdout, stderr bytes.Buffer, err error) {
 		return
 	}
 	cmdPath := filepath.Join(root, "bin", "go")
-	cmd := exec.Command(cmdPath, "get", "-v", "all")
+	cmd := exec.Command(cmdPath, "get", "-v", "./...")
 	cmd.Dir = r.Dir()
 	cmd.Env = []string{
 		fmt.Sprintf("GOPATH=%s", cmd.Dir),
