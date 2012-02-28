@@ -26,9 +26,9 @@ func (i envFlag) Finished() {
 }
 
 var (
-	cacheDir, _ = os.Getwd()
-	goVersion   = `weekly.2012-02-22`
-	goHost      = `linux-amd64`
+	cacheDir  = os.TempDir()
+	goVersion = `weekly.2012-02-22`
+	goHost    = `linux-amd64`
 
 	envInit envFlag = make(chan bool, 1)
 )

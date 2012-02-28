@@ -28,6 +28,8 @@ func Extract(url string, path string) error {
 
 func untar(r io.Reader, path string) error {
 	tr := tar.NewReader(r)
+	mode := os.O_RDWR | os.O_CREATE | os.O_TRUNC
+
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
@@ -49,7 +51,7 @@ func untar(r io.Reader, path string) error {
 			continue
 		}
 
-		file, err := os.Create(path)
+		file, err := os.OpenFile(path, mode, 0777)
 		if err != nil {
 			return err
 		}
