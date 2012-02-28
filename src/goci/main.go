@@ -14,6 +14,7 @@ func herokuTmpDir(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 	http.HandleFunc("/push", handlePush)
+	http.HandleFunc("/tmpdir", herokuTmpDir)
 	if err := http.ListenAndServe(":"+os.Getenv("PORT"), nil); err != nil {
 		errLogger.Fatal(err)
 	}
