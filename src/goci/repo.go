@@ -18,7 +18,7 @@ func init() {
 
 	//make a gopath for external things to be cloned into
 	extGOPATH = filepath.Join(os.TempDir(), "gopath")
-	if err := os.Mkdir(extGOPATH, 0777); err != nil {
+	if err := os.MkdirAll(extGOPATH, 0777); err != nil {
 		panic(err)
 	}
 }

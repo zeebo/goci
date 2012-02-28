@@ -24,7 +24,11 @@ func processConsumer() {
 }
 
 func process(p github.HookMessage) {
-	logger.Println(p)
+	commits := make([]string, len(p.Commits))
+	for i, commit := range p.Commits {
+		commits[i] = commit.ID
+	}
+	logger.Printf("Pull for %s. Commits: %v", p.Repository.URL, commits)
 
 	path, err := github.ClonePath(p.Repository.URL)
 	if err != nil {
@@ -54,7 +58,6 @@ func process(p github.HookMessage) {
 
 func handlePush(w http.ResponseWriter, r *http.Request) {
 	var p github.HookMessage
-	logger.Println("Incoming JSON:", r.FormValue("payload"))
 	if err := json.Unmarshal([]byte(r.FormValue("payload")), &p); err != nil {
 		errLogger.Println("json:", err)
 		return
