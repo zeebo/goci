@@ -53,6 +53,7 @@ func (r Repo) Get() (stdout, stderr bytes.Buffer, err error) {
 	cmd.Env = []string{
 		fmt.Sprintf("GOPATH=%s", cmd.Dir),
 		fmt.Sprintf("GOROOT=%s", root),
+		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
 	}
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -73,6 +74,7 @@ func (r Repo) Test() (stdout, stderr bytes.Buffer, err error) {
 	cmd.Env = []string{
 		fmt.Sprintf("GOPATH=%s", cmd.Dir),
 		fmt.Sprintf("GOROOT=%s", root),
+		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
 	}
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
