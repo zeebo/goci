@@ -37,7 +37,7 @@ func Extract(url string, path string) (err error) {
 		return err
 	}
 
-	if m := stat.Mode(); m.IsDir() || m&0111 != 0 {
+	if m := stat.Mode(); m.IsDir() {
 		return fmt.Errorf("%s is not executable.", exe)
 	}
 
