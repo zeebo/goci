@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github"
 	"net/http"
+	"os"
 	"sync"
 )
 
@@ -16,6 +17,7 @@ func handlePush(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger.Println(os.TempDir())
 	logger.Println(p)
 
 	path, err := github.ClonePath(p.Repository.URL)
@@ -25,6 +27,7 @@ func handlePush(w http.ResponseWriter, r *http.Request) {
 	}
 
 	repo := Repo(path)
+	logger.Println(repo, "Cloning the repository")
 	if err := repo.Clone(); err != nil {
 		errLogger.Println("clone:", err)
 		return
@@ -40,6 +43,7 @@ func handlePush(w http.ResponseWriter, r *http.Request) {
 	//on it.
 	go func() {
 		group.Wait()
+		logger.Println(repo, "Cleaning up the repository")
 		repo.Cleanup()
 	}()
 }
@@ -48,12 +52,14 @@ func work(repo Repo, commit string, group sync.WaitGroup) {
 	defer with(workMutex)()
 	defer group.Done()
 
+	logger.Println(repo, commit, "Checking out")
 	if err := repo.Checkout(commit); err != nil {
 		errLogger.Println(repo, commit, "checkout:", err)
 		return
 	}
 
 	//build
+	logger.Println(repo, commit, "Building...")
 	stdout, stderr, err := repo.Get()
 	if err != nil {
 		errLogger.Println(repo, commit, "get:", err)
@@ -63,6 +69,7 @@ func work(repo Repo, commit string, group sync.WaitGroup) {
 	}
 
 	//test
+	logger.Println(repo, commit, "Testing...")
 	stdout, stderr, err = repo.Test()
 	if err != nil {
 		errLogger.Println(repo, commit, "test:", err)

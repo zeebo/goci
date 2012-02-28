@@ -10,6 +10,9 @@ import (
 )
 
 func Extract(url string, path string) error {
+	logger.Println("Exctracting", url, "to", path)
+	defer logger.Println("Finished extracting.")
+
 	res, err := http.Get(url)
 	if err != nil {
 		return err
