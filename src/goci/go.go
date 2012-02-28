@@ -33,44 +33,18 @@ func Root(version string) (goroot string, err error) {
 	//we're looking for cacheDir/go.%s.linux-amd64/go
 	fullVersion := fmt.Sprintf("go.%s.%s", version, goHost)
 
+	//set up the goroot
 	goroot = filepath.Join(cacheDir, fullVersion)
+
+	//check for the go command
 	_, err = exec.LookPath(filepath.Join(goroot, "bin", "go"))
 	if err != nil {
-		err = download(fullVersion)
-	}
-	return
-}
 
-func download(fullVersion string) (err error) {
-	file := fmt.Sprintf("%s.tar.gz", fullVersion)
-
-	cmd := exec.Command("curl", "-sO", fmt.Sprintf("http://go.googlecode.com/files/%s", file))
-	cmd.Dir = cacheDir
-
-	if err = cmd.Run(); err != nil {
-		return fmt.Errorf("%s: %s", cmd.Args, err)
+		//extract the tarball
+		path := fmt.Sprintf("http://go.googlecode.com/files/%s.tar.gz", fullVersion)
+		err = Extract(path, fullVersion)
 	}
 
-	cmd = exec.Command("tar", "zxf", file)
-	cmd.Dir = cacheDir
-
-	if err = cmd.Run(); err != nil {
-		return fmt.Errorf("%s: %s", cmd.Args, err)
-	}
-
-	cmd = exec.Command("mv", "go", fullVersion)
-	cmd.Dir = cacheDir
-
-	if err = cmd.Run(); err != nil {
-		return fmt.Errorf("%s: %s", cmd.Args, err)
-	}
-
-	cmd = exec.Command("rm", "-f", file)
-	cmd.Dir = cacheDir
-
-	if err = cmd.Run(); err != nil {
-		return fmt.Errorf("%s: %s", cmd.Args, err)
-	}
-
+	//should be done
 	return
 }
