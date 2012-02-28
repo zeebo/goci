@@ -7,18 +7,11 @@ import (
 	"sync"
 )
 
-/*
-   url=http://go.googlecode.com/files/$pkg_path.tar.gz
-   curl -sO $url
-   tar zxf $pkg_path.tar.gz
-   rm -f $pkg_path.tar.gz
-*/
-
-var goLock sync.Mutex
+var goLock = new(sync.Mutex)
 
 type lambda func()
 
-func with(m sync.Mutex) lambda {
+func with(m *sync.Mutex) lambda {
 	m.Lock()
 	return func() {
 		m.Unlock()

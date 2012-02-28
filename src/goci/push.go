@@ -4,20 +4,26 @@ import (
 	"encoding/json"
 	"github"
 	"net/http"
-	"sync"
 	"time"
 )
 
-var workMutex sync.Mutex
+var processChannel = make(chan github.HookMessage)
 
-func handlePush(w http.ResponseWriter, r *http.Request) {
-	var p github.HookMessage
-	logger.Println("Incoming JSON:", r.FormValue("payload"))
-	if err := json.Unmarshal([]byte(r.FormValue("payload")), &p); err != nil {
-		errLogger.Println("json:", err)
-		return
+func init() {
+	//wait for our environment init
+	_ = envInit.Value()
+
+	//run our consumer
+	go processConsumer()
+}
+
+func processConsumer() {
+	for p := range processChannel {
+		process(p)
 	}
+}
 
+func process(p github.HookMessage) {
 	logger.Println(p)
 
 	path, err := github.ClonePath(p.Repository.URL)
@@ -27,33 +33,41 @@ func handlePush(w http.ResponseWriter, r *http.Request) {
 	}
 
 	repo := Repo(path)
+	logger.Println(repo, "Cleaning out any old repository")
+	repo.Cleanup()
+
 	logger.Println(repo, "Cloning the repository")
 	if err := repo.Clone(); err != nil {
 		errLogger.Println("clone:", err)
 		return
 	}
-	var group sync.WaitGroup
-	group.Add(len(p.Commits))
-
-	for _, commit := range p.Commits {
-		go work(repo, commit.ID, group)
-	}
-
-	//launch a goroutine to clean up the repo after we're finished working
-	//on it.
-	go func() {
-		group.Wait()
+	defer func() {
 		logger.Println(repo, "Cleaning up the repository")
 		repo.Cleanup()
 	}()
+
+	//spawn workers
+	for _, commit := range p.Commits {
+		work(repo, commit.ID)
+	}
 }
 
-func work(repo Repo, commit string, group sync.WaitGroup) {
+func handlePush(w http.ResponseWriter, r *http.Request) {
+	var p github.HookMessage
+	logger.Println("Incoming JSON:", r.FormValue("payload"))
+	if err := json.Unmarshal([]byte(r.FormValue("payload")), &p); err != nil {
+		errLogger.Println("json:", err)
+		return
+	}
+	//async send it in
+	go func() {
+		processChannel <- p
+	}()
+}
+
+func work(repo Repo, commit string) {
 	logger.Println(repo, commit, "Starting...")
-	defer with(workMutex)()
-	logger.Println(repo, commit, "Running...")
 	defer logger.Println(repo, commit, "Finishing...")
-	defer group.Done()
 
 	now := time.Now()
 	r := Result{

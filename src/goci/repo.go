@@ -24,6 +24,7 @@ func (r Repo) Hash() string {
 //Clone clones the repo into the temporary directory
 func (r Repo) Clone() error {
 	cmd := exec.Command("git", "clone", string(r), r.Dir())
+	logger.Println(cmd.Args)
 	return cmd.Run()
 }
 

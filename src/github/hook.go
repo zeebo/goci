@@ -6,6 +6,7 @@ type HookMessage struct {
 	Before, After, Ref string
 	Commits            []Commit
 	Repository         Repository
+	Pusher             Author
 }
 
 type Repository struct {

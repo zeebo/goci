@@ -2,9 +2,34 @@ package main
 
 import (
 	"bytes"
+	"fmt"
+	"log"
 	"net/http"
 	"testing"
 )
+
+//sentinalLogger looks for any argument matching the value passed in
+type sentinalLogger struct {
+	found bool
+	value string
+}
+
+//find looks for any argument that prints like our sentinal
+func (l *sentinalLogger) Find(v []interface{}) {
+	if l.found {
+		return
+	}
+	for _, val := range v {
+		if fmt.Sprintf("%v", val) == l.value {
+			l.found = true
+			return
+		}
+	}
+}
+
+func (l *sentinalLogger) Fatal(v ...interface{})                 { l.Find(v); log.Println(v...) }
+func (l *sentinalLogger) Printf(format string, v ...interface{}) { l.Find(v); log.Printf(format, v...) }
+func (l *sentinalLogger) Println(v ...interface{})               { l.Find(v); log.Println(v...) }
 
 //simple Logger that fails the test on any call.
 type errorLogger struct {
