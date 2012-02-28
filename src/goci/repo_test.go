@@ -44,6 +44,9 @@ func TestCloneAndTest(t *testing.T) {
 	}
 	t.Log(stdout.String())
 
+	//Test Install
+	repo.TestInstall(packages)
+
 	//test
 	stdout, stderr, err = repo.Test(packages)
 	if err != nil {
@@ -52,5 +55,4 @@ func TestCloneAndTest(t *testing.T) {
 		t.Log(stderr.String())
 		t.FailNow()
 	}
-	t.Log(stdout.String())
 }

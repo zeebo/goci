@@ -100,6 +100,10 @@ func work(repo Repo, commit string, group sync.WaitGroup) {
 		Error:  stderr.String(),
 	}
 
+	//run a TestInstall first and ignore any errors
+	logger.Println(repo, commit, "Running a test -i", packages)
+	repo.TestInstall(packages)
+
 	//test
 	logger.Println(repo, commit, "Testing...")
 	stdout, stderr, err = repo.Test(packages)

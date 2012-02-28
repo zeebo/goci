@@ -67,7 +67,7 @@ func (r Repo) Packages() (p []string, err error) {
 	}
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
-	logger.Println("list:", cmd)
+	logger.Println("running: go", cmd.Args[1:])
 	err = cmd.Run()
 	if err != nil {
 		return
@@ -99,7 +99,7 @@ func (r Repo) Get() (stdout, stderr bytes.Buffer, err error) {
 	}
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	logger.Println("get:", cmd)
+	logger.Println("running: go", cmd.Args[1:])
 	err = cmd.Run()
 	return
 }
@@ -113,7 +113,18 @@ func (r Repo) Test(packages []string) (stdout, stderr bytes.Buffer, err error) {
 	}
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	logger.Println("test:", cmd)
+	logger.Println("running: go", cmd.Args[1:])
 	err = cmd.Run()
 	return
+}
+
+//TestInstall runs a test -i on the packages
+func (r Repo) TestInstall(packages []string) {
+	command := append([]string{"test", "-i"}, packages...)
+	cmd, err := r.goCommand(command...)
+	if err != nil {
+		return
+	}
+	logger.Println("running: go", cmd.Args[1:])
+	cmd.Run()
 }
