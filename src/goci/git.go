@@ -4,12 +4,20 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 )
 
-//Repo is a path to a repository like "http://github.com/zeebo/goci"
+func init() {
+	//set up the path to work like on heroku
+	if err := os.Setenv("PATH", "/usr/bin"); err != nil {
+		panic(err)
+	}
+}
+
+//Repo is a path to a repository like "git://github.com/zeebo/goci.git"
 type Repo string
 
 //Hash returns the hex represntation of the sha1 sum of the repo.
@@ -21,23 +29,26 @@ func (r Repo) Hash() string {
 
 //Clone clones the repo into the temporary directory
 func (r Repo) Clone() (err error) {
-	return exec.Command("git", "clone", string(r), r.Dir()).Run()
+	cmd := exec.Command("git", "clone", string(r), r.Dir())
+	return cmd.Run()
+}
+
+func (r Repo) Cleanup() error {
+	return exec.Command("rm", "-rf", r.Dir()).Run()
 }
 
 //Dir returns the directory of where the repo will be cloned.
 func (r Repo) Dir() string {
-	//silencing the error and just using a relative path if theres ever an
-	//issue getting the current working directory
-	cwd, _ := os.Getwd()
-	return filepath.Join(cwd, "tmp", r.Hash())
+	return filepath.Join(os.TempDir(), r.Hash())
 }
 
 //Test run's the go test command and returns the output generated and any errors
 func (r Repo) Test() (out bytes.Buffer, err error) {
 	cmd := exec.Command("go", "test", "-v", "./...")
 	cmd.Dir = r.Dir()
-	cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%s", cmd.Dir))
+	cmd.Env = []string{fmt.Sprintf("GOPATH=%s", cmd.Dir)}
 	cmd.Stdout = &out
+	log.Println(cmd)
 	err = cmd.Run()
 	return
 }

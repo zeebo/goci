@@ -19,3 +19,16 @@ func TestRepoHash(t *testing.T) {
 		}
 	}
 }
+
+func TestCloneAndTest(t *testing.T) {
+	repo := Repo("git://github.com/zeebo/goci.git")
+	defer repo.Cleanup()
+	if err := repo.Clone(); err != nil {
+		t.Fatal("clone:", err)
+	}
+	out, err := repo.Test()
+	t.Log(out.String())
+	if err != nil {
+		t.Fatal("test:", err)
+	}
+}
