@@ -16,6 +16,8 @@ import (
 
 var goLock sync.Mutex
 
+type lambda func()
+
 func with(m sync.Mutex) lambda {
 	m.Lock()
 	return func() {

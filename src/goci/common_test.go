@@ -70,8 +70,6 @@ func (b *bufferedWriter) WriteHeader(status int) {
 	b.wrote = true
 }
 
-type lambda func()
-
 func setupLogger(l Logger) lambda {
 	oldLogger := logger
 	logger = l
