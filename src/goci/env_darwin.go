@@ -2,7 +2,7 @@ package main
 
 import "os"
 
-//setup so the tests run locally
+//setup so the tests/app runs locally
 func init() {
 	envInit.Wait()
 	defer logger.Println("Darwin environment setup finished.")

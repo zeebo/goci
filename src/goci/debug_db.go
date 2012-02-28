@@ -2,23 +2,25 @@ package main
 
 import (
 	"fmt"
-	"github.com/bmizerany/pat.go"
+	"io"
 	"net/http"
 	"strconv"
 )
 
-func init() {
-	m := pat.New()
-	m.Get("/:id", http.HandlerFunc(debugDatabase))
-	http.Handle("/debug/", m)
-}
-
 func debugDatabase(w http.ResponseWriter, req *http.Request) {
-	id, err := strconv.ParseInt(req.URL.Query().Get(":id"), 10, 32)
-	if err != nil {
-		fmt.Fprintln(w, "Invalid id")
+	tid := req.URL.Query().Get(":id")
+	if tid == "list" {
+		dumpIds(w)
 		return
 	}
+
+	id, err := strconv.ParseInt(tid, 10, 32)
+	if err != nil {
+		fmt.Fprintln(w, "404 page not found")
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
 	rows, err := databaseConn.Query(`SELECT attribute_key, attribute_value
 		FROM attributes WHERE
 		    object_id = $1
@@ -29,8 +31,6 @@ func debugDatabase(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	fmt.Fprintln(w, "<pre>")
-
 	//loop over them
 	var key string
 	var value []byte
@@ -40,5 +40,24 @@ func debugDatabase(w http.ResponseWriter, req *http.Request) {
 		}
 
 		fmt.Fprintln(w, key, string(value))
+	}
+}
+
+func dumpIds(w io.Writer) {
+	rows, err := databaseConn.Query(`SELECT object_id
+		FROM objects WHERE
+		    object_deleted = false`)
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+
+	var id int
+	for rows.Next() {
+		if err = rows.Scan(&id); err != nil {
+			return
+		}
+
+		fmt.Fprintln(w, id)
 	}
 }

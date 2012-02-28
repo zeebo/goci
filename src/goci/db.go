@@ -14,13 +14,15 @@ var (
 )
 
 func init() {
+	var err error
+
 	//connect to the database
-	databaseConn, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	databaseConn, err = sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		panic(err)
 	}
 	//boostrap fdb
-	if err := fdb.Bootstrap(databaseConn); err != nil {
+	if err = fdb.Bootstrap(databaseConn); err != nil {
 		panic(err)
 	}
 	//run our insert loob
