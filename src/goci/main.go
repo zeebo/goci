@@ -3,7 +3,14 @@ package main
 import (
 	"net/http"
 	"os"
+	"path/filepath"
 )
+
+func herokuTmpDir(w http.ResponseWriter, req *http.Request) {
+	dir := os.TempDir()
+	logger.Println(dir)
+	logger.Println("Mkdir", os.Mkdir(filepath.Join(dir, "foo"), 0777))
+}
 
 func main() {
 	http.HandleFunc("/push", handlePush)

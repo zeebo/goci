@@ -10,6 +10,7 @@ import (
 func TestMalformedJson(t *testing.T) {
 	called := isCalled(false)
 	defer setupErrLogger(&called)()
+	defer setupLogger(noOp(false))()
 
 	body := bytes.NewBufferString(`payload={foasdf}`)
 	req, err := http.NewRequest("GET", "/", body)
@@ -69,6 +70,7 @@ const fromGithub = `{
 
 func TestGoodJson(t *testing.T) {
 	defer setupErrLogger(&errorLogger{t})()
+	defer setupLogger(noOp(false))()
 
 	enc := url.Values{
 		"payload": {fromGithub},
