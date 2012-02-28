@@ -1,5 +1,7 @@
 package main
 
+import "os"
+
 type envFlag chan bool
 
 func (i envFlag) IsDone() bool {
@@ -24,7 +26,7 @@ func (i envFlag) Finished() {
 }
 
 var (
-	cacheDir  = `/app/tmp/repo.git/.cache`
+	cacheDir  = os.TempDir()
 	goVersion = `weekly.2012-02-22`
 	goHost    = `linux-amd64`
 

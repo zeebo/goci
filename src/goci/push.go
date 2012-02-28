@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github"
 	"net/http"
-	"os"
 	"sync"
 )
 
@@ -17,7 +16,6 @@ func handlePush(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Println(os.TempDir())
 	logger.Println(p)
 
 	path, err := github.ClonePath(p.Repository.URL)
