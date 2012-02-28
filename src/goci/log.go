@@ -13,6 +13,6 @@ type Logger interface {
 
 //set up our apps loggers
 var (
-	logger    Logger = log.New(os.Stdout, "app: ", log.LstdFlags)
-	errLogger Logger = log.New(os.Stderr, "error: ", log.LstdFlags)
+	logger    Logger = log.New(os.Stdout, "app: ", log.Lshortfile)
+	errLogger Logger = log.New(os.Stderr, "error: ", log.Lshortfile)
 )
