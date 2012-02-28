@@ -3,27 +3,45 @@ package main
 import (
 	"archive/tar"
 	"compress/gzip"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 )
 
-func Extract(url string, path string) error {
+func Extract(url string, path string) (err error) {
 	logger.Println("Extracting", url, "to", path)
 	defer logger.Println("Finished extracting.")
 
 	res, err := http.Get(url)
 	if err != nil {
-		return err
+		return
 	}
 	defer res.Body.Close()
 	r, err := gzip.NewReader(res.Body)
 	if err != nil {
-		return err
+		return
 	}
 	defer r.Close()
-	return untar(r, path)
+
+	err = untar(r, path)
+	if err != nil {
+		return
+	}
+
+	//check that the go bin is executable
+	exe := filepath.Join(path, "bin", "go")
+	stat, err := os.Stat(exe)
+	if err != nil {
+		return err
+	}
+
+	if m := stat.Mode(); m.IsDir() || m&0111 != 0 {
+		return fmt.Errorf("%s is not executable.", exe)
+	}
+
+	return
 }
 
 func untar(r io.Reader, path string) error {
@@ -41,10 +59,11 @@ func untar(r io.Reader, path string) error {
 		}
 
 		//drop of the prefixing go/
-		path := filepath.Join(path, hdr.Name[3:])
+		name := hdr.Name[3:]
+		path := filepath.Join(path, name)
 
 		//check if it's a directory
-		if hdr.Mode&(1<<3) > 0 {
+		if hdr.Typeflag == tar.TypeDir {
 			if err := os.Mkdir(path, 0777); err != nil {
 				return err
 			}
