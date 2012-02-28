@@ -35,6 +35,6 @@ var (
 
 func init() {
 	defer envInit.Finished()
-
+	defer logger.Println("Base environment setup finished.")
 	//set up any environment initialization here
 }

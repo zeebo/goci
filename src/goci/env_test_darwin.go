@@ -5,9 +5,8 @@ import "os"
 //setup so the tests run locally
 func init() {
 	envInit.Wait()
+	defer logger.Println("Darwin environment setup finished.")
 
-	//change the cacheDir to something we can actually use
-	cacheDir = os.TempDir()
 	goHost = `darwin-amd64`
 
 	//set the path for local testing
