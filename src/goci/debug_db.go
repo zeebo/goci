@@ -9,7 +9,7 @@ import (
 
 func init() {
 	m := pat.New()
-	m.Get("/:id", debugDatabase)
+	m.Get("/:id", http.HandlerFunc(debugDatabase))
 	http.Handle("/debug/", m)
 }
 

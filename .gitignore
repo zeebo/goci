@@ -1,2 +1,5 @@
+src/*
+!src/goci/
+!src/github/
 bin/
 pkg/

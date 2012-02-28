@@ -5,6 +5,7 @@ import (
 	"github"
 	"net/http"
 	"sync"
+	"time"
 )
 
 var workMutex sync.Mutex
@@ -49,33 +50,66 @@ func handlePush(w http.ResponseWriter, r *http.Request) {
 func work(repo Repo, commit string, group sync.WaitGroup) {
 	defer with(workMutex)()
 	defer group.Done()
+	now := time.Now()
+	r := Result{
+		Repo: string(repo),
+	}
+
+	defer func() {
+		r.Duration = time.Now().Sub(now)
+		resultsChan <- r
+	}()
 
 	logger.Println(repo, commit, "Checking out")
 	if err := repo.Checkout(commit); err != nil {
+		r.Checkout.Error = err.Error()
 		errLogger.Println(repo, commit, "checkout:", err)
 		return
+	}
+
+	r.Checkout = Status{
+		Passed: true,
 	}
 
 	//build
 	logger.Println(repo, commit, "Building...")
 	stdout, stderr, err := repo.Get()
 	if err != nil {
+		r.Build = Status{
+			Passed: false,
+			Output: stdout.String(),
+			Error:  stderr.String(),
+		}
 		errLogger.Println(repo, commit, "get:", err)
-		errLogger.Println("stdout:", stdout.String())
-		errLogger.Println("stderr:", stderr.String())
+		errLogger.Printf("%+v", r.Build)
 		return
+	}
+
+	r.Build = Status{
+		Passed: true,
+		Output: stdout.String(),
+		Error:  stderr.String(),
 	}
 
 	//test
 	logger.Println(repo, commit, "Testing...")
 	stdout, stderr, err = repo.Test()
 	if err != nil {
+		r.Test = Status{
+			Passed: false,
+			Output: stdout.String(),
+			Error:  stderr.String(),
+		}
 		errLogger.Println(repo, commit, "test:", err)
-		errLogger.Println("stdout:", stdout.String())
-		errLogger.Println("stderr:", stderr.String())
+		errLogger.Printf("%+v", r.Test)
 		return
 	}
 
+	r.Test = Status{
+		Passed: true,
+		Output: stdout.String(),
+		Error:  stderr.String(),
+	}
+
 	logger.Println(repo, commit, "PASS")
-	logger.Println(repo, commit, stdout.String())
 }
