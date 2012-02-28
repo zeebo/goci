@@ -37,4 +37,7 @@ func init() {
 	defer envInit.Finished()
 
 	//set up any environment initialization here
+	if err := os.Chmod(cacheDir, 0777); err != nil {
+		panic(err)
+	}
 }
