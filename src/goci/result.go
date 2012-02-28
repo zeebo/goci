@@ -9,6 +9,7 @@ import (
 type Result struct {
 	ID       int
 	Repo     string
+	Commit   string
 	Duration time.Duration
 	List     Status
 	Checkout Status

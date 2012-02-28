@@ -11,6 +11,18 @@ import (
 	"strings"
 )
 
+var extGOPATH string
+
+func init() {
+	_ = envInit.Value()
+
+	//make a gopath for external things to be cloned into
+	extGOPATH = filepath.Join(os.TempDir(), "gopath")
+	if err := os.Mkdir(extGOPATH, 0777); err != nil {
+		panic(err)
+	}
+}
+
 //Repo is a path to a repository like "git://github.com/zeebo/goci.git"
 type Repo string
 
@@ -54,7 +66,7 @@ func (r Repo) goCommand(args ...string) (cmd *exec.Cmd, err error) {
 	cmd = exec.Command(cmdPath, args...)
 	cmd.Dir = r.Dir()
 	cmd.Env = []string{
-		fmt.Sprintf("GOPATH=%s", cmd.Dir),
+		fmt.Sprintf("GOPATH=%s:%s", extGOPATH, cmd.Dir),
 		fmt.Sprintf("GOROOT=%s", root),
 		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
 	}

@@ -71,7 +71,8 @@ func work(repo Repo, commit string) {
 
 	now := time.Now()
 	r := Result{
-		Repo: string(repo),
+		Repo:   string(repo),
+		Commit: commit,
 	}
 
 	defer func() {
