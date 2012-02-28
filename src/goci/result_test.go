@@ -10,6 +10,11 @@ import (
 )
 
 func TestFDBResult(t *testing.T) {
+	//only run this test on my local machine (or any darwin machine actually)
+	if goHost != `darwin-amd64` {
+		return
+	}
+
 	conn, err := sql.Open("postgres", "postgres://okco:@localhost:5432/okcoerrors")
 	if err != nil {
 		t.Fatal(err)
