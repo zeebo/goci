@@ -54,6 +54,8 @@ func (r Repo) Clone() (err error) {
 		return
 	}
 
+	logger.Println(r, "non GOPATH repo dectected. Moving to GOPATH")
+
 	//we had an error so let's reset that and move things
 	//around so that we have it in a gopath
 	repoDir := filepath.Join(cacheDir, r.Name())
