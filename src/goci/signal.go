@@ -13,9 +13,6 @@ var (
 )
 
 func init() {
-	//wait for env to finish init
-	_ = envInit.Value()
-
 	//broadcast!
 	go signalBroadcast()
 }

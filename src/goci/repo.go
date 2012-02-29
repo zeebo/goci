@@ -12,13 +12,9 @@ import (
 	"strings"
 )
 
-var extGOPATH string
+var extGOPATH = filepath.Join(cacheDir, "gopath")
 
 func init() {
-	_ = envInit.Value()
-
-	//make a gopath for external things to be cloned into
-	extGOPATH = filepath.Join(cacheDir, "gopath")
 	if err := os.MkdirAll(extGOPATH, 0777); err != nil {
 		panic(err)
 	}

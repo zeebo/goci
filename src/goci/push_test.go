@@ -10,9 +10,6 @@ import (
 )
 
 func init() {
-	//wait for our environment init
-	_ = envInit.Value()
-
 	//run a consumer of the results
 	//because we have no database connection while testing
 	go func() {

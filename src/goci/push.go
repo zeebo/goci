@@ -10,9 +10,6 @@ import (
 var processChannel = make(chan github.HookMessage)
 
 func init() {
-	//wait for our environment init
-	_ = envInit.Value()
-
 	//run our consumer
 	go processConsumer()
 }
