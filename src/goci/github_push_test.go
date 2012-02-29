@@ -31,7 +31,7 @@ func TestMalformedJson(t *testing.T) {
 	w := NewLoggingRW(t)
 
 	//this should error
-	handlePush(w, req)
+	handleGithubPush(w, req)
 
 	if !bool(called) {
 		t.Error("Did not fail with invalid json")
@@ -75,7 +75,7 @@ func TestGOPATHRepo(t *testing.T) {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	handlePush(w, req)
+	handleGithubPush(w, req)
 
 	//lets just try waiting 30 seconds with a 1 second poll
 	timeout := time.After(30 * time.Second)
@@ -131,7 +131,7 @@ func TestCleanedUp(t *testing.T) {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	handlePush(w, req)
+	handleGithubPush(w, req)
 
 	//lets just try waiting 30 seconds with a 1 second poll
 	timeout := time.After(30 * time.Second)

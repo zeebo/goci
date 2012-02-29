@@ -1,9 +1,17 @@
 package main
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestBroadcast(t *testing.T) {
 	one, two := make(SignalPipe), make(SignalPipe)
+	go func() {
+		<-time.After(5 * time.Second)
+		t.Fatal("Timeout")
+	}()
+
 	signalRegister <- one
 	signalRegister <- two
 
@@ -22,6 +30,7 @@ func TestBroadcast(t *testing.T) {
 	if g := <-two; g != nil {
 		t.Fatal("Expected %v Got %v", nil, g)
 	}
+
 	select {
 	case <-one:
 		t.Fatal("Got value after unregister")

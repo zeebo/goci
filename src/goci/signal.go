@@ -1,14 +1,23 @@
 package main
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 type Signal map[string]interface{}
+
+//return a string represntation as a json encoded map
+func (s Signal) String() string {
+	val, _ := json.Marshal(s)
+	return string(val)
+}
 
 type SignalPipe chan Signal
 
 var (
-	signalRegister   = make(chan SignalPipe)
-	signalUnregister = make(chan SignalPipe)
+	signalRegister   = make(chan SignalPipe) //buffered for init
+	signalUnregister = make(chan SignalPipe) //buffered for init
 	notify           = make(SignalPipe)
 )
 
@@ -28,7 +37,7 @@ func signalBroadcast() {
 			delete(pipes, pipe)
 		case signal := <-notify:
 			for pipe := range pipes {
-				go timeoutSend(pipe, signal, 5*time.Second)
+				go timeoutSend(pipe, signal, 1*time.Second)
 			}
 		}
 	}

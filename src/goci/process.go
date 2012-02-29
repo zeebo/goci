@@ -1,39 +1,36 @@
 package main
 
-import (
-	"encoding/json"
-	"github"
-	"net/http"
-	"time"
-)
+import "time"
 
-var processChannel = make(chan github.HookMessage)
+type workItem struct {
+	repo    Repo
+	commits []string
+}
 
-func init() {
-	//run our consumer
-	go processConsumer()
+//a queue of 1000 items before handlers start backing up
+var processQueue = make(chan workItem, 1000)
+
+func enqueue(repo Repo, commits []string) {
+	notify <- Signal{
+		"repo":    repo,
+		"commits": commits,
+		"event":   "enqueue",
+	}
+	processQueue <- workItem{repo, commits}
 }
 
 func processConsumer() {
-	for p := range processChannel {
-		process(p)
+	for {
+		w := <-processQueue
+		process(w.repo, w.commits)
 	}
 }
 
-func process(p github.HookMessage) {
-	commits := make([]string, len(p.Commits))
-	for i, commit := range p.Commits {
-		commits[i] = commit.ID
-	}
-	logger.Printf("Pull for %s. Commits: %v", p.Repository.URL, commits)
+func init() {
+	go processConsumer()
+}
 
-	path, err := github.ClonePath(p.Repository.URL)
-	if err != nil {
-		errLogger.Println("clonePath:", err)
-		return
-	}
-
-	repo := Repo(path)
+func process(repo Repo, commits []string) {
 	logger.Println(repo, "Cleaning out any old repository")
 	repo.Cleanup()
 
@@ -48,27 +45,46 @@ func process(p github.HookMessage) {
 	}()
 
 	//spawn workers
-	for _, commit := range p.Commits {
-		work(repo, commit.ID)
+	for _, commit := range commits {
+		work(repo, commit)
 	}
 }
 
-func handlePush(w http.ResponseWriter, r *http.Request) {
-	var p github.HookMessage
-	logger.Println("json:", r.FormValue("payload"))
-	if err := json.Unmarshal([]byte(r.FormValue("payload")), &p); err != nil {
-		errLogger.Println("json:", err)
-		return
+type Notifier struct {
+	repo   Repo
+	commit string
+}
+
+func newNotifier(repo Repo, commit string) *Notifier {
+	return &Notifier{
+		repo:   repo,
+		commit: commit,
 	}
-	//async send it in
-	go func() {
-		processChannel <- p
-	}()
+}
+
+func (n *Notifier) Notify(event string) {
+	notify <- Signal{
+		"repo":   n.repo,
+		"commit": n.commit,
+		"event":  event,
+	}
 }
 
 func work(repo Repo, commit string) {
-	logger.Println(repo, commit, "Starting...")
-	defer logger.Println(repo, commit, "Finishing...")
+	n := newNotifier(repo, commit)
+	var passed bool
+
+	n.Notify("start")
+	defer n.Notify("finish")
+
+	defer func() {
+		switch passed {
+		case true:
+			n.Notify("pass")
+		case false:
+			n.Notify("fail")
+		}
+	}()
 
 	now := time.Now()
 	r := Result{
@@ -81,7 +97,7 @@ func work(repo Repo, commit string) {
 		resultsChan <- r
 	}()
 
-	logger.Println(repo, commit, "Checking out")
+	n.Notify("checkout")
 	if err := repo.Checkout(commit); err != nil {
 		r.Checkout.Error = err.Error()
 		errLogger.Println(repo, commit, "checkout:", err)
@@ -91,7 +107,7 @@ func work(repo Repo, commit string) {
 	r.Checkout.Passed = true
 
 	//list
-	logger.Println(repo, commit, "Listing...")
+	n.Notify("list")
 	packages, err := repo.Packages()
 	if err != nil {
 		r.List.Error = err.Error()
@@ -102,7 +118,7 @@ func work(repo Repo, commit string) {
 	r.List.Passed = true
 
 	//build
-	logger.Println(repo, commit, "Building...")
+	n.Notify("build")
 	stdout, stderr, err := repo.Get()
 	if err != nil {
 		r.Build = Status{
@@ -123,11 +139,11 @@ func work(repo Repo, commit string) {
 	}
 
 	//run a TestInstall first and ignore any errors
-	logger.Println(repo, commit, "Running a test -i", packages)
+	n.Notify("testinstall")
 	repo.TestInstall(packages)
 
 	//test
-	logger.Println(repo, commit, "Testing...")
+	n.Notify("test")
 	stdout, stderr, err = repo.Test(packages)
 	if err != nil {
 		r.Test = Status{
@@ -146,5 +162,5 @@ func work(repo Repo, commit string) {
 		Error:  stderr.String(),
 	}
 
-	logger.Println(repo, commit, "PASS")
+	passed = true
 }
