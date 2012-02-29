@@ -28,6 +28,7 @@ func TestFDBResult(t *testing.T) {
 	r := Result{
 		Repo:     "git://github.com/zeebo/heroku-basic-app.git",
 		Duration: 3 * time.Second,
+		Time:     time.Now(),
 		Build: Status{
 			Passed: true,
 			Output: "some output",

@@ -1,18 +1,13 @@
 package main
 
-var notifyLoggerPipe = make(SignalPipe)
-
 func init() {
-	//async send to register the pipe
-	go func() {
-		signalRegister <- notifyLoggerPipe
-	}()
 	go notifyLogger()
 }
 
 func notifyLogger() {
+	pipe := make(SignalPipe)
+	signalRegister <- pipe
 	for {
-		sig := <-notifyLoggerPipe
-		logger.Println("signal:", sig)
+		logger.Println("signal:", <-pipe)
 	}
 }

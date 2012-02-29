@@ -3,44 +3,98 @@ package main
 import "time"
 
 type workItem struct {
-	repo    Repo
-	commits []string
+	Repo    Repo
+	Commits []string
 }
 
-//a queue of 1000 items before handlers start backing up
-var processQueue = make(chan workItem, 1000)
+//a queue of 100 items before handlers start backing up
+const maxQueueSize = 100
+
+var (
+	processQueue = make(chan workItem)
+	currentQueue = make(chan []workItem)
+)
 
 func enqueue(repo Repo, commits []string) {
+	processQueue <- workItem{repo, commits}
 	notify <- Signal{
 		"repo":    repo,
 		"commits": commits,
 		"event":   "enqueue",
 	}
-	processQueue <- workItem{repo, commits}
 }
 
-func processConsumer() {
+func processConsumer(in chan workItem) {
 	for {
-		w := <-processQueue
-		process(w.repo, w.commits)
+		w := <-in
+		process(w.Repo, w.Commits)
 	}
 }
 
+func processQueuer(in chan workItem, current chan []workItem) (out chan workItem) {
+	out = make(chan workItem)
+	go func() {
+		processQueueBuf := make(chan workItem, maxQueueSize)
+		buf := make([]workItem, 0)
+		var val *workItem
+		for {
+			if val == nil {
+				select {
+				case w := <-in:
+					processQueueBuf <- w
+					buf = append(buf, w)
+				case temp := <-processQueueBuf:
+					val = &temp
+				case current <- buf:
+				}
+			} else {
+				select {
+				case w := <-in:
+					processQueueBuf <- w
+					buf = append(buf, w)
+				case out <- *val:
+					val = nil
+					buf = buf[1:]
+				case current <- buf:
+				}
+			}
+		}
+	}()
+	return out
+}
+
 func init() {
-	go processConsumer()
+	mid := processQueuer(processQueue, currentQueue)
+	go processConsumer(mid)
 }
 
 func process(repo Repo, commits []string) {
-	logger.Println(repo, "Cleaning out any old repository")
+	defer func() {
+		notify <- Signal{
+			"repo":  repo,
+			"event": "processfinished",
+		}
+	}()
+
+	notify <- Signal{
+		"repo":  repo,
+		"event": "repoclean",
+	}
 	repo.Cleanup()
 
-	logger.Println(repo, "Cloning the repository")
+	notify <- Signal{
+		"repo":  repo,
+		"event": "repoclone",
+	}
 	if err := repo.Clone(); err != nil {
 		errLogger.Println("clone:", err)
 		return
 	}
 	defer func() {
-		logger.Println(repo, "Cleaning up the repository")
+		notify <- Signal{
+			"repo":  repo,
+			"event": "repoclean",
+		}
 		repo.Cleanup()
 	}()
 
@@ -90,6 +144,7 @@ func work(repo Repo, commit string) {
 	r := Result{
 		Repo:   string(repo),
 		Commit: commit,
+		Time:   now,
 	}
 
 	defer func() {
@@ -119,7 +174,7 @@ func work(repo Repo, commit string) {
 
 	//build
 	n.Notify("build")
-	stdout, stderr, err := repo.Get()
+	stdout, stderr, err := repo.Get(packages)
 	if err != nil {
 		r.Build = Status{
 			Passed: false,
@@ -130,7 +185,6 @@ func work(repo Repo, commit string) {
 		errLogger.Printf("%+v", r.Build)
 		return
 	}
-
 	//go get -v spits it's output to stderr, so log that as stdout for
 	//the build phase if it passed.
 	r.Build = Status{
@@ -141,6 +195,27 @@ func work(repo Repo, commit string) {
 	//run a TestInstall first and ignore any errors
 	n.Notify("testinstall")
 	repo.TestInstall(packages)
+
+	//defer a clean
+	defer func() {
+		n.Notify("clean")
+		stdout, stderr, err := repo.Clean(packages)
+		if err != nil {
+			r.Clean = Status{
+				Passed: false,
+				Output: stdout.String(),
+				Error:  stderr.String(),
+			}
+			errLogger.Println(repo, commit, "clean:", err)
+			errLogger.Printf("%+v", r.Clean)
+			return
+		}
+
+		r.Clean = Status{
+			Passed: true,
+			Output: stdout.String(),
+		}
+	}()
 
 	//test
 	n.Notify("test")

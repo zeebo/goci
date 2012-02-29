@@ -34,7 +34,7 @@ func cloneAndTest(repo Repo, t *testing.T) {
 	}
 
 	//build
-	stdout, stderr, err := repo.Get()
+	stdout, stderr, err := repo.Get(packages)
 	if err != nil {
 		t.Error("get:", err)
 		t.Log(stdout.String())

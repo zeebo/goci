@@ -7,14 +7,16 @@ import (
 )
 
 type Result struct {
-	ID       int
+	ID       int `json:"-"`
 	Repo     string
 	Commit   string
 	Duration time.Duration
+	Time     time.Time
 	List     Status
 	Checkout Status
 	Build    Status
 	Test     Status
+	Clean    Status
 }
 
 type Status struct {

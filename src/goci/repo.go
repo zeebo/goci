@@ -145,9 +145,23 @@ func (r Repo) Packages() (p []string, err error) {
 	return
 }
 
+//Clean runs the go clean command on all the packages passed in
+func (r Repo) Clean(packages []string) (stdout, stderr bytes.Buffer, err error) {
+	command := append([]string{"clean", "-i"}, packages...)
+	cmd, err := r.goCommand(command...)
+	if err != nil {
+		return
+	}
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err = cmd.Run()
+	return
+}
+
 //Get runs go get on the package to install it and it's dependencies
-func (r Repo) Get() (stdout, stderr bytes.Buffer, err error) {
-	cmd, err := r.goCommand("get", "-v", "./...")
+func (r Repo) Get(packages []string) (stdout, stderr bytes.Buffer, err error) {
+	command := append([]string{"get", "-v"}, packages...)
+	cmd, err := r.goCommand(command...)
 	if err != nil {
 		return
 	}
