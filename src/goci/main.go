@@ -11,6 +11,7 @@ func main() {
 	if err := setupDatabase(); err != nil {
 		errLogger.Fatal(err)
 	}
+	go resultInsert()
 
 	//set up our routing system
 	m := pat.New()

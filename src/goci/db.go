@@ -24,11 +24,6 @@ func setupDatabase() (err error) {
 	return fdb.Bootstrap(databaseConn)
 }
 
-func init() {
-	//run our insert loob
-	go resultInsert()
-}
-
 func resultInsert() {
 	for result := range resultsChan {
 		if err := fdb.Update(&result); err != nil {
