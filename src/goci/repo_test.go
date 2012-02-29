@@ -21,8 +21,7 @@ func TestRepoHash(t *testing.T) {
 	}
 }
 
-func TestCloneAndTest(t *testing.T) {
-	repo := Repo("git://github.com/zeebo/heroku-basic-app.git")
+func cloneAndTest(repo Repo, t *testing.T) {
 	defer repo.Cleanup()
 	if err := repo.Clone(); err != nil {
 		t.Fatal("clone:", err)
@@ -42,7 +41,6 @@ func TestCloneAndTest(t *testing.T) {
 		t.Log(stderr.String())
 		t.FailNow()
 	}
-	t.Log(stdout.String())
 
 	//Test Install
 	repo.TestInstall(packages)
@@ -55,4 +53,16 @@ func TestCloneAndTest(t *testing.T) {
 		t.Log(stderr.String())
 		t.FailNow()
 	}
+
+	t.Log("tests passed")
+}
+
+func TestCloneAndTest(t *testing.T) {
+	repo := Repo("git://github.com/zeebo/heroku-basic-app.git")
+	cloneAndTest(repo, t)
+}
+
+func TestCloneNonGOPATH(t *testing.T) {
+	repo := Repo("git://github.com/zeebo/bencode.git")
+	cloneAndTest(repo, t)
 }

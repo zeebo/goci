@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -17,7 +18,7 @@ func init() {
 	_ = envInit.Value()
 
 	//make a gopath for external things to be cloned into
-	extGOPATH = filepath.Join(os.TempDir(), "gopath")
+	extGOPATH = filepath.Join(cacheDir, "gopath")
 	if err := os.MkdirAll(extGOPATH, 0777); err != nil {
 		panic(err)
 	}
@@ -25,6 +26,12 @@ func init() {
 
 //Repo is a path to a repository like "git://github.com/zeebo/goci.git"
 type Repo string
+
+//Name returns the name of the repo with the last 4 chars (.git) removed
+func (r Repo) Name() string {
+	name := path.Base(string(r))
+	return name[:len(name)-4]
+}
 
 //Hash returns the hex represntation of the sha1 sum of the repo.
 func (r Repo) Hash() string {
@@ -34,10 +41,38 @@ func (r Repo) Hash() string {
 }
 
 //Clone clones the repo into the temporary directory
-func (r Repo) Clone() error {
+func (r Repo) Clone() (err error) {
 	cmd := exec.Command("git", "clone", string(r), r.Dir())
 	logger.Println(cmd.Args)
-	return cmd.Run()
+	err = cmd.Run()
+	if err != nil {
+		return
+	}
+
+	//check for a src directory
+	_, err = os.Stat(filepath.Join(r.Dir(), "src"))
+	if err == nil {
+		return
+	}
+
+	//we had an error so let's reset that and move things
+	//around so that we have it in a gopath
+	repoDir := filepath.Join(cacheDir, r.Name())
+	cmd = exec.Command("mv", r.Dir(), repoDir)
+	if err = cmd.Run(); err != nil {
+		return
+	}
+
+	//make the directory
+	srcDir := filepath.Join(r.Dir(), "src")
+	if err = os.MkdirAll(srcDir, 0777); err != nil {
+		return
+	}
+
+	//move it into src, and we're done
+	cmd = exec.Command("mv", repoDir, srcDir+string(filepath.Separator))
+	err = cmd.Run()
+	return
 }
 
 //Cleanup removes the checked out repository
@@ -54,7 +89,7 @@ func (r Repo) Checkout(commit string) error {
 
 //Dir returns the directory of where the repo will be cloned.
 func (r Repo) Dir() string {
-	return filepath.Join(os.TempDir(), r.Hash())
+	return filepath.Join(cacheDir, r.Hash())
 }
 
 func (r Repo) goCommand(args ...string) (cmd *exec.Cmd, err error) {

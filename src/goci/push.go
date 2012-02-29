@@ -117,10 +117,11 @@ func work(repo Repo, commit string) {
 		return
 	}
 
+	//go get -v spits it's output to stderr, so log that as stdout for
+	//the build phase if it passed.
 	r.Build = Status{
 		Passed: true,
-		Output: stdout.String(),
-		Error:  stderr.String(),
+		Output: stderr.String(),
 	}
 
 	//run a TestInstall first and ignore any errors
