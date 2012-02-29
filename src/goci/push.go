@@ -58,6 +58,7 @@ func process(p github.HookMessage) {
 
 func handlePush(w http.ResponseWriter, r *http.Request) {
 	var p github.HookMessage
+	logger.Println("json:", r.FormValue("payload"))
 	if err := json.Unmarshal([]byte(r.FormValue("payload")), &p); err != nil {
 		errLogger.Println("json:", err)
 		return
