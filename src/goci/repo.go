@@ -43,7 +43,6 @@ func (r Repo) Hash() string {
 //Clone clones the repo into the temporary directory
 func (r Repo) Clone() (err error) {
 	cmd := exec.Command("git", "clone", string(r), r.Dir())
-	logger.Println(cmd.Args)
 	err = cmd.Run()
 	if err != nil {
 		return
@@ -83,13 +82,23 @@ func (r Repo) Cleanup() error {
 //Checkout checks out the repository to a specific commit
 func (r Repo) Checkout(commit string) error {
 	cmd := exec.Command("git", "checkout", commit)
-	cmd.Dir = r.Dir()
+	//this requires some thought
+	cmd.Dir = r.GitDir()
 	return cmd.Run()
 }
 
 //Dir returns the directory of where the repo will be cloned.
 func (r Repo) Dir() string {
 	return filepath.Join(cacheDir, r.Hash())
+}
+
+func (r Repo) GitDir() string {
+	//check for a .git directory in r.Dir()
+	_, err := os.Stat(filepath.Join(r.Dir(), ".git"))
+	if err == nil {
+		return r.Dir()
+	}
+	return filepath.Join(r.Dir(), "src", r.Name())
 }
 
 func (r Repo) goCommand(args ...string) (cmd *exec.Cmd, err error) {

@@ -41,6 +41,61 @@ func TestMalformedJson(t *testing.T) {
 	}
 }
 
+func TestGOPATHRepo(t *testing.T) {
+	w := NewLoggingRW(t)
+	l := &sentinalLogger{
+		value: "Cleaning up the repository",
+	}
+	defer setupLogger(l)()
+	defer setupErrLogger(errorLogger{t})()
+	//a result from github with multiple commits
+
+	json := `{"pusher":{"name":"zeebo","email":"leterip@me.com"},"repository":{"name":"bencode",
+	"size":128,"has_wiki":false,"created_at":"2011/10/25 18:05:00 -0700","watchers":2,"private":
+	false,"url":"https://github.com/zeebo/bencode","fork":false,"language":"Go","pushed_at":
+	"2012/02/29 04:46:09 -0800","open_issues":0,"has_downloads":true,"homepage":"http://zeebo.github.com/bencode",
+	"has_issues":true,"forks":2,"description":"Go bencode marshal/unmarshal library","owner":
+	{"name":"zeebo","email":"leterip@me.com"}},"forced":false,"after":"d92281761439b02ffe0c57b86def6893e9e05f93",
+	"head_commit":{"added":[],"modified":["README.md"],"author":{"name":"jeff","username":"zeebo",
+	"email":"leterip@me.com"},"timestamp":"2012-02-29T04:46:01-08:00","removed":[],"url":
+	"https://github.com/zeebo/bencode/commit/d92281761439b02ffe0c57b86def6893e9e05f93","id":
+	"d92281761439b02ffe0c57b86def6893e9e05f93","distinct":true,"message":
+	"add placeholder for future build status icon"},"deleted":false,"ref":"refs/heads/master","commits":
+	[{"added":[],"modified":["README.md"],"author":{"name":"jeff","username":"zeebo","email":"leterip@me.com"},
+	"timestamp":"2012-02-29T04:46:01-08:00","removed":[],"url":
+	"https://github.com/zeebo/bencode/commit/d92281761439b02ffe0c57b86def6893e9e05f93","id":
+	"d92281761439b02ffe0c57b86def6893e9e05f93","distinct":true,"message":"add placeholder for future build status icon"}],
+	"compare":"https://github.com/zeebo/bencode/compare/2ddf0ab...d922817","before":
+	"2ddf0ab03e2d79162c08ce0ba59496a8ef250a91","created":false}`
+
+	data := url.Values{
+		"payload": {json},
+	}
+
+	req, err := http.NewRequest("POST", "/", strings.NewReader(data.Encode()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	handlePush(w, req)
+
+	//lets just try waiting 30 seconds with a 1 second poll
+	timeout := time.After(30 * time.Second)
+
+	for {
+		select {
+		case <-timeout:
+			t.Fatal("Timeout. Never printed")
+		case <-time.After(time.Second):
+			//check the value
+			if l.found {
+				return
+			}
+		}
+	}
+}
+
 func TestCleanedUp(t *testing.T) {
 	w := NewLoggingRW(t)
 	l := &sentinalLogger{
