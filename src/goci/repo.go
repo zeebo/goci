@@ -112,6 +112,7 @@ func (r Repo) goCommand(args ...string) (cmd *exec.Cmd, err error) {
 		fmt.Sprintf("GOROOT=%s", root),
 		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
 	}
+	logger.Println("running:", cmd.Dir, cmd.Args, cmd.Env)
 	return
 }
 
