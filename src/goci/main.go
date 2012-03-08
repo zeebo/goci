@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/bmizerany/pat.go"
+	"github.com/bmizerany/pat"
 	"io"
 	"net/http"
 	"os"
