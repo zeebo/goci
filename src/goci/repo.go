@@ -23,10 +23,9 @@ func init() {
 //Repo is a path to a repository like "git://github.com/zeebo/goci.git"
 type Repo string
 
-//Name returns the name of the repo with the last 4 chars (.git) removed
+//Name returns the name of the repo with the first 6 and last 4 chars removed
 func (r Repo) Name() string {
-	name := path.Base(string(r))
-	return name[:len(name)-4]
+	return string(r[6 : len(r)-4])
 }
 
 //Hash returns the hex represntation of the sha1 sum of the repo.
@@ -54,14 +53,15 @@ func (r Repo) Clone() (err error) {
 
 	//we had an error so let's reset that and move things
 	//around so that we have it in a gopath
-	repoDir := filepath.Join(cacheDir, r.Name())
+	prefix, name := path.Split(r.Name())
+	repoDir := filepath.Join(cacheDir, name)
 	cmd = exec.Command("mv", r.Dir(), repoDir)
 	if err = cmd.Run(); err != nil {
 		return
 	}
 
 	//make the directory
-	srcDir := filepath.Join(r.Dir(), "src")
+	srcDir := filepath.Join(r.Dir(), "src", prefix)
 	if err = os.MkdirAll(srcDir, 0777); err != nil {
 		return
 	}
