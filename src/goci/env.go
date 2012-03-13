@@ -8,6 +8,6 @@ import (
 
 var (
 	cacheDir  = os.TempDir()
-	goVersion = `weekly.2012-03-04`
+	goVersion = `weekly.2012-03-13`
 	goHost    = fmt.Sprintf("%s-%s", runtime.GOOS, runtime.GOARCH)
 )
