@@ -1,7 +1,6 @@
 package github
 
 import (
-	"encoding/json"
 	"reflect"
 	"testing"
 	"time"
@@ -14,8 +13,8 @@ type unserializeTest struct {
 
 func (u *unserializeTest) perform(t *testing.T) {
 	var ex HookMessage
-	if err := json.Unmarshal(u.payload, &ex); err != nil {
-		t.Error(err)
+	if err := ex.LoadBytes(u.payload); err != nil {
+		t.Errorf("Error unmarshaling payload: %s", err)
 		return
 	}
 	if !reflect.DeepEqual(ex, u.expect) {
@@ -27,9 +26,7 @@ type testCase interface {
 	perform(t *testing.T)
 }
 
-func TestUnserialize(t *testing.T) {
-	cases := []unserializeTest{
-		{[]byte(`{
+const example_packet = `{
 "before": "5aef35982fb2d34e9d9d4502f6ede1072793222d",
   "repository": {
     "url": "http://github.com/defunkt/github",
@@ -68,7 +65,11 @@ func TestUnserialize(t *testing.T) {
   ],
   "after": "de8251ff97ee194a289832576287d6f8ad74e3d0",
   "ref": "refs/heads/master"
-}`), HookMessage{
+}`
+
+func TestUnserialize(t *testing.T) {
+	cases := []unserializeTest{
+		{[]byte(example_packet), HookMessage{
 			Before: "5aef35982fb2d34e9d9d4502f6ede1072793222d",
 			Repository: Repository{
 				URL:         "http://github.com/defunkt/github",
@@ -112,5 +113,18 @@ func TestUnserialize(t *testing.T) {
 
 	for _, c := range cases {
 		c.perform(t)
+	}
+}
+
+func TestHookMessagePaths(t *testing.T) {
+	var ex HookMessage
+	if err := ex.LoadBytes([]byte(example_packet)); err != nil {
+		t.Fatal(err)
+	}
+	if v, ex := ex.ClonePath(), "git://github.com/defunkt/github.git"; v != ex {
+		t.Fatalf("Expected %+v. Got %+v", ex, v)
+	}
+	if v, ex := ex.ImportPath(), "github.com/defunkt/github"; v != ex {
+		t.Fatalf("Expected %+v. Got %+v", ex, v)
 	}
 }
