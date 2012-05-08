@@ -64,13 +64,8 @@ func Run(w Work) (res []Report, err error) {
 	defer os.RemoveAll(dir)
 
 	//create gopath rooted at dir
-	src := fp.Join(dir, "src")
-	if err = os.MkdirAll(src, 0777); err != nil {
-		return
-	}
-
 	pack := w.ImportPath()
-	srcDir := fp.Join(src, pack)
+	srcDir := fp.Join(dir, "src", pack)
 	err = vcs.Clone(w.RepoPath(), srcDir)
 	if err != nil {
 		return
