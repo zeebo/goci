@@ -1,5 +1,6 @@
 src/*
 !src/app/
+!src/builder/
 !src/github/
 bin/
 pkg/
