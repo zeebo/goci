@@ -1,0 +1,5 @@
+{% define "js" %}
+{% range $path := . %}
+    <script src="/assets/js/{% $path %}"></script>
+{% end %}
+{% end %}

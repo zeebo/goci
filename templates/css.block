@@ -1,0 +1,5 @@
+{% define "css" %}
+{% range $path := . %}
+    <link href="/assets/css/{% $path %}" rel="stylesheet">
+{% end %}
+{% end %}

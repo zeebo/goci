@@ -1,0 +1,5 @@
+{% define "content" %}
+<div class="hero-unit">
+<h1>{% .content %}</h1>
+</div>
+{% end %}

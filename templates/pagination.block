@@ -1,0 +1,19 @@
+{% define "pagination" %}
+<div class="pagination">
+  <ul>
+    <li><a href="?{% $.PageLink $.First | html %}">First</a></li>
+    <li><a href="?{% $.PageLink $.Prev | html %}">Prev</a></li>
+{% range $page := $.BeforePages %}
+    <li><a href="?{% $.PageLink $page | html %}">{% $page %}</a></li>
+{% end %}
+    <li class="active">
+      <a href="#">{% $.Current %}</a>
+    </li>
+{% range $page := $.AfterPages %}
+    <li><a href="?{% $.PageLink $page | html %}">{% $page %}</a></li>
+{% end %}
+    <li><a href="?{% $.PageLink $.Next | html %}">Next</a></li>
+    <li><a href="?{% $.PageLink $.Last | html %}">Last</a></li>
+  </ul>
+</div>
+{% end %}
