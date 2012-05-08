@@ -49,8 +49,14 @@ func test(gopath, pack string) (output string, ok bool, err error) {
 }
 
 func get(gopath, pack string) (err error) {
-	cmd := gopathCmd(gopath, "go", "get", pack)
-	err = cmd.Run()
+	cmd := gopathCmd(gopath, "go", "get", "-v", pack)
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+	e := cmd.Run()
+	if !cmd.ProcessState.Success() {
+		err = fmt.Errorf("Error building the code + deps: %s\noutput: %s", e, buf)
+	}
 	return
 }
 
