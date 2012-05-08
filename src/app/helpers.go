@@ -49,7 +49,7 @@ func execute(w http.ResponseWriter, ctx interface{}, blocks ...string) (err erro
 //internal_error is what is called when theres an error processing something
 func internal_error(w http.ResponseWriter, req *http.Request, err error) {
 	perform_status(w, req, http.StatusInternalServerError)
-	log.Println("error serving request:", err)
+	panic(err)
 }
 
 func serve_static(requestPrefix, filesystemDir string) {

@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	appname   = "app"
+	appname   = "goci"
 	store_key = "foobar"
 )
 
