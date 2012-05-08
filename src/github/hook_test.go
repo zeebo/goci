@@ -127,4 +127,10 @@ func TestHookMessagePaths(t *testing.T) {
 	if v, ex := ex.ImportPath(), "github.com/defunkt/github"; v != ex {
 		t.Fatalf("Expected %+v. Got %+v", ex, v)
 	}
+	if v, ex := ex.Revisions(), []string{
+		"41a212ee83ca127e3c8cf465891ab7216a705f59",
+		"de8251ff97ee194a289832576287d6f8ad74e3d0",
+	}; !reflect.DeepEqual(v, ex) {
+		t.Fatalf("Expected %+v. Got %+v", ex, v)
+	}
 }

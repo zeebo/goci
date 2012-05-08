@@ -69,6 +69,9 @@ func (h *HookMessage) ImportPath() (path string) {
 }
 
 func (h *HookMessage) Revisions() (revs []string) {
+	for _, ci := range h.Commits {
+		revs = append(revs, ci.ID)
+	}
 	return
 }
 
