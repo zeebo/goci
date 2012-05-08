@@ -10,9 +10,11 @@ import (
 
 type HookMessage struct {
 	Before, After, Ref string
-	Commits            []Commit
-	Repository         Repository
-	Pusher             Author
+
+	Commits    []Commit
+	Repository Repository
+	Pusher     Author
+	Workspace  bool
 }
 
 type Repository struct {
@@ -29,11 +31,12 @@ type Author struct {
 }
 
 type Commit struct {
-	ID, Message              string
-	Timestamp                time.Time
-	URL                      string
+	ID, Message string
+	Timestamp   time.Time
+	URL         string
+	Author      Author
+
 	Added, Removed, Modified []string
-	Author                   Author
 }
 
 func (h *HookMessage) Load(r io.Reader) (err error) {
@@ -47,7 +50,7 @@ func (h *HookMessage) LoadBytes(p []byte) (err error) {
 	return
 }
 
-func (h *HookMessage) ClonePath() (path string) {
+func (h *HookMessage) RepoPath() (path string) {
 	parsed, err := url.Parse(h.Repository.URL)
 	if err != nil {
 		panic(err)
@@ -68,6 +71,14 @@ func (h *HookMessage) ImportPath() (path string) {
 	return
 }
 
+func (h *HookMessage) VCS() builder.VCS {
+	return builder.Git
+}
+
+func (h *HookMessage) IsWorkspace() bool {
+	return h.Workspace
+}
+
 func (h *HookMessage) Revisions() (revs []string) {
 	for _, ci := range h.Commits {
 		revs = append(revs, ci.ID)
@@ -76,7 +87,4 @@ func (h *HookMessage) Revisions() (revs []string) {
 }
 
 //ensure our HookMessage is a valid work item
-var (
-	_ builder.ToolWork   = &HookMessage{}
-	_ builder.GopathWork = &HookMessage{}
-)
+var _ builder.Work = &HookMessage{}

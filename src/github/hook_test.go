@@ -121,10 +121,7 @@ func TestHookMessagePaths(t *testing.T) {
 	if err := ex.LoadBytes([]byte(example_packet)); err != nil {
 		t.Fatal(err)
 	}
-	if v, ex := ex.ClonePath(), "git://github.com/defunkt/github.git"; v != ex {
-		t.Fatalf("Expected %+v. Got %+v", ex, v)
-	}
-	if v, ex := ex.ImportPath(), "github.com/defunkt/github"; v != ex {
+	if v, ex := ex.RepoPath(), "git://github.com/defunkt/github.git"; v != ex {
 		t.Fatalf("Expected %+v. Got %+v", ex, v)
 	}
 	if v, ex := ex.Revisions(), []string{
