@@ -83,7 +83,7 @@ func Run(w Work) (res []Report, err error) {
 			Revision: rev,
 		}
 
-		//checkout
+		//checkout the revision we need
 		rep.Error = vcs.Checkout(srcDir, rev)
 		if rep.Error != nil {
 			//return an error report for this revision
@@ -92,7 +92,7 @@ func Run(w Work) (res []Report, err error) {
 			continue
 		}
 
-		//run a get
+		//run a get to build deps
 		rep.Error = get(dir, pack)
 		if rep.Error != nil {
 			//return an error report for this revision
