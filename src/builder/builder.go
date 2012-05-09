@@ -1,11 +1,8 @@
 package builder
 
 import (
-	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	fp "path/filepath"
 	"time"
 )
@@ -28,55 +25,38 @@ type Report struct {
 	Error    error
 }
 
-func gopathCmd(gopath string, bin string, args ...string) (cmd *exec.Cmd) {
-	cmd = exec.Command(bin, args...)
-	cmd.Dir = gopath
-	cmd.Env = []string{
-		fmt.Sprintf("GOPATH=%s", gopath),
-	}
-	return
-}
-
-func test(gopath, pack string) (output string, ok bool, err error) {
-	cmd := gopathCmd(gopath, "go", "test", "-v", pack)
-	var buf bytes.Buffer
-	cmd.Stdout = &buf
-	cmd.Stderr = &buf
-	err = cmd.Run()
-	output = buf.String()
-	ok = cmd.ProcessState.Success()
-	return
-}
-
-func get(gopath, pack string) (err error) {
-	cmd := gopathCmd(gopath, "go", "get", "-v", pack)
-	var buf bytes.Buffer
-	cmd.Stdout = &buf
-	cmd.Stderr = &buf
-	e := cmd.Run()
-	if !cmd.ProcessState.Success() {
-		err = fmt.Errorf("Error building the code + deps: %s\noutput: %s", e, buf)
-	}
-	return
-}
-
 func Run(w Work) (res []Report, err error) {
+	//create a gopath to run all this stuff in
+	gopath, err := ioutil.TempDir("", "gopath")
+	if err != nil {
+		return
+	}
+	defer os.RemoveAll(gopath)
+
+	if w.IsWorkspace() {
+		res, err = cloneAndTest(w, gopath, gopath)
+	} else {
+		res, err = cloneAndTest(w, gopath, fp.Join(gopath, "src", w.ImportPath()))
+	}
+	return
+}
+
+func cloneAndTest(w Work, gopath, srcDir string) (res []Report, err error) {
 	vcs := w.VCS()
 
-	dir, err := ioutil.TempDir("", "gopath")
+	tmpRepo, err := ioutil.TempDir("", "tmpRepo")
 	if err != nil {
 		return
 	}
-	defer os.RemoveAll(dir)
+	defer os.RemoveAll(tmpRepo)
 
-	//create gopath rooted at dir
-	pack := w.ImportPath()
-	srcDir := fp.Join(dir, "src", pack)
-	err = vcs.Clone(w.RepoPath(), srcDir)
+	//clone to a temporary location
+	err = vcs.Clone(w.RepoPath(), tmpRepo)
 	if err != nil {
 		return
 	}
 
+	var packs []string
 	for _, rev := range w.Revisions() {
 		rep := Report{
 			When:     time.Now(),
@@ -84,25 +64,39 @@ func Run(w Work) (res []Report, err error) {
 		}
 
 		//checkout the revision we need
-		rep.Error = vcs.Checkout(srcDir, rev)
+		rep.Error = vcs.Checkout(tmpRepo, rev)
 		if rep.Error != nil {
-			//return an error report for this revision
+			rep.Duration = time.Since(rep.When)
+			res = append(res, rep)
+			continue
+		}
+
+		//copy the repo to the srcDir
+		rep.Error = copy(tmpRepo+string(fp.Separator), srcDir)
+		if rep.Error != nil {
+			rep.Duration = time.Since(rep.When)
+			res = append(res, rep)
+			continue
+		}
+
+		//figure out what packages need to be built
+		packs, rep.Error = list(gopath)
+		if rep.Error != nil {
 			rep.Duration = time.Since(rep.When)
 			res = append(res, rep)
 			continue
 		}
 
 		//run a get to build deps
-		rep.Error = get(dir, pack)
+		rep.Error = get(gopath, packs...)
 		if rep.Error != nil {
-			//return an error report for this revision
 			rep.Duration = time.Since(rep.When)
 			res = append(res, rep)
 			continue
 		}
 
 		//run the tests
-		rep.Output, rep.Passed, rep.Error = test(dir, pack)
+		rep.Output, rep.Passed, rep.Error = test(gopath, packs...)
 		rep.Duration = time.Since(rep.When)
 		res = append(res, rep)
 	}
