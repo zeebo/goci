@@ -31,6 +31,11 @@ func Run(w Work) (res []Report, err error) {
 		return
 	}
 
+	//run ensureVcs to make sure we have the supported vcs installed
+	if err = ensureVCS(); err != nil {
+		return
+	}
+
 	//create a gopath to run all this stuff in
 	gopath, err := ioutil.TempDir("", "gopath")
 	if err != nil {

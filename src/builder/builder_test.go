@@ -41,7 +41,7 @@ func TestRunTool(t *testing.T) {
 	}
 
 	for _, r := range reps {
-		t.Logf("%+v", r)
+		t.Logf("%q", r)
 	}
 }
 
@@ -63,7 +63,7 @@ func TestRunWorkspace(t *testing.T) {
 	}
 
 	for _, r := range reps {
-		t.Logf("%+v", r)
+		t.Logf("%q", r)
 	}
 }
 
