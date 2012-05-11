@@ -26,6 +26,11 @@ type Report struct {
 }
 
 func Run(w Work) (res []Report, err error) {
+	//run ensureTool to make sure we have the go tool to run this Work
+	if err = ensureTool(); err != nil {
+		return
+	}
+
 	//create a gopath to run all this stuff in
 	gopath, err := ioutil.TempDir("", "gopath")
 	if err != nil {
