@@ -1,4 +1,4 @@
-package builder
+package setup
 
 import (
 	"fmt"
@@ -14,12 +14,9 @@ import (
 
 var toolLock sync.Mutex
 
-func ensureTool() (err error) {
+func EnsureTool(goroot string) (err error) {
 	toolLock.Lock()
 	defer toolLock.Unlock()
-
-	//where to download the go binaries
-	goroot := "/usr/local/go"
 
 	//fast path: tool exists
 	if toolExists(goroot) {

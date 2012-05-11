@@ -8,6 +8,11 @@ import (
 	"strings"
 )
 
+var (
+	GOROOT = "/usr/local/go"
+	PATH   = "/usr/bin:/usr/local/bin:/usr/local/go/bin"
+)
+
 func gopathCmd(gopath, action, arg string, args ...string) (cmd *exec.Cmd) {
 	if args == nil {
 		cmd = exec.Command("go", action, arg)
@@ -17,7 +22,7 @@ func gopathCmd(gopath, action, arg string, args ...string) (cmd *exec.Cmd) {
 	cmd.Dir = gopath
 	cmd.Env = []string{
 		fmt.Sprintf("GOPATH=%s", gopath),
-		"PATH=/usr/bin:/usr/local/bin:/usr/local/go/bin",
+		fmt.Sprintf("PATH=%s", PATH),
 	}
 	return
 }

@@ -1,4 +1,4 @@
-package builder
+package setup
 
 import (
 	"os/exec"
@@ -7,7 +7,7 @@ import (
 
 var vcsLock sync.Mutex
 
-func ensureVCS() (err error) {
+func EnsureVCS() (err error) {
 	vcsLock.Lock()
 	defer vcsLock.Unlock()
 
