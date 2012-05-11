@@ -1,10 +1,12 @@
 package main
 
 import (
+	"builder"
 	"code.google.com/p/gorilla/sessions"
 	"log"
 	"net/http"
 	"path/filepath"
+	"setup"
 	"thegoods.biz/tmplmgr"
 )
 
@@ -32,6 +34,10 @@ var (
 		},
 		BaseTitle: appname,
 	}
+
+	GOROOT  = "/usr/local/go"
+	VCSPATH = "/usr/local/bin"
+	PATH    = "/usr/bin:/usr/local/bin:/usr/local/go/bin"
 )
 
 func init() {
@@ -40,6 +46,18 @@ func init() {
 
 	//add blocks to base template
 	base_template.Blocks(tmpl_root("*.block"))
+
+	//set the GOROOT and PATH for the builder
+	builder.GOROOT = GOROOT
+	builder.PATH = PATH
+
+	//ensure we have the go tool and vcs
+	if err := setup.EnsureTool(GOROOT); err != nil {
+		log.Fatal(err)
+	}
+	if err := setup.EnsureVCS(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {
