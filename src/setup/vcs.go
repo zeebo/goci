@@ -19,12 +19,12 @@ func EnsureVCS() (err error) {
 	return
 }
 
-func vcsExists() (ex bool) {
-	cmd := exec.Command("hg", "--version")
-	if ex = cmd.Run() == nil; !ex {
-		return
+func vcsExists() bool {
+	tools := []string{"hg", "bzr", "git"}
+	for _, tool := range tools {
+		if _, err := exec.LookPath(tool); err != nil {
+			return false
+		}
 	}
-	cmd = exec.Command("bzr", "version")
-	ex = cmd.Run() == nil
-	return
+	return true
 }

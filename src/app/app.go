@@ -19,6 +19,7 @@ var (
 	mode          = tmplmgr.Development
 	assets_dir    = filepath.Join(env("APPROOT", ""), "assets")
 	template_dir  = filepath.Join(env("APPROOT", ""), "templates")
+	dist_dir      = filepath.Join(env("APPROOT", ""), "dist")
 	base_template = tmplmgr.Parse(tmpl_root("base.tmpl"))
 	store         = sessions.NewCookieStore([]byte(store_key))
 	base_meta     = &Meta{
@@ -34,30 +35,15 @@ var (
 		},
 		BaseTitle: appname,
 	}
-
-	GOROOT  = "/usr/local/go"
-	VCSPATH = "/usr/local/bin"
-	PATH    = "/usr/bin:/usr/local/bin:/usr/local/go/bin"
 )
 
+//run the basic setup needed to serve web pages
 func init() {
 	//set our compiler mode
 	tmplmgr.CompileMode(mode)
 
 	//add blocks to base template
 	base_template.Blocks(tmpl_root("*.block"))
-
-	//set the GOROOT and PATH for the builder
-	builder.GOROOT = GOROOT
-	builder.PATH = PATH
-
-	//ensure we have the go tool and vcs
-	if err := setup.EnsureTool(GOROOT); err != nil {
-		log.Fatal(err)
-	}
-	if err := setup.EnsureVCS(); err != nil {
-		log.Fatal(err)
-	}
 }
 
 func main() {

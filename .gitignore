@@ -5,3 +5,4 @@ src/*
 !src/github/
 bin/
 pkg/
+*.py[oc]

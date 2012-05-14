@@ -29,12 +29,8 @@ func EnsureTool(goroot string) (err error) {
 }
 
 func toolExists(goroot string) (ex bool) {
-	//just try to run go version
-	cmd := exec.Command("go", "version")
-	cmd.Env = []string{
-		fmt.Sprintf("PATH=%s", fp.Join(goroot, "bin")),
-	}
-	ex = cmd.Run() == nil //it exists if we have no error
+	_, err := exec.LookPath("go")
+	ex = err == nil //it exists if we have no error
 	return
 }
 
