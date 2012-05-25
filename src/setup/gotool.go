@@ -90,6 +90,16 @@ func toolDownload() (err error) {
 		return
 	}
 
+	//DEBUG:run an ls of the tmpdir to see what happened and exit
+	cmd = exec.Command("ls", "-al", tmpDir)
+	var lsout bytes.Buffer
+	cmd.Stdout = &lsout
+	err = cmd.Run()
+	log.Println("ls out:", lsout.String())
+	log.Println("ls err:", err)
+	err = fmt.Errorf("bad")
+	return
+
 	//make the destination directory
 	if err = os.MkdirAll(GOROOT, 0777); err != nil {
 		err = fmt.Errorf("error making destination directory: %s", err)
