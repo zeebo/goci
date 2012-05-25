@@ -2,6 +2,7 @@ package setup
 
 import (
 	"log"
+	"os"
 	fp "path/filepath"
 )
 
@@ -17,4 +18,6 @@ func init() {
 	log.Println("\tDISTDIR: ", DISTDIR)
 	log.Println("\tVENVDIR: ", VENVDIR)
 	log.Println("\tGOROOT:  ", GOROOT)
+	wd, _ := os.Getwd()
+	log.Println("\tWD:      ", wd)
 }

@@ -76,7 +76,12 @@ func toolDownload() (err error) {
 	//check if we can run the go command.
 	//if not, try adding GOROOT/bin to the path
 	if !toolExists() {
-		path := fmt.Sprintf("%s:%s", os.Getenv("PATH"), fp.Join(GOROOT, "bin"))
+		bindir := fp.Join(GOROOT, "bin")
+		if _, e := os.Stat(fp.Join(bindir, "go")); e != nil {
+			err = fmt.Errorf("can't find go command where it was expected: %s", e)
+			return
+		}
+		path := fmt.Sprintf("%s:%s", os.Getenv("PATH"), bindir)
 		os.Setenv("PATH", path)
 	}
 	//if we still don't have the tool, we have an error
