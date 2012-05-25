@@ -82,12 +82,12 @@ func toolDownload() (err error) {
 	cmd.Stdout = &tarout
 	cmd.Stderr = &tarerr
 	err = cmd.Run()
-	if err != nil {
-		err = fmt.Errorf("error untarring file: %s", err)
-	}
-
 	log.Println("tar out:", tarout.String())
 	log.Println("tar err:", tarerr.String())
+	if err != nil {
+		err = fmt.Errorf("error untarring file: %s", err)
+		return
+	}
 
 	//make the destination directory
 	if err = os.MkdirAll(GOROOT, 0777); err != nil {
@@ -96,8 +96,15 @@ func toolDownload() (err error) {
 	}
 
 	//copy the files into the destination directory
-	cmd = exec.Command("cp", "-r", fp.Join(tmpDir, "go", "*"), GOROOT)
+	copyFiles := fp.Join(tmpDir, "go", "*")
+	log.Println("copying", copyFiles, "to", GOROOT)
+	var cpout, cperr bytes.Buffer
+	cmd = exec.Command("cp", "-r", copyFiles, GOROOT)
+	cmd.Stdout = &cpout
+	cmd.Stderr = &cperr
 	err = cmd.Run()
+	log.Println("cp out:", cpout.String())
+	log.Println("cp err:", cperr.String())
 	if err != nil {
 		err = fmt.Errorf("error copying files to destination: %s", err)
 		return
