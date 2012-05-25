@@ -35,5 +35,5 @@ func runQueue() {
 }
 
 func init() {
-	go setup()
+	go run_setup()
 }

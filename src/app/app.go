@@ -1,12 +1,10 @@
 package main
 
 import (
-	"builder"
 	"code.google.com/p/gorilla/sessions"
 	"log"
 	"net/http"
 	"path/filepath"
-	"setup"
 	"thegoods.biz/tmplmgr"
 )
 
