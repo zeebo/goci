@@ -107,7 +107,7 @@ func toolDownload() (err error) {
 	}
 
 	//copy the files into the destination directory
-	copyFiles := fp.Join(tmpDir, "go"+string(fp.Separator))
+	copyFiles := fp.Join(tmpDir, "go") + string(fp.Separator)
 	log.Println("copying", copyFiles, "to", GOROOT)
 	var cpout, cperr bytes.Buffer
 	cmd = exec.Command("cp", "-r", copyFiles, GOROOT)
