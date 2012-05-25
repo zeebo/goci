@@ -98,10 +98,9 @@ func toolDownload() (err error) {
 
 	//copy the files into the destination directory
 	copyFiles := fp.Join(tmpDir, "go") + string(fp.Separator)
-	gorootDir := fp.Clean(GOROOT) + string(fp.Separator)
-	log.Println("copying", copyFiles, "to", gorootDir)
+	log.Println("copying", copyFiles, "to", GOROOT)
 	var cpout, cperr bytes.Buffer
-	cmd = exec.Command("cp", "-r", copyFiles, gorootDir)
+	cmd = exec.Command("cp", "-a", copyFiles, GOROOT)
 	cmd.Stdout = &cpout
 	cmd.Stderr = &cperr
 	err = cmd.Run()
@@ -120,7 +119,7 @@ func toolDownload() (err error) {
 	log.Println("ls out:", lsout.String())
 	log.Println("ls err:", err)
 
-	cmd = exec.Command("ls", "-al", gorootDir)
+	cmd = exec.Command("ls", "-al", GOROOT)
 	lsout.Reset()
 	cmd.Stdout = &lsout
 	err = cmd.Run()
