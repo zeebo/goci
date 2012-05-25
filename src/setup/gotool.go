@@ -1,7 +1,6 @@
 package setup
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -77,14 +76,9 @@ func toolDownload() (err error) {
 
 	//extract the tarball
 	log.Println("extracting", tbPath, "to", tmpDir)
-	var tarout, tarerr bytes.Buffer
 	cmd := exec.Command("tar", "zxf", tbPath)
 	cmd.Dir = tmpDir
-	cmd.Stdout = &tarout
-	cmd.Stderr = &tarerr
 	err = cmd.Run()
-	log.Println("tar out:", tarout.String())
-	log.Println("tar err:", tarerr.String())
 	if err != nil {
 		err = fmt.Errorf("error untarring file: %s", err)
 		return
@@ -99,32 +93,12 @@ func toolDownload() (err error) {
 	//copy the files into the destination directory
 	copyFiles := fp.Join(tmpDir, "go") + string(fp.Separator) + "."
 	log.Println("copying", copyFiles, "to", GOROOT)
-	var cpout, cperr bytes.Buffer
 	cmd = exec.Command("cp", "-a", copyFiles, GOROOT)
-	cmd.Stdout = &cpout
-	cmd.Stderr = &cperr
 	err = cmd.Run()
-	log.Println("cp out:", cpout.String())
-	log.Println("cp err:", cperr.String())
 	if err != nil {
 		err = fmt.Errorf("error copying files to destination: %s", err)
 		return
 	}
-
-	//DEBUG:run an ls of the tmpdir to see what happened and exit
-	cmd = exec.Command("ls", "-al", copyFiles)
-	var lsout bytes.Buffer
-	cmd.Stdout = &lsout
-	err = cmd.Run()
-	log.Println("ls out:", lsout.String())
-	log.Println("ls err:", err)
-
-	cmd = exec.Command("ls", "-al", GOROOT)
-	lsout.Reset()
-	cmd.Stdout = &lsout
-	err = cmd.Run()
-	log.Println("ls out:", lsout.String())
-	log.Println("ls err:", err)
 
 	//check if we can run the go command.
 	//if not, try adding GOROOT/bin to the path
