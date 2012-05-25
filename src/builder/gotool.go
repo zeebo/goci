@@ -8,10 +8,7 @@ import (
 	"strings"
 )
 
-var (
-	GOROOT = os.Getenv("GOROOT")
-	PATH   = os.Getenv("PATH")
-)
+var GOROOT = os.Getenv("GOROOT")
 
 func gopathCmd(gopath, action, arg string, args ...string) (cmd *exec.Cmd) {
 	if args == nil {
@@ -22,7 +19,7 @@ func gopathCmd(gopath, action, arg string, args ...string) (cmd *exec.Cmd) {
 	cmd.Dir = gopath
 	cmd.Env = []string{
 		fmt.Sprintf("GOPATH=%s", gopath),
-		fmt.Sprintf("PATH=%s", PATH),
+		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
 	}
 	return
 }
