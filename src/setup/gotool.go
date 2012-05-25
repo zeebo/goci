@@ -90,15 +90,15 @@ func toolDownload() (err error) {
 		return
 	}
 
-	//DEBUG:run an ls of the tmpdir to see what happened and exit
-	cmd = exec.Command("ls", "-al", tmpDir)
-	var lsout bytes.Buffer
-	cmd.Stdout = &lsout
-	err = cmd.Run()
-	log.Println("ls out:", lsout.String())
-	log.Println("ls err:", err)
-	err = fmt.Errorf("bad")
-	return
+	// //DEBUG:run an ls of the tmpdir to see what happened and exit
+	// cmd = exec.Command("ls", "-al", tmpDir)
+	// var lsout bytes.Buffer
+	// cmd.Stdout = &lsout
+	// err = cmd.Run()
+	// log.Println("ls out:", lsout.String())
+	// log.Println("ls err:", err)
+	// err = fmt.Errorf("bad")
+	// return
 
 	//make the destination directory
 	if err = os.MkdirAll(GOROOT, 0777); err != nil {
@@ -107,7 +107,7 @@ func toolDownload() (err error) {
 	}
 
 	//copy the files into the destination directory
-	copyFiles := fp.Join(tmpDir, "go", "*")
+	copyFiles := fp.Join(tmpDir, "go"+string(fp.Separator))
 	log.Println("copying", copyFiles, "to", GOROOT)
 	var cpout, cperr bytes.Buffer
 	cmd = exec.Command("cp", "-r", copyFiles, GOROOT)
