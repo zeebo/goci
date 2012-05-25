@@ -66,6 +66,12 @@ func toolDownload() (err error) {
 		return
 	}
 
+	//close the tarball to flush writes out
+	if err = tarball.Close(); err != nil {
+		err = fmt.Errorf("error closing tarball: %s", err)
+		return
+	}
+
 	//extract the tarball
 	cmd := exec.Command("tar", "zxvf", tbPath, GOROOT)
 	err = cmd.Run()
