@@ -37,7 +37,7 @@ func vcsExists() bool {
 
 func vcsInstall() (err error) {
 	//make sure the dist dir exists
-	if _, err = os.Stat(distdir); err != nil {
+	if _, err = os.Stat(DISTDIR); err != nil {
 		return
 	}
 
@@ -56,9 +56,9 @@ func vcsInstall() (err error) {
 		pip install --use-mirrors mercurial
 		pip install --use-mirrors bzr
 	`,
-		fp.Join(distdir, "virtualenv-1.7", "virtualenv.py"),
-		venvdir,
-		fp.Join(venvdir, "bin", "activate"),
+		fp.Join(DISTDIR, "virtualenv-1.7", "virtualenv.py"),
+		VENVDIR,
+		fp.Join(VENVDIR, "bin", "activate"),
 	)
 
 	bash := exec.Command("bash")
@@ -72,7 +72,7 @@ func vcsInstall() (err error) {
 	//success! - first see if we have the tools.
 	//if we don't, add venvdir/bin to the path
 	if !vcsExists() {
-		path := fmt.Sprintf("%s:%s", os.Getenv("PATH"), fp.Join(venvdir, "bin"))
+		path := fmt.Sprintf("%s:%s", os.Getenv("PATH"), fp.Join(VENVDIR, "bin"))
 		os.Setenv("PATH", path)
 	}
 	//if we still don't we have an error

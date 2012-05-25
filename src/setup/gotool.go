@@ -67,7 +67,7 @@ func toolDownload() (err error) {
 	}
 
 	//extract the tarball
-	cmd := exec.Command("tar", "zxvf", tbPath, goroot)
+	cmd := exec.Command("tar", "zxvf", tbPath, GOROOT)
 	err = cmd.Run()
 	if err != nil {
 		err = fmt.Errorf("error untarring file: %s", err)

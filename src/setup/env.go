@@ -4,7 +4,7 @@ import fp "path/filepath"
 
 var (
 	appdir  = env("APPDIR", ".")
-	distdir = fp.Join(appdir, "dist")
-	venvdir = fp.Join(appdir, "venv")
-	goroot  = fp.Join(appdir, "go")
+	DISTDIR = fp.Join(appdir, "dist")
+	VENVDIR = fp.Join(appdir, "venv")
+	GOROOT  = fp.Join(appdir, "go")
 )
