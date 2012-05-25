@@ -75,6 +75,12 @@ func toolDownload() (err error) {
 		return
 	}
 
+	//make the destination directory
+	if err = os.MkdirAll(GOROOT, 0777); err != nil {
+		err = fmt.Errorf("error making destination directory: %s", err)
+		return
+	}
+
 	//extract the tarball
 	log.Println("extracting", tbPath, "to", GOROOT)
 	var tarout, tarerr bytes.Buffer
