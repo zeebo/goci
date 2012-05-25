@@ -78,7 +78,7 @@ func toolDownload() (err error) {
 	//extract the tarball
 	log.Println("extracting", tbPath, "to", tmpDir)
 	var tarout, tarerr bytes.Buffer
-	cmd := exec.Command("tar", "zxf", tbPath)
+	cmd := exec.Command("tar", "zxf", tbPath, tmpDir)
 	cmd.Stdout = &tarout
 	cmd.Stderr = &tarerr
 	err = cmd.Run()
