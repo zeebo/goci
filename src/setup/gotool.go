@@ -29,8 +29,7 @@ func EnsureTool(goroot string) (err error) {
 }
 
 func toolExists(goroot string) (ex bool) {
-	_, err := exec.LookPath("go")
-	ex = err == nil //it exists if we have no error
+	ex = exists("go")
 	return
 }
 

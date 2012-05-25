@@ -1,9 +1,6 @@
 package setup
 
-import (
-	"os/exec"
-	"sync"
-)
+import "sync"
 
 var vcsLock sync.Mutex
 
@@ -11,7 +8,7 @@ func EnsureVCS() (err error) {
 	vcsLock.Lock()
 	defer vcsLock.Unlock()
 
-	//fast path: if hg + bzr exist, dont do anything
+	//fast path: if tools exist, dont do anything
 	if vcsExists() {
 		return
 	}
@@ -20,9 +17,9 @@ func EnsureVCS() (err error) {
 }
 
 func vcsExists() bool {
-	tools := []string{"hg", "bzr", "git"}
+	tools := []string{"hg", "bzr"}
 	for _, tool := range tools {
-		if _, err := exec.LookPath(tool); err != nil {
+		if !exists(tool) {
 			return false
 		}
 	}
