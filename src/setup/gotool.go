@@ -14,26 +14,26 @@ import (
 
 var toolLock sync.Mutex
 
-func EnsureTool(goroot string) (err error) {
+func EnsureTool() (err error) {
 	toolLock.Lock()
 	defer toolLock.Unlock()
 
 	//fast path: tool exists
-	if toolExists(goroot) {
+	if toolExists() {
 		return
 	}
 
 	//gotta download/unzip it
-	err = download(goroot)
+	err = toolDownload()
 	return
 }
 
-func toolExists(goroot string) (ex bool) {
+func toolExists() (ex bool) {
 	ex = exists("go")
 	return
 }
 
-func download(goroot string) (err error) {
+func toolDownload() (err error) {
 	//download and extract the go tarball into /usr/local/go
 	tmpDir, err := ioutil.TempDir("", "go-tool")
 	if err != nil {
