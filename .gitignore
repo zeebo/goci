@@ -7,4 +7,5 @@ bin/
 pkg/
 venv/
 go/
+.env
 *.py[oc]
