@@ -75,16 +75,10 @@ func toolDownload() (err error) {
 		return
 	}
 
-	//make the destination directory
-	if err = os.MkdirAll(GOROOT, 0777); err != nil {
-		err = fmt.Errorf("error making destination directory: %s", err)
-		return
-	}
-
 	//extract the tarball
-	log.Println("extracting", tbPath, "to", GOROOT)
+	log.Println("extracting", tbPath, "to", tmpDir)
 	var tarout, tarerr bytes.Buffer
-	cmd := exec.Command("tar", "zxf", tbPath, "go", GOROOT)
+	cmd := exec.Command("tar", "zxf", tbPath)
 	cmd.Stdout = &tarout
 	cmd.Stderr = &tarerr
 	err = cmd.Run()
@@ -94,6 +88,20 @@ func toolDownload() (err error) {
 
 	log.Println("tar out:", tarout.String())
 	log.Println("tar err:", tarerr.String())
+
+	//make the destination directory
+	if err = os.MkdirAll(GOROOT, 0777); err != nil {
+		err = fmt.Errorf("error making destination directory: %s", err)
+		return
+	}
+
+	//copy the files into the destination directory
+	cmd = exec.Command("cp", "-r", fp.Join(tmpDir, "go", "*"), GOROOT)
+	err = cmd.Run()
+	if err != nil {
+		err = fmt.Errorf("error copying files to destination: %s", err)
+		return
+	}
 
 	//check if we can run the go command.
 	//if not, try adding GOROOT/bin to the path
