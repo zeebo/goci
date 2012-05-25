@@ -83,6 +83,7 @@ func toolDownload() (err error) {
 		err = fmt.Errorf("error untarring file: %s", err)
 		return
 	}
+	//tarball will be removed by the earlier os.RemoveAll
 
 	//make the destination directory
 	if err = os.MkdirAll(GOROOT, 0777); err != nil {
