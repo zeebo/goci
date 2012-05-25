@@ -84,7 +84,7 @@ func toolDownload() (err error) {
 	//extract the tarball
 	log.Println("extracting", tbPath, "to", GOROOT)
 	var tarout, tarerr bytes.Buffer
-	cmd := exec.Command("tar", "zxf", tbPath, "-C", GOROOT)
+	cmd := exec.Command("tar", "zxf", tbPath, "go", GOROOT)
 	cmd.Stdout = &tarout
 	cmd.Stderr = &tarerr
 	err = cmd.Run()
