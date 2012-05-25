@@ -72,5 +72,16 @@ func toolDownload() (err error) {
 	if err != nil {
 		err = fmt.Errorf("error untarring file: %s", err)
 	}
+
+	//check if we can run the go command.
+	//if not, try adding GOROOT/bin to the path
+	if !toolExists() {
+		path := fmt.Sprintf("%s:%s", os.Getenv("PATH"), fp.Join(GOROOT, "bin"))
+		os.Setenv("PATH", path)
+	}
+	//if we still don't have the tool, we have an error
+	if !toolExists() {
+		err = fmt.Errorf("tool downloaded but can't find go command")
+	}
 	return
 }

@@ -78,7 +78,6 @@ func vcsInstall() (err error) {
 	//if we still don't we have an error
 	if !vcsExists() {
 		err = fmt.Errorf("script ran but can't find hg+bzr anywhere")
-		return
 	}
 	return
 }
