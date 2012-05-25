@@ -54,7 +54,7 @@ func toolDownload() (err error) {
 
 	//create the request for the tarball
 	dlpath := fmt.Sprintf("https://go.googlecode.com/files/go1.0.1.%s-%s.tar.gz", runtime.GOOS, runtime.GOARCH)
-	log.Println("downloading ", dlpath, " to ", tbPath)
+	log.Println("downloading", dlpath, "to", tbPath)
 	resp, err := http.Get(dlpath)
 	if err != nil {
 		err = fmt.Errorf("error downloading file: %s", err)
@@ -76,16 +76,18 @@ func toolDownload() (err error) {
 	}
 
 	//extract the tarball
-	log.Println("extracting ", tbPath, " to ", GOROOT)
-	var tarout bytes.Buffer
+	log.Println("extracting", tbPath, "to", GOROOT)
+	var tarout, tarerr bytes.Buffer
 	cmd := exec.Command("tar", "zxvf", tbPath, GOROOT)
 	cmd.Stdout = &tarout
+	cmd.Stderr = &tarerr
 	err = cmd.Run()
 	if err != nil {
 		err = fmt.Errorf("error untarring file: %s", err)
 	}
 
-	log.Println("tar output:", tarout.String())
+	log.Println("tar out:", tarout.String())
+	log.Println("tar err:", tarerr.String())
 
 	//check if we can run the go command.
 	//if not, try adding GOROOT/bin to the path
