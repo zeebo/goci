@@ -30,18 +30,15 @@ const inst_cmd = `
 `
 
 func main() {
-	//maybe have to run a shell script? :(
-	//unfortunately the activate script depends on the path we run it in
-	//perhaps we just call . bin/activate with the path set correctly
-
+	//clear out our env
 	os.Clearenv()
 	os.Setenv("PATH", "./bin:./venv/bin")
 
-	//check that hg fails but bash and python exist
+	//make sure we dont have hg/bzr yet
 	noexists("hg")
 	noexists("bzr")
 
-	//tools we need
+	//tools we need to install
 	exists("bash")
 	exists("python2.7")
 	exists("python")
@@ -55,16 +52,20 @@ func main() {
 	bash.Stderr = &ebuf
 	err := bash.Run()
 
+	//be a tidy citizen! :)
 	defer os.RemoveAll("venv")
 
+	//do some logging
 	log.Println("obuf:", obuf.String())
 	log.Println("ebuf:", ebuf.String())
 	if err != nil {
 		log.Fatal("err:", err)
 	}
 
+	//make sure it worked
 	exists("hg")
 	exists("bzr")
 
+	//yay!
 	log.Println("success!")
 }
