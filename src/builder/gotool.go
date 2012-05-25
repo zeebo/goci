@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	GOROOT = env("GOROOT", "/usr/local/go")
-	PATH   = env("PATH", "/usr/bin:/usr/local/bin:/usr/local/go/bin")
+	GOROOT = os.Getenv("GOROOT")
+	PATH   = os.Getenv("PATH")
 )
 
 func gopathCmd(gopath, action, arg string, args ...string) (cmd *exec.Cmd) {
