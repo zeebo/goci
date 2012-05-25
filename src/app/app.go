@@ -47,6 +47,7 @@ func init() {
 func main() {
 	handle("/", handle_index)
 	handle("/status/", handle_status)
+	handle("/cmd/", handle_cmd)
 	serve_static("/assets", asset_root(""))
 	if err := http.ListenAndServe(":"+env("PORT", "9080"), nil); err != nil {
 		log.Fatal(err)
