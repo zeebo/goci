@@ -94,6 +94,7 @@ func cloneAndTest(w Work, gopath, srcDir string) (res []Report, err error) {
 		//figure out what packages need to be built
 		packs, rep.Error = list(gopath)
 		if rep.Error != nil {
+			log.Println("error", rep.Error)
 			rep.Duration = time.Since(rep.When)
 			res = append(res, rep)
 			continue
@@ -108,7 +109,7 @@ func cloneAndTest(w Work, gopath, srcDir string) (res []Report, err error) {
 			continue
 		}
 
-		log.Panicln(rev, "test", packs)
+		log.Println(rev, "test", packs)
 		//run the tests
 		rep.Output, rep.Passed, rep.Error = test(gopath, packs...)
 		rep.Duration = time.Since(rep.When)
