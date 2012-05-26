@@ -8,8 +8,6 @@ import (
 	"strings"
 )
 
-var GOROOT = os.Getenv("GOROOT")
-
 func gopathCmd(gopath, action, arg string, args ...string) (cmd *exec.Cmd) {
 	if args == nil {
 		cmd = exec.Command("go", action, arg)

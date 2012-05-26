@@ -1,7 +1,6 @@
 package main
 
 import (
-	"builder"
 	"log"
 	"setup"
 	"sync"
@@ -33,9 +32,6 @@ func run_setup() {
 	}()
 
 	group.Wait()
-
-	//setup the builder to know where GOROOT is set
-	builder.GOROOT = setup.GOROOT
 
 	log.Println("setup complete. running queue")
 	go runQueue()

@@ -63,8 +63,6 @@ func do_setup() {
 	var group sync.WaitGroup
 	group.Add(2)
 
-	builder.GOROOT = setup.GOROOT
-
 	go func() {
 		if err := setup.EnsureTool(); err != nil {
 			log.Fatal(err)

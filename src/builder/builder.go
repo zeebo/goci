@@ -2,6 +2,7 @@ package builder
 
 import (
 	"io/ioutil"
+	"log"
 	"os"
 	fp "path/filepath"
 	"time"
@@ -71,6 +72,7 @@ func cloneAndTest(w Work, gopath, srcDir string) (res []Report, err error) {
 			Revision: rev,
 		}
 
+		log.Println(rev, "checkout")
 		//checkout the revision we need
 		rep.Error = vcs.Checkout(tmpRepo, rev)
 		if rep.Error != nil {
@@ -79,6 +81,7 @@ func cloneAndTest(w Work, gopath, srcDir string) (res []Report, err error) {
 			continue
 		}
 
+		log.Println(rev, "copy")
 		//copy the repo to the srcDir
 		rep.Error = copy(tmpRepo+string(fp.Separator)+".", srcDir)
 		if rep.Error != nil {
@@ -87,6 +90,7 @@ func cloneAndTest(w Work, gopath, srcDir string) (res []Report, err error) {
 			continue
 		}
 
+		log.Println(rev, "list")
 		//figure out what packages need to be built
 		packs, rep.Error = list(gopath)
 		if rep.Error != nil {
@@ -95,6 +99,7 @@ func cloneAndTest(w Work, gopath, srcDir string) (res []Report, err error) {
 			continue
 		}
 
+		log.Println(rev, "get", packs)
 		//run a get to build deps
 		rep.Error = get(gopath, packs...)
 		if rep.Error != nil {
@@ -103,6 +108,7 @@ func cloneAndTest(w Work, gopath, srcDir string) (res []Report, err error) {
 			continue
 		}
 
+		log.Panicln(rev, "test", packs)
 		//run the tests
 		rep.Output, rep.Passed, rep.Error = test(gopath, packs...)
 		rep.Duration = time.Since(rep.When)
