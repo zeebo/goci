@@ -4,6 +4,7 @@ src/*
 !src/setup/
 !src/github/
 !src/worker/
+!src/env/
 bin/
 pkg/
 venv/
