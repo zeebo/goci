@@ -1,6 +1,7 @@
 package main
 
 import (
+	"builder"
 	"log"
 	"setup"
 	"sync"
@@ -12,6 +13,8 @@ func run_setup() {
 	//ensure we have the go tool and vcs in parallel
 	var group sync.WaitGroup
 	group.Add(2)
+
+	builder.GOROOT = setup.GOROOT
 
 	//check the go tool
 	go func() {
