@@ -65,21 +65,13 @@ func main() {
 		os.Getenv("IRON_MQ_TOKEN"),
 		ironmq.IronAWSUSEast,
 	)
-	queue := client.Queue("my_queue")
+	queue := client.Queue("work_in")
 
-	ch := poll(queue, 10*time.Second) //once every 10 seconds
-
-	go func() {
-		<-time.After(5 * time.Second)
-		// Put a message on the queue
-		id, err := queue.Push("Hello, world!")
-		log.Println("Push:", id, err)
-	}()
-
-	msg := <-ch
-	log.Println(msg)
-
-	// Delete the message
-	err := msg.Delete()
+	_, err := queue.Push(
+		`{"revisions":["e4ef402bacb2a4e0a86c0729ffd531e52eb68` +
+			`d52","34aa918aab43351e5ee86180cb170dc5b68f7a56"],"vc` +
+			`s":"git","repopath":"git://github.com/zeebo/irc","im` +
+			`portpath":"github.com/zeebo/irc","workspace":false}`,
+	)
 	log.Println(err)
 }

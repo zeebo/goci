@@ -3,6 +3,7 @@ src/*
 !src/builder/
 !src/setup/
 !src/github/
+!src/worker/
 bin/
 pkg/
 venv/

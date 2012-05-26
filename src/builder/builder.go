@@ -17,12 +17,13 @@ type Work interface {
 }
 
 type Report struct {
-	When     time.Time
-	Duration time.Duration
-	Revision string
-	Passed   bool
-	Output   string
-	Error    error
+	When        time.Time
+	Duration    time.Duration
+	Revision    string
+	Passed      bool
+	Output      string
+	Error       error  `json:"-"`
+	ErrorString string `json:"Error"`
 }
 
 func Run(w Work) (res []Report, err error) {
@@ -37,6 +38,13 @@ func Run(w Work) (res []Report, err error) {
 		res, err = cloneAndTest(w, gopath, gopath)
 	} else {
 		res, err = cloneAndTest(w, gopath, fp.Join(gopath, "src", w.ImportPath()))
+	}
+
+	//set the strings on the results
+	for _, r := range res {
+		if r.Error != nil {
+			r.ErrorString = r.Error.Error()
+		}
 	}
 	return
 }
