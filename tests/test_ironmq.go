@@ -68,10 +68,15 @@ func main() {
 	queue := client.Queue("work_in")
 
 	_, err := queue.Push(
-		`{"revisions":["e4ef402bacb2a4e0a86c0729ffd531e52eb68` +
-			`d52","34aa918aab43351e5ee86180cb170dc5b68f7a56"],"vc` +
-			`s":"git","repopath":"git://github.com/zeebo/irc","im` +
-			`portpath":"github.com/zeebo/irc","workspace":false}`,
+		// `{"revisions":["e4ef402bacb2a4e0a86c0729ffd531e52eb68` +
+		// 	`d52","34aa918aab43351e5ee86180cb170dc5b68f7a56"],"vc` +
+		// 	`s":"git","repopath":"git://github.com/zeebo/irc","im` +
+		// 	`portpath":"github.com/zeebo/irc","workspace":false}`,
+
+		`{"revisions":["6d1ed8f9512102f30227ebfe8a327a572cbae` +
+			`7f2","48d02e161b71b9ccce7d4e91439f43628f215003"],"vc` +
+			`s":"git","repopath":"git://github.com/goods/starter"` +
+			`,"importpath":"","workspace":true}`,
 	)
 	log.Println(err)
 }

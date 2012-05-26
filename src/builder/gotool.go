@@ -88,7 +88,7 @@ func copy(src, dst string) (err error) {
 		return
 	}
 
-	cmd := exec.Command("cp", "-r", src, dst)
+	cmd := exec.Command("cp", "-a", src, dst)
 	err = cmd.Run()
 	return
 }

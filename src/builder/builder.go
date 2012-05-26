@@ -80,7 +80,7 @@ func cloneAndTest(w Work, gopath, srcDir string) (res []Report, err error) {
 		}
 
 		//copy the repo to the srcDir
-		rep.Error = copy(tmpRepo+string(fp.Separator), srcDir)
+		rep.Error = copy(tmpRepo+string(fp.Separator)+".", srcDir)
 		if rep.Error != nil {
 			rep.Duration = time.Since(rep.When)
 			res = append(res, rep)

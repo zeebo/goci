@@ -36,6 +36,9 @@ func TestRunWorkspace(t *testing.T) {
 		workspace:  true,
 	}
 
+	o, _ := Serialize(w)
+	t.Log(o)
+
 	reps, err := Run(w)
 	if err != nil {
 		t.Fatal(err)
