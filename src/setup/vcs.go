@@ -76,11 +76,6 @@ func vcsInstall() (err error) {
 	//if we don't, add venvdir/bin to the path
 	log.Println("checking to see if we have the commands")
 	if !vcsExists() {
-		bindir := fp.Join(VENVDIR, "bin")
-		if _, e := os.Stat(fp.Join(bindir, "go")); e != nil {
-			err = fmt.Errorf("can't find go command where it was expected: %s", e)
-			return
-		}
 		path := fmt.Sprintf("%s:%s", os.Getenv("PATH"), fp.Join(VENVDIR, "bin"))
 		os.Setenv("PATH", path)
 	}
