@@ -112,6 +112,7 @@ func new_work(work builder.Work) (w *Work) {
 
 func work_run_queue() {
 	for work := range work_queue {
+		log.Println("got work item:", work.RepoPath())
 		w := new_work(work)
 
 		//create the builds for the work
