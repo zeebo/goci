@@ -67,14 +67,20 @@ type environ struct {
 }
 
 func (e environ) Cleanup() {
-	os.RemoveAll(e.gopath)
-	os.RemoveAll(e.tmpRepo)
+	if e.gopath != "" {
+		os.RemoveAll(e.gopath)
+	}
+	if e.tmpRepo != "" {
+		os.RemoveAll(e.tmpRepo)
+	}
 }
 
 func (e environ) CleanGopath() {
 	//clean bin/pkg directories from the gopath
-	os.RemoveAll(fp.Join(e.gopath, "pkg"))
-	os.RemoveAll(fp.Join(e.gopath, "bin"))
+	if e.gopath != "" {
+		os.RemoveAll(fp.Join(e.gopath, "pkg"))
+		os.RemoveAll(fp.Join(e.gopath, "bin"))
+	}
 }
 
 func newEnviron(w Work) (e environ, err error) {
@@ -124,7 +130,7 @@ func createBuilds(w Work, e environ) (res []Build, err error) {
 
 		//if we didn't create any binaries, don't keep the dump directory around
 		if len(bui.paths) == 0 {
-			os.RemoveAll(bui.base)
+			bui.Cleanup()
 			bui.base = ""
 		}
 
