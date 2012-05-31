@@ -53,6 +53,8 @@ func main() {
 	handleGet("/bins/{id}", handlerFunc(handle_test_request), "test_request")
 	handlePost("/bins/{id}", handlerFunc(handle_test_response), "test_response")
 
+	handlePost("/hooks/github", handlerFunc(handle_github_hook), "github_hook")
+
 	handleRequest("/foo", handlerFunc(handle_simple_work), "foo")
 
 	//add our index with 404 support
