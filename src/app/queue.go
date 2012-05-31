@@ -2,7 +2,6 @@ package main
 
 import (
 	"builder"
-	"log"
 	"time"
 )
 
@@ -27,10 +26,7 @@ func enqueue(w *Work) (ok bool) {
 func runQueue() {
 	for {
 		item := <-queue
-		res, err := builder.Run(item.Work)
-
-		//do something with the result and error
-		log.Println(err, res)
+		_ = item
 	}
 }
 

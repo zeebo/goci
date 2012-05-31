@@ -14,7 +14,7 @@ func TestRunTool(t *testing.T) {
 		workspace:  false,
 	}
 
-	reps, err := Run(w)
+	reps, err := CreateBuilds(w)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,10 +36,7 @@ func TestRunWorkspace(t *testing.T) {
 		workspace:  true,
 	}
 
-	o, _ := Serialize(w)
-	t.Log(o)
-
-	reps, err := Run(w)
+	reps, err := CreateBuilds(w)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -25,14 +25,15 @@ func gopathCmd(gopath, action, arg string, args ...string) (cmd *exec.Cmd) {
 	return
 }
 
-func test(gopath string, packs ...string) (output string, ok bool, err error) {
-	cmd := gopathCmd(gopath, "test", "-v", packs...)
+func testbuild(gopath string, pack string) (err error) {
+	cmd := gopathCmd(gopath, "test", "-c", pack)
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
-	err = cmd.Run()
-	output = buf.String()
-	ok = cmd.ProcessState.Success()
+	e := cmd.Run()
+	if !cmd.ProcessState.Success() {
+		err = fmt.Errorf("Error building a %s binary: %s\nargs: %s\noutput: %s", pack, e.Error(), cmd.Args, &buf)
+	}
 	return
 }
 
@@ -43,7 +44,7 @@ func get(gopath string, packs ...string) (err error) {
 	cmd.Stderr = &buf
 	e := cmd.Run()
 	if !cmd.ProcessState.Success() {
-		err = fmt.Errorf("Error building the code + deps: %s\nargs: %s\noutput: %s", e, cmd.Args, buf)
+		err = fmt.Errorf("Error building the code + deps: %s\nargs: %s\noutput: %s", e.Error(), cmd.Args, &buf)
 	}
 	return
 }

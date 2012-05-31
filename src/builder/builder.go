@@ -3,8 +3,8 @@ package builder
 import (
 	"io/ioutil"
 	"os"
+	"os/exec"
 	fp "path/filepath"
-	"time"
 )
 
 //Work represents an item of work to be completed by the builder
@@ -18,44 +18,32 @@ type Work interface {
 
 type Build interface {
 	Error() error
-	Path() string
-	Clean() error
-	Info() Info
-}
-
-type Info struct {
-	Revision   string
-	When       time.Time
-	ImportPath string
-	RepoPath   string
+	Paths() []string
+	Revision() string
 }
 
 type build struct {
-	path string
-	err  error
-	info *Info
+	paths []string
+	base  string
+	err   error
+	rev   string
 }
 
-func (b build) Info() Info {
-	return *b.info
+func (b build) Revision() string {
+	return b.rev
 }
 
 func (b build) Error() error {
 	return b.err
 }
 
-func (b build) Path() string {
-	return b.path
-}
-
-func (b build) Clean() (err error) {
-	err = os.RemoveAll(fp.Base(b.path))
-	return
+func (b build) Paths() []string {
+	return b.paths
 }
 
 var _ Build = build{}
 
-func Build(w Work) (items []Build, err error) {
+func CreateBuilds(w Work) (items []Build, err error) {
 	//create a gopath to run all this stuff in
 	gopath, err := ioutil.TempDir("", "gopath")
 	if err != nil {
@@ -89,44 +77,62 @@ func cloneAndTest(w Work, gopath, srcDir string) (res []Build, err error) {
 
 	var packs []string
 	for _, rev := range w.Revisions() {
-		bui := build{}
+		bui := build{
+			rev: rev,
+		}
+
+		//make a new directory for the builds of this revision
+		bui.base, bui.err = ioutil.TempDir("", rev)
+		if bui.err != nil {
+			goto done
+		}
 
 		//checkout the revision we need
-		rep.Error = vcs.Checkout(tmpRepo, rev)
-		if rep.Error != nil {
-			rep.Duration = time.Since(rep.When)
-			res = append(res, rep)
-			continue
+		bui.err = vcs.Checkout(tmpRepo, rev)
+		if bui.err != nil {
+			goto done
 		}
 
 		//copy the repo to the srcDir
-		rep.Error = copy(tmpRepo+string(fp.Separator)+".", srcDir)
-		if rep.Error != nil {
-			rep.Duration = time.Since(rep.When)
-			res = append(res, rep)
-			continue
+		bui.err = copy(tmpRepo+string(fp.Separator)+".", srcDir)
+		if bui.err != nil {
+			goto done
 		}
 
 		//figure out what packages need to be built
-		packs, rep.Error = list(gopath)
-		if rep.Error != nil {
-			rep.Duration = time.Since(rep.When)
-			res = append(res, rep)
-			continue
+		packs, bui.err = list(gopath)
+		if bui.err != nil {
+			goto done
 		}
 
 		//run a get to build deps
-		rep.Error = get(gopath, packs...)
-		if rep.Error != nil {
-			rep.Duration = time.Since(rep.When)
-			res = append(res, rep)
-			continue
+		bui.err = get(gopath, packs...)
+		if bui.err != nil {
+			goto done
 		}
 
-		//build the binary and move it to a temporary directory
-		rep.Output, rep.Passed, rep.Error = test(gopath, packs...)
-		rep.Duration = time.Since(rep.When)
-		res = append(res, rep)
+		//build the binaries and move them to a temporary directory
+		for _, pack := range packs {
+			bui.err = testbuild(gopath, pack)
+			if bui.err != nil {
+				goto done
+			}
+			name := pack + ".test"
+			path := fp.Join(bui.base, name)
+
+			//move the compiled binary into the base dir
+			cmd := exec.Command("mv", fp.Join(gopath, name), path)
+			bui.err = cmd.Run()
+			if bui.err != nil {
+				goto done
+			}
+
+			//append the path to the new dir into the paths
+			bui.paths = append(bui.paths, path)
+		}
+
+	done:
+		res = append(res, bui)
 	}
 
 	return
