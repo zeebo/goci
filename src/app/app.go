@@ -53,7 +53,8 @@ func main() {
 	handleGet("/bins/{id}", handlerFunc(handle_test_request), "test_request")
 	handlePost("/bins/{id}", handlerFunc(handle_test_response), "test_response")
 
-	handlePost("/hooks/github", handlerFunc(handle_github_hook), "github_hook")
+	handlePost("/hooks/github/package", handlerFunc(handle_github_hook_package), "github_hook_package")
+	handlePost("/hooks/github/workspace", handlerFunc(handle_github_hook_workspace), "github_hook_workspace")
 
 	handleRequest("/foo", handlerFunc(handle_simple_work), "foo")
 

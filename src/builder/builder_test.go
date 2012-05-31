@@ -53,7 +53,7 @@ func TestCreateBuildsWorkspace(t *testing.T) {
 func TestCreateBuildsWorkspaceGoci(t *testing.T) {
 	w := &testWork{
 		revisions: []string{
-			"d951400b3fdf80f6fa97ba85ce9a109c6382cdb0",
+			"185f3c1735c482a280d00ae09f15b4f6b05f6d22",
 		},
 		vcs:        Git,
 		repoPath:   "git://github.com/zeebo/goci",
