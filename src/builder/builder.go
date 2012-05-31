@@ -66,26 +66,45 @@ type environ struct {
 	vcs     VCS
 }
 
-func CreateBuilds(w Work) (items []Build, err error) {
-	//create a gopath to run all this stuff in
-	gopath, err := ioutil.TempDir("", "gopath")
+func (e environ) Cleanup() {
+	os.RemoveAll(e.gopath)
+	os.RemoveAll(e.tmpRepo)
+}
+
+func (e environ) CleanGopath() {
+	//clean bin/pkg directories from the gopath
+	os.RemoveAll(fp.Join(e.gopath, "pkg"))
+	os.RemoveAll(fp.Join(e.gopath, "bin"))
+}
+
+func newEnviron(w Work) (e environ, err error) {
+	e.vcs = w.VCS()
+
+	e.gopath, err = ioutil.TempDir("", "gopath")
 	if err != nil {
 		return
 	}
-	defer os.RemoveAll(gopath)
 
-	//set up an environment for the builds
-	e := environ{
-		gopath: gopath,
-		vcs:    w.VCS(),
+	e.tmpRepo, err = ioutil.TempDir("", "tmpRepo")
+	if err != nil {
+		return
 	}
 
-	//set the srcdir of the environment
 	if w.IsWorkspace() {
-		e.srcDir = gopath
+		e.srcDir = e.gopath
 	} else {
-		e.srcDir = fp.Join(gopath, "src", w.ImportPath())
+		e.srcDir = fp.Join(e.gopath, "src", w.ImportPath())
 	}
+	return
+}
+
+func CreateBuilds(w Work) (items []Build, err error) {
+	//create a new environment for the work
+	e, err := newEnviron(w)
+	if err != nil {
+		return
+	}
+	defer e.Cleanup()
 
 	//grab the build items
 	items, err = createBuilds(w, e)
@@ -93,23 +112,13 @@ func CreateBuilds(w Work) (items []Build, err error) {
 }
 
 func createBuilds(w Work, e environ) (res []Build, err error) {
-	e.tmpRepo, err = ioutil.TempDir("", "tmpRepo")
-	if err != nil {
-		return
-	}
-	defer os.RemoveAll(e.tmpRepo)
-
-	//clone to a temporary location
+	//clone the repo to a temporary location for checkout/copying
 	err = e.vcs.Clone(w.RepoPath(), e.tmpRepo)
 	if err != nil {
 		return
 	}
 
 	for _, rev := range w.Revisions() {
-		//clean bin/pkg directories from the gopath
-		os.RemoveAll(fp.Join(e.gopath, "pkg"))
-		os.RemoveAll(fp.Join(e.gopath, "bin"))
-
 		//create the build binaries for this revision
 		bui := createBuild(rev, e)
 
@@ -119,7 +128,11 @@ func createBuilds(w Work, e environ) (res []Build, err error) {
 			bui.base = ""
 		}
 
+		//add the build into our result list
 		res = append(res, bui)
+
+		//clean up the gopath from the last build
+		e.CleanGopath()
 	}
 
 	return
