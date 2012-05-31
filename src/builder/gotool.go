@@ -10,13 +10,23 @@ import (
 
 var GOROOT = os.Getenv("GOROOT")
 
+type cmdError struct {
+	msg    string
+	err    error
+	args   []string
+	output string
+}
+
+func (t *cmdError) Error() string {
+	return fmt.Sprintf("%s: %s\nargs: %s\noutput: %s", t.msg, t.err.Error(), t.args, t.output)
+}
+
 func gopathCmd(gopath, action, arg string, args ...string) (cmd *exec.Cmd) {
 	if args == nil {
 		cmd = exec.Command("go", action, arg)
 	} else {
 		cmd = exec.Command("go", append([]string{action, arg}, args...)...)
 	}
-	cmd.Dir = gopath
 	cmd.Env = []string{
 		fmt.Sprintf("GOPATH=%s", gopath),
 		fmt.Sprintf("GOROOT=%s", GOROOT),
@@ -25,14 +35,20 @@ func gopathCmd(gopath, action, arg string, args ...string) (cmd *exec.Cmd) {
 	return
 }
 
-func testbuild(gopath string, pack string) (err error) {
+func testbuild(gopath, pack, dir string) (err error) {
 	cmd := gopathCmd(gopath, "test", "-c", pack)
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
+	cmd.Dir = dir
 	e := cmd.Run()
 	if !cmd.ProcessState.Success() {
-		err = fmt.Errorf("Error building a %s binary: %s\nargs: %s\noutput: %s", pack, e.Error(), cmd.Args, &buf)
+		err = &cmdError{
+			msg:    fmt.Sprintf("Error building a %s binary", pack),
+			err:    e,
+			args:   cmd.Args,
+			output: buf.String(),
+		}
 	}
 	return
 }
@@ -44,7 +60,12 @@ func get(gopath string, packs ...string) (err error) {
 	cmd.Stderr = &buf
 	e := cmd.Run()
 	if !cmd.ProcessState.Success() {
-		err = fmt.Errorf("Error building the code + deps: %s\nargs: %s\noutput: %s", e.Error(), cmd.Args, &buf)
+		err = &cmdError{
+			msg:    "Error building the code + deps",
+			err:    e,
+			args:   cmd.Args,
+			output: buf.String(),
+		}
 	}
 	return
 }
@@ -54,8 +75,15 @@ func list(gopath string) (packs []string, err error) {
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
+	cmd.Dir = gopath
 	err = cmd.Run()
 	if err != nil {
+		err = &cmdError{
+			msg:    "Error listing the packages",
+			err:    err,
+			args:   cmd.Args,
+			output: buf.String(),
+		}
 		return
 	}
 
@@ -92,5 +120,13 @@ func copy(src, dst string) (err error) {
 
 	cmd := exec.Command("cp", "-a", src, dst)
 	err = cmd.Run()
+	if err != nil {
+		err = &cmdError{
+			msg:    "Error copying files",
+			err:    err,
+			args:   cmd.Args,
+			output: "",
+		}
+	}
 	return
 }

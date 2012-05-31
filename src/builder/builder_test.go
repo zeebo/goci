@@ -2,11 +2,13 @@ package builder
 
 import "testing"
 
-func TestRunTool(t *testing.T) {
+func TestCreateBuildsNonWorkspace(t *testing.T) {
 	w := &testWork{
 		revisions: []string{
-			"e4ef402bacb2a4e0a86c0729ffd531e52eb68d52",
-			"34aa918aab43351e5ee86180cb170dc5b68f7a56",
+			"e4ef402bacb2a4e0a86c0729ffd531e52eb68d52", //empty tests
+			"1351a526989eda49cf7159561f38d9454c8e961a", //before go1 commit
+			"c97d0b46f86c1d1294b9351c01349177e38ef2b3", //working with tests
+			"b1a6b6797e2009e1dac7ccd5515f8aee17df6774", //tests that fail to compile
 		},
 		vcs:        Git,
 		repoPath:   "git://github.com/zeebo/irc",
@@ -21,10 +23,11 @@ func TestRunTool(t *testing.T) {
 
 	for _, r := range reps {
 		t.Logf("%q", r)
+		t.Log("cleanup:", r.Cleanup())
 	}
 }
 
-func TestRunWorkspace(t *testing.T) {
+func TestCreateBuildsWorkspace(t *testing.T) {
 	w := &testWork{
 		revisions: []string{
 			"6d1ed8f9512102f30227ebfe8a327a572cbae7f2",
@@ -43,5 +46,6 @@ func TestRunWorkspace(t *testing.T) {
 
 	for _, r := range reps {
 		t.Logf("%q", r)
+		t.Log("cleanup:", r.Cleanup())
 	}
 }

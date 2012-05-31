@@ -3,9 +3,17 @@ package builder
 import (
 	"io/ioutil"
 	"os"
-	"os/exec"
+	"path"
 	fp "path/filepath"
+	"runtime"
 )
+
+var exeSuffix = func() string {
+	if runtime.GOOS == "windows" {
+		return ".exe"
+	}
+	return ""
+}()
 
 //Work represents an item of work to be completed by the builder
 type Work interface {
@@ -20,6 +28,7 @@ type Build interface {
 	Error() error
 	Paths() []string
 	Revision() string
+	Cleanup() error
 }
 
 type build struct {
@@ -39,6 +48,13 @@ func (b build) Error() error {
 
 func (b build) Paths() []string {
 	return b.paths
+}
+
+func (b build) Cleanup() (err error) {
+	if b.base != "" {
+		err = os.RemoveAll(b.base)
+	}
+	return
 }
 
 var _ Build = build{}
@@ -77,6 +93,10 @@ func cloneAndTest(w Work, gopath, srcDir string) (res []Build, err error) {
 
 	var packs []string
 	for _, rev := range w.Revisions() {
+		//clean bin/pkg directories from the gopath
+		os.RemoveAll(fp.Join(gopath, "pkg"))
+		os.RemoveAll(fp.Join(gopath, "bin"))
+
 		bui := build{
 			rev: rev,
 		}
@@ -113,18 +133,21 @@ func cloneAndTest(w Work, gopath, srcDir string) (res []Build, err error) {
 
 		//build the binaries and move them to a temporary directory
 		for _, pack := range packs {
-			bui.err = testbuild(gopath, pack)
+			bui.err = testbuild(gopath, pack, bui.base)
 			if bui.err != nil {
 				goto done
 			}
-			name := pack + ".test"
+
+			//what the go tool does from inspecting the source
+			_, elem := path.Split(pack)
+			name := elem + ".test" + exeSuffix
 			path := fp.Join(bui.base, name)
 
-			//move the compiled binary into the base dir
-			cmd := exec.Command("mv", fp.Join(gopath, name), path)
-			bui.err = cmd.Run()
-			if bui.err != nil {
-				goto done
+			//make sure that binary exists before we add it to the paths. it may
+			//not exist if there are no test files, so just continue past this
+			//commit.
+			if _, err := os.Stat(path); err != nil {
+				continue
 			}
 
 			//append the path to the new dir into the paths
@@ -132,6 +155,12 @@ func cloneAndTest(w Work, gopath, srcDir string) (res []Build, err error) {
 		}
 
 	done:
+		//if we didn't create any binaries, don't keep the dump directory around
+		if len(bui.paths) == 0 {
+			os.RemoveAll(bui.base)
+			bui.base = ""
+		}
+
 		res = append(res, bui)
 	}
 

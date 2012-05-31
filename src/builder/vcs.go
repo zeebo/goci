@@ -1,6 +1,7 @@
 package builder
 
 import (
+	"bytes"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -39,6 +40,18 @@ var (
 	}
 )
 
+type vcsError struct {
+	msg    string
+	vcs    *vcs
+	err    error
+	args   []string
+	output string
+}
+
+func (v *vcsError) Error() string {
+	return fmt.Sprintf("%s: %s\nvcs: %s\nargs: %s\noutput: %s", v.msg, v.err.Error(), v.vcs.name, v.args, v.output)
+}
+
 func expand(s string, vals map[string]string) string {
 	for k, v := range vals {
 		s = strings.Replace(s, "{"+k+"}", v, -1)
@@ -50,34 +63,50 @@ func expandSplit(s string, vals map[string]string) []string {
 	return strings.Split(expand(s, vals), " ")
 }
 
-func (v *vcs) expandCmd(cmd string, keyval ...string) *exec.Cmd {
+func (v *vcs) expandCmd(cmd string, keyval ...string) (c *exec.Cmd) {
 	vals := map[string]string{}
 	for i := 0; i < len(keyval); i += 2 {
 		vals[keyval[i]] = keyval[i+1]
 	}
-	return exec.Command(v.name, expandSplit(cmd, vals)...)
+	c = exec.Command(v.name, expandSplit(cmd, vals)...)
+	return
 }
 
 func (v *vcs) Checkout(dir, rev string) (err error) {
 	cmd := v.expandCmd(v.checkout, "rev", rev)
+	var buf bytes.Buffer
 	cmd.Dir = dir
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+
 	err = cmd.Run()
 	if err != nil {
-		err = format(cmd, err)
+		err = &vcsError{
+			msg:    "Failed to checkout",
+			vcs:    v,
+			err:    err,
+			args:   cmd.Args,
+			output: buf.String(),
+		}
 	}
 	return
 }
 
 func (v *vcs) Clone(repo, dir string) (err error) {
 	cmd := v.expandCmd(v.clone, "repo", repo, "dir", dir)
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+
 	err = cmd.Run()
 	if err != nil {
-		err = format(cmd, err)
+		err = &vcsError{
+			msg:    "Failed to clone",
+			vcs:    v,
+			err:    err,
+			args:   cmd.Args,
+			output: buf.String(),
+		}
 	}
-	return
-}
-
-func format(cmd *exec.Cmd, err error) (e error) {
-	e = fmt.Errorf("Error running %s: %s", strings.Join(cmd.Args, " "), err)
 	return
 }
