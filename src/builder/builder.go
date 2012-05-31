@@ -16,17 +16,46 @@ type Work interface {
 	IsWorkspace() (ok bool)
 }
 
-type Report struct {
-	When        time.Time
-	Duration    time.Duration
-	Revision    string
-	Passed      bool
-	Output      string
-	Error       error  `json:"-"`
-	ErrorString string `json:"Error"`
+type Build interface {
+	Error() error
+	Path() string
+	Clean() error
+	Info() Info
 }
 
-func Run(w Work) (res []Report, err error) {
+type Info struct {
+	Revision   string
+	When       time.Time
+	ImportPath string
+	RepoPath   string
+}
+
+type build struct {
+	path string
+	err  error
+	info *Info
+}
+
+func (b build) Info() Info {
+	return *b.info
+}
+
+func (b build) Error() error {
+	return b.err
+}
+
+func (b build) Path() string {
+	return b.path
+}
+
+func (b build) Clean() (err error) {
+	err = os.RemoveAll(fp.Base(b.path))
+	return
+}
+
+var _ Build = build{}
+
+func Build(w Work) (items []Build, err error) {
 	//create a gopath to run all this stuff in
 	gopath, err := ioutil.TempDir("", "gopath")
 	if err != nil {
@@ -35,21 +64,15 @@ func Run(w Work) (res []Report, err error) {
 	defer os.RemoveAll(gopath)
 
 	if w.IsWorkspace() {
-		res, err = cloneAndTest(w, gopath, gopath)
+		items, err = cloneAndTest(w, gopath, gopath)
 	} else {
-		res, err = cloneAndTest(w, gopath, fp.Join(gopath, "src", w.ImportPath()))
+		items, err = cloneAndTest(w, gopath, fp.Join(gopath, "src", w.ImportPath()))
 	}
 
-	//set the strings on the results
-	for _, r := range res {
-		if r.Error != nil {
-			r.ErrorString = r.Error.Error()
-		}
-	}
 	return
 }
 
-func cloneAndTest(w Work, gopath, srcDir string) (res []Report, err error) {
+func cloneAndTest(w Work, gopath, srcDir string) (res []Build, err error) {
 	vcs := w.VCS()
 
 	tmpRepo, err := ioutil.TempDir("", "tmpRepo")
@@ -66,10 +89,7 @@ func cloneAndTest(w Work, gopath, srcDir string) (res []Report, err error) {
 
 	var packs []string
 	for _, rev := range w.Revisions() {
-		rep := Report{
-			When:     time.Now(),
-			Revision: rev,
-		}
+		bui := build{}
 
 		//checkout the revision we need
 		rep.Error = vcs.Checkout(tmpRepo, rev)
@@ -103,7 +123,7 @@ func cloneAndTest(w Work, gopath, srcDir string) (res []Report, err error) {
 			continue
 		}
 
-		//run the tests
+		//build the binary and move it to a temporary directory
 		rep.Output, rep.Passed, rep.Error = test(gopath, packs...)
 		rep.Duration = time.Since(rep.When)
 		res = append(res, rep)
