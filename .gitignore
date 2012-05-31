@@ -3,7 +3,6 @@ src/*
 !src/builder/
 !src/setup/
 !src/github/
-!src/worker/
 !src/env/
 !src/runner/
 bin/
