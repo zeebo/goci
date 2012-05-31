@@ -14,7 +14,7 @@ func run_setup() {
 	var group sync.WaitGroup
 	group.Add(2)
 
-	setup.GOROOT = "/usr/local/go"
+	setup.GOROOT = env("GOROOT", setup.GOROOT)
 	builder.GOROOT = setup.GOROOT
 
 	//check the go tool
