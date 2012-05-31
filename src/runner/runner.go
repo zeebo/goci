@@ -54,6 +54,7 @@ func main() {
 	cmd := exec.Command(bin.Name(), "-test.v")
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
+	cmd.Env = []string{} //clear the env to not leak config details
 	err = cmd.Run()
 
 	if err != nil {
