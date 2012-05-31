@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/rand"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -11,51 +13,24 @@ import (
 //pervasive type. convenient to have a short name for it.
 type d map[string]interface{}
 
-//lists of things with easy append/duplicate methdos
-type list []string
-
-func (l *list) Append(val string) {
-	*l = append(*l, val)
-}
-
-func (l list) Dup() (r list) {
-	r = make(list, 0, len(l))
-	for _, v := range l {
-		r = append(r, v)
-	}
-	return
-}
-
-//perform_status runs the passed in status on the request and calls the appropriate block
-func perform_status(w http.ResponseWriter, req *http.Request, status int) (err error) {
-	w.WriteHeader(status)
-	block := fmt.Sprintf(tmpl_root("status", "%d.block"), status)
-	err = base_template.Execute(w, init_context(req), block)
-	if err != nil {
-		log.Println(err)
-	}
-	return
-}
-
-//execute is a convenient shorthand all it does extra is log errors and make the code
-//a little cleaner
-func execute(w http.ResponseWriter, ctx interface{}, blocks ...string) (err error) {
+func base_execute(w io.Writer, ctx interface{}, blocks ...string) (err error) {
 	if err = base_template.Execute(w, ctx, blocks...); err != nil {
 		log.Println(err)
 	}
 	return
 }
 
-//internal_error is what is called when theres an error processing something
-func internal_error(w http.ResponseWriter, req *http.Request, err error) {
-	perform_status(w, req, http.StatusInternalServerError)
-	panic(err)
+func perform_status(w http.ResponseWriter, ctx *Context, status int) {
+	w.WriteHeader(status)
+	block := fmt.Sprintf(tmpl_root("status", "%d.block"), status)
+	if err := base_template.Execute(w, ctx, block); err != nil {
+		log.Println(err)
+	}
 }
 
-func serve_static(requestPrefix, filesystemDir string) {
-	fileServer := http.FileServer(http.Dir(filesystemDir))
-	handler := http.StripPrefix(requestPrefix, fileServer)
-	http.Handle(requestPrefix+"/", handler)
+func internal_error(w http.ResponseWriter, req *http.Request, ctx *Context, err error) {
+	perform_status(w, ctx, http.StatusInternalServerError)
+	log.Println("error serving request:", err)
 }
 
 func tmpl_root(path ...string) string {
@@ -68,9 +43,33 @@ func asset_root(path ...string) string {
 	return filepath.Join(elems...)
 }
 
-func env(key, def string) string {
-	if k := os.Getenv(key); k != "" {
-		return k
+func env(key, def string) (k string) {
+	if k = os.Getenv(key); k == "" {
+		k = def
 	}
-	return def
+	return
+}
+
+// Serves static files from filesystemDir when any request is made matching
+// requestPrefix
+func serve_static(requestPrefix, filesystemDir string) {
+	fileServer := http.FileServer(http.Dir(filesystemDir))
+	handler := http.StripPrefix(requestPrefix, fileServer)
+	http.Handle(requestPrefix+"/", handler)
+}
+
+func new_id() string {
+	const idSize = 10
+	var (
+		buf [idSize]byte
+		n   int
+	)
+	for n < idSize {
+		m, err := rand.Read(buf[n:])
+		if err != nil {
+			log.Panicf("error generating a random id [%d bytes of %d]: %v", n, idSize, err)
+		}
+		n += m
+	}
+	return fmt.Sprintf("%X", buf)
 }

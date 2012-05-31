@@ -14,6 +14,7 @@ func run_setup() {
 	var group sync.WaitGroup
 	group.Add(2)
 
+	setup.GOROOT = "/usr/local/go"
 	builder.GOROOT = setup.GOROOT
 
 	//check the go tool
@@ -37,5 +38,5 @@ func run_setup() {
 	group.Wait()
 
 	log.Println("setup complete. running queue")
-	go runQueue()
+	go work_run_queue()
 }

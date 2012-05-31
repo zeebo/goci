@@ -1,6 +1,7 @@
 package main
 
 import (
+	"code.google.com/p/gorilla/pat"
 	"code.google.com/p/gorilla/sessions"
 	"log"
 	"net/http"
@@ -33,6 +34,8 @@ var (
 		},
 		BaseTitle: appname,
 	}
+
+	router = pat.New()
 )
 
 //run the basic setup needed to serve web pages
@@ -42,12 +45,21 @@ func init() {
 
 	//add blocks to base template
 	base_template.Blocks(tmpl_root("*.block"))
+
+	go run_setup()
 }
 
 func main() {
-	handle("/", handle_index)
-	handle("/status/", handle_status)
-	handle("/cmd/", handle_cmd)
+	handleGet("/bins/{id}", handlerFunc(handle_test_request), "test_request")
+	handlePost("/bins/{id}", handlerFunc(handle_test_response), "test_response")
+
+	handleRequest("/foo", handlerFunc(handle_simple_work), "foo")
+
+	//add our index with 404 support
+	handleRequest("/", handlerFunc(handle_index), "index")
+
+	//set up our router
+	http.Handle("/", router)
 	serve_static("/assets", asset_root(""))
 	if err := http.ListenAndServe(":"+env("PORT", "9080"), nil); err != nil {
 		log.Fatal(err)
