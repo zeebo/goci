@@ -62,6 +62,7 @@ type Test struct {
 	Path    string
 
 	Output   string
+	Passed   bool
 	Started  time.Time
 	Duration time.Duration
 

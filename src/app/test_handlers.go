@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 func build_url_pair(host, id string) (req, res, err string) {
@@ -61,7 +62,9 @@ func handle_test_response(w http.ResponseWriter, req *http.Request, ctx *Context
 		perform_status(w, ctx, http.StatusInternalServerError)
 		return
 	}
-	test.Output = string(by)
+	s := string(by)
+	test.Output = s
+	test.Passed = strings.HasSuffix(s, "\nPASS\n")
 	test.Finish()
 
 	test_complete <- id

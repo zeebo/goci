@@ -37,7 +37,7 @@ func save_runner() {
 			log.Printf("%s error: %q", id.WholeID(), id.GetInfo().Error)
 		}
 		if t, ok := it.(*Test); ok && good {
-			log.Printf("%s output: %q", id.WholeID(), t.Output)
+			log.Printf("%s passed: %v output: %q", id.WholeID(), t.Passed, t.Output)
 		}
 	}
 }
