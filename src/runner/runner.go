@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -56,7 +57,7 @@ func main() {
 	cmd.Env = []string{} //clear the env to not leak config details
 	err = cmd.Run()
 	if err != nil {
-		err = fmt.Errorf("error: %s\noutput: %s", err.Error(), buf.String())
+		err = errors.New(buf.String())
 	}
 	handle_error("error running test binary", err, error_url)
 

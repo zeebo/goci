@@ -34,7 +34,7 @@ func save_runner() {
 		good := id.GetInfo().Error == ""
 		log.Println(id.WholeID(), "save. good:", good)
 		if !good {
-			log.Println(id.WholeID(), "error:", id.GetInfo().Error)
+			log.Printf("%s error: %q", id.WholeID(), id.GetInfo().Error)
 		}
 		if t, ok := it.(*Test); ok && good {
 			log.Printf("%s output: %q", id.WholeID(), t.Output)
