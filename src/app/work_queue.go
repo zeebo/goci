@@ -35,17 +35,16 @@ type Build struct {
 	WorkID string
 	Build  builder.Build
 
-	num_left int
-	poke     chan bool
+	poke chan bool
 }
 
-func (b *Build) cleanup() {
+func (b *Build) cleanup(num int) {
 	defer log.Println(b.WholeID(), "clean up")
 	defer b.Build.Cleanup()
 
-	for _ = range b.poke {
-		b.num_left--
-		if b.num_left == 0 {
+	for i := 0; i < num; i++ {
+		_, ok := <-b.poke
+		if !ok {
 			return
 		}
 	}
@@ -141,23 +140,20 @@ func work_run_queue() {
 			b := new_build(build, w)
 			if err := build.Error(); err != nil {
 				b.Error = err.Error()
+				b.cleanup(0)
 				save_item <- b
 				continue
 			}
 			save_item <- b
 
-			for _, path := range build.Paths() {
+			paths := build.Paths()
+			for _, path := range paths {
 				t := new_test(path, b, w)
 				schedule_test <- t
-				b.num_left++
 			}
 
-			//if we have tests scheduled
-			if b.num_left > 0 {
-				go b.cleanup()
-			} else {
-				build.Cleanup()
-			}
+			//launch a goroutine to handle cleanup after x tests have run
+			go b.cleanup(len(paths))
 		}
 	}
 }
