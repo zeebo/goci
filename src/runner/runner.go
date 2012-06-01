@@ -53,7 +53,12 @@ func main() {
 	cmd := exec.Command(bin.Name(), "-test.v")
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
-	cmd.Env = []string{} //clear the env to not leak config details
+	cmd.Env = []string{
+		//copy in some basic env vars if we have them
+		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
+		fmt.Sprintf("GOROOT=%s", os.Getenv("GOROOT")),
+		fmt.Sprintf("GOPATH=%s", os.Getenv("GOPATH")),
+	}
 
 	//do this with a timeout
 	err = cmd.Run()
