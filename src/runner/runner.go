@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 func handle_error(msg string, err error, url string) {
@@ -20,6 +21,29 @@ func handle_error(msg string, err error, url string) {
 	error_message := fmt.Sprintf("%s: %s", msg, err.Error())
 	http.Post(url, "text/plain", strings.NewReader(error_message))
 	os.Exit(1)
+}
+
+func timeout(cmd *exec.Cmd, dur time.Duration) (ok bool) {
+	done := make(chan bool, 1)
+	if err := cmd.Start(); err != nil {
+		return
+	}
+	defer cmd.Process.Kill()
+
+	//start a race
+	go func() {
+		cmd.Wait()
+		done <- true
+	}()
+
+	go func() {
+		<-time.After(dur)
+		done <- false
+	}()
+
+	//see who won
+	ok = <-done
+	return
 }
 
 func main() {
@@ -60,7 +84,12 @@ func main() {
 		fmt.Sprintf("GOPATH=%s", os.Getenv("GOPATH")),
 	}
 
-	//TODO: do this with a timeout
-	cmd.Run()
-	http.Post(post, "text/plain", &buf)
+	//only allow the test to run for one minute
+	finished := timeout(cmd, time.Minute)
+
+	if finished {
+		http.Post(post, "text/plain", &buf)
+	} else {
+		handle_error("error running command", fmt.Errorf("timeout"), error_url)
+	}
 }
