@@ -9,9 +9,10 @@ import (
 	"os"
 )
 
-func build_url_pair(host, id string) (req, res string) {
+func build_url_pair(host, id string) (req, res, err string) {
 	req = fmt.Sprintf("http://%s%s", host, reverse("test_request", "id", id))
 	res = fmt.Sprintf("http://%s%s", host, reverse("test_response", "id", id))
+	err = fmt.Sprintf("http://%s%s", host, reverse("test_error", "id", id))
 	return
 }
 
@@ -53,7 +54,6 @@ func handle_test_response(w http.ResponseWriter, req *http.Request, ctx *Context
 		perform_status(w, ctx, http.StatusNotFound)
 		return
 	}
-	log.Printf("data for %s", test.WholeID())
 	by, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Printf("error reading response data: %v", err)
@@ -62,6 +62,30 @@ func handle_test_response(w http.ResponseWriter, req *http.Request, ctx *Context
 		return
 	}
 	test.Output = string(by)
+	test.Finish()
+
+	test_complete <- id
+}
+
+func handle_test_error(w http.ResponseWriter, req *http.Request, ctx *Context) {
+	active_tests_lock.RLock()
+	defer active_tests_lock.RUnlock()
+
+	id := req.URL.Query().Get(":id")
+	test, ex := active_tests[id]
+	if !ex {
+		log.Printf("test id not found: %q", id)
+		perform_status(w, ctx, http.StatusNotFound)
+		return
+	}
+	by, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		log.Printf("error reading response data: %v", err)
+		test.Error = err.Error()
+		perform_status(w, ctx, http.StatusInternalServerError)
+		return
+	}
+	test.Error = string(by)
 	test.Finish()
 
 	test_complete <- id

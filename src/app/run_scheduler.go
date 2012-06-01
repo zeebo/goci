@@ -13,7 +13,7 @@ func init() {
 func run_scheduler() {
 	host := env("HOST", "localhost:"+env("PORT", "9080"))
 	for id := range schedule_run {
-		req, res := build_url_pair(host, id)
-		log.Println("bin/runner", req, res)
+		req, res, err := build_url_pair(host, id)
+		log.Println("bin/runner", req, res, err)
 	}
 }

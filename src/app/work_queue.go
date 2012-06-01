@@ -17,6 +17,10 @@ type TaskInfo struct {
 	Error string
 }
 
+func (t TaskInfo) GetInfo() TaskInfo {
+	return t
+}
+
 type Work struct {
 	TaskInfo
 	Work builder.Work
@@ -36,7 +40,7 @@ type Build struct {
 }
 
 func (b *Build) cleanup() {
-	defer log.Println("cleaned up:", b.WholeID())
+	defer log.Println(b.WholeID(), "clean up")
 	defer b.Build.Cleanup()
 
 	for _ = range b.poke {

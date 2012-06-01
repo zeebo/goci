@@ -13,7 +13,9 @@ func init() {
 func save_runner() {
 	type ider interface {
 		WholeID() string
+		GetInfo() TaskInfo
 	}
+	var id ider
 	for it := range save_item {
 		var coll string
 		switch it.(type) {
@@ -27,6 +29,15 @@ func save_runner() {
 			log.Printf("don't know how to save an item of type %T", it)
 			continue
 		}
-		log.Printf("save %s: %s", coll, it.(ider).WholeID())
+		_ = coll
+		id = it.(ider)
+		good := id.GetInfo().Error == ""
+		log.Println(id.WholeID(), "save. good:", good)
+		if !good {
+			log.Println(id.WholeID(), "error:", id.GetInfo().Error)
+		}
+		if t, ok := it.(*Test); ok && good {
+			log.Printf("%s output: %q", id.WholeID(), t.Output)
+		}
 	}
 }

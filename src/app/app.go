@@ -51,6 +51,7 @@ func init() {
 
 func main() {
 	handleGet("/bins/{id}", handlerFunc(handle_test_request), "test_request")
+	handlePost("/bins/{id}/err", handlerFunc(handle_test_error), "test_error") //more specific one has to be listed first
 	handlePost("/bins/{id}", handlerFunc(handle_test_response), "test_response")
 
 	handlePost("/hooks/github/package", handlerFunc(handle_github_hook_package), "github_hook_package")
