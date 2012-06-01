@@ -63,7 +63,7 @@ func main() {
 	//do this with a timeout
 	err = cmd.Run()
 
-	if err != nil {
+	if err == nil {
 		http.Post(post, "text/plain", &buf)
 	} else {
 		http.Post(error_url, "text/plain", &buf)
