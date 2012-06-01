@@ -9,13 +9,16 @@ import (
 
 //run the setup to run the work
 func run_setup() {
+	//set the goroot env var to the default in the env
+	setup.GOROOT = env("GOROOT", setup.GOROOT)
+	builder.GOROOT = setup.GOROOT
+
 	log.Println("running setup...")
+	setup.PrintVars()
+
 	//ensure we have the go tool and vcs in parallel
 	var group sync.WaitGroup
 	group.Add(2)
-
-	setup.GOROOT = env("GOROOT", setup.GOROOT)
-	builder.GOROOT = setup.GOROOT
 
 	//check the go tool
 	go func() {
@@ -38,5 +41,5 @@ func run_setup() {
 	group.Wait()
 
 	log.Println("setup complete. running queue")
-	go work_run_queue()
+	go run_work_queue()
 }

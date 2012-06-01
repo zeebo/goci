@@ -9,11 +9,7 @@ var (
 	active_tests_lock sync.RWMutex
 )
 
-func init() {
-	go test_scheduler()
-}
-
-func test_scheduler() {
+func run_test_scheduler() {
 	for {
 		select {
 		case t := <-schedule_test:

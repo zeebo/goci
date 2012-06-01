@@ -121,7 +121,7 @@ func new_work(work builder.Work) (w *Work) {
 	return
 }
 
-func work_run_queue() {
+func run_work_queue() {
 	for work := range work_queue {
 		log.Println("got work item:", work.RepoPath())
 		w := new_work(work)

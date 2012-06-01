@@ -13,8 +13,7 @@ var (
 	GOROOT  = fp.Join(appdir, "go")
 )
 
-func init() {
-	log.Println("Setup initialized with:")
+func PrintVars() {
 	log.Println("\tDISTDIR: ", DISTDIR)
 	log.Println("\tVENVDIR: ", VENVDIR)
 	log.Println("\tGOROOT:  ", GOROOT)

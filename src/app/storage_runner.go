@@ -6,11 +6,7 @@ var (
 	save_item = make(chan interface{})
 )
 
-func init() {
-	go save_runner()
-}
-
-func save_runner() {
+func run_saver() {
 	type ider interface {
 		WholeID() string
 		GetInfo() TaskInfo

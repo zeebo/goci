@@ -38,18 +38,22 @@ var (
 	router = pat.New()
 )
 
-//run the basic setup needed to serve web pages
-func init() {
+func main() {
 	//set our compiler mode
 	tmplmgr.CompileMode(mode)
 
 	//add blocks to base template
 	base_template.Blocks(tmpl_root("*.block"))
 
+	//set up the environment which kicks off the work queue
 	go run_setup()
-}
 
-func main() {
+	//spawn our service goroutines
+	go run_test_scheduler()
+	go run_run_scheduler()
+	go run_saver()
+
+	//set up our handlers
 	handleGet("/bins/{id}", handlerFunc(handle_test_request), "test_request")
 	handlePost("/bins/{id}/err", handlerFunc(handle_test_error), "test_error") //more specific one has to be listed first
 	handlePost("/bins/{id}", handlerFunc(handle_test_response), "test_response")
