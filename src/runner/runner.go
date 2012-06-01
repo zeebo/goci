@@ -60,12 +60,7 @@ func main() {
 		fmt.Sprintf("GOPATH=%s", os.Getenv("GOPATH")),
 	}
 
-	//do this with a timeout
-	err = cmd.Run()
-
-	if err == nil {
-		http.Post(post, "text/plain", &buf)
-	} else {
-		http.Post(error_url, "text/plain", &buf)
-	}
+	//TODO: do this with a timeout
+	cmd.Run()
+	http.Post(post, "text/plain", &buf)
 }
