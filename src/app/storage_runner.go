@@ -11,6 +11,9 @@ func init() {
 }
 
 func save_runner() {
+	type ider interface {
+		WholeID() string
+	}
 	for it := range save_item {
 		var coll string
 		switch it.(type) {
@@ -24,6 +27,6 @@ func save_runner() {
 			log.Printf("don't know how to save an item of type %T", it)
 			continue
 		}
-		log.Printf("save %s: %#v", coll, it)
+		log.Printf("save %s: %s", coll, it.(ider).WholeID())
 	}
 }

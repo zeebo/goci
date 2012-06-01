@@ -22,6 +22,10 @@ type Work struct {
 	Work builder.Work
 }
 
+func (w *Work) WholeID() string {
+	return w.ID
+}
+
 type Build struct {
 	TaskInfo
 	WorkID string
@@ -32,7 +36,7 @@ type Build struct {
 }
 
 func (b *Build) cleanup() {
-	defer log.Printf("cleaned up: %#v", b)
+	defer log.Println("cleaned up:", b.WholeID())
 	defer b.Build.Cleanup()
 
 	for _ = range b.poke {
@@ -41,6 +45,10 @@ func (b *Build) cleanup() {
 			return
 		}
 	}
+}
+
+func (b *Build) WholeID() string {
+	return fmt.Sprintf("%s:%s", b.WorkID, b.ID)
 }
 
 type Test struct {
@@ -64,7 +72,6 @@ func (t *Test) Start() {
 
 func (t *Test) Finish() {
 	t.Duration = time.Since(t.Started)
-	log.Printf("test complete: %#v", t)
 	t.done <- true
 }
 
