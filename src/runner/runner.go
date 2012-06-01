@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -55,13 +54,13 @@ func main() {
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
 	cmd.Env = []string{} //clear the env to not leak config details
+
+	//do this with a timeout
 	err = cmd.Run()
+
 	if err != nil {
-		err = errors.New(buf.String())
+		http.Post(post, "text/plain", &buf)
+	} else {
+		http.Post(error_url, "text/plain", &buf)
 	}
-	handle_error("error running test binary", err, error_url)
-
-	_, err = http.Post(post, "text/plain", &buf)
-	handle_error("error posting to response url", err, error_url)
-
 }
