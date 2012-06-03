@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 	"time"
 )
@@ -40,11 +41,11 @@ func timeout(cmd *exec.Cmd, dur time.Duration) (ok bool) {
 }
 
 func main() {
-	if len(os.Args) != 4 {
-		log.Print("usage: runner <url to binary> <url to post response> <url to post error>")
+	if len(os.Args) != 2 {
+		log.Print("usage: runner <url to binary>")
 		return
 	}
-	bin_url, post, error_url := os.Args[1], os.Args[2], os.Args[3]
+	bin_url, post, error_url := os.Args[1], os.Args[1], path.Join(os.Args[1], "err")
 	var err error
 
 	//define a little helper that closes on the error value and error url

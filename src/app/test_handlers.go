@@ -10,10 +10,8 @@ import (
 	"strings"
 )
 
-func build_url_pair(host, id string) (req, res, err string) {
+func build_runner_url(host, id string) (req string) {
 	req = fmt.Sprintf("http://%s%s", host, reverse("test_request", "id", id))
-	res = fmt.Sprintf("http://%s%s", host, reverse("test_response", "id", id))
-	err = fmt.Sprintf("http://%s%s", host, reverse("test_error", "id", id))
 	return
 }
 

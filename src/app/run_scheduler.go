@@ -15,6 +15,7 @@ func spawn_runner(cmd string) (proc string, err error) {
 	if err != nil {
 		return
 	}
+	log.Printf("running %s on %s", cmd, p)
 	proc = p.Process
 	return
 }
@@ -46,8 +47,8 @@ func cull_runner(id, proc string) func() {
 func run_run_scheduler() {
 	host := env("HOST", "localhost:"+env("PORT", "9080"))
 	for id := range schedule_run {
-		req, res, err_url := build_url_pair(host, id)
-		cmd := fmt.Sprintf("bin/runner %s %s %s", req, res, err_url)
+		req := build_runner_url(host, id)
+		cmd := fmt.Sprintf("bin/runner %s", req)
 		proc, err := spawn_runner(cmd)
 		if err != nil {
 			msg := fmt.Sprintf("error spawning %s: %s", id, err)
@@ -62,7 +63,7 @@ func run_run_scheduler() {
 			test_complete <- id
 			return
 		}
-		log.Println("spawned %s for %s", proc, id)
+		log.Printf("spawned %s for %s", proc, id)
 		time.AfterFunc(90*time.Second, cull_runner(id, proc))
 	}
 }
