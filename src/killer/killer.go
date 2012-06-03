@@ -5,6 +5,7 @@ import (
 	"heroku"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -19,10 +20,16 @@ func clean_processes(app, api string) {
 	}
 
 	for _, p := range ps {
+		//only kill processes running longer than too long
 		if p.Elapsed <= too_long {
 			continue
 		}
+		//only kill processes that are in the run command type
+		if strings.HasPrefix(p.Process, "run") {
+			continue
+		}
 
+		//KEEL IT
 		err := cl.Kill(p.Process)
 		if err != nil {
 			log.Printf("error killing %s: %s", p.Process, err)
