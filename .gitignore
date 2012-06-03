@@ -4,6 +4,8 @@ src/*
 !src/setup/
 !src/github/
 !src/env/
+!src/heroku/
+!src/killer/
 !src/runner/
 bin/
 pkg/
