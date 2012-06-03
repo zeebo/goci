@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const too_long = 90
+const too_long = 90 // seconds
 
 func clean_processes(app, api string) {
 	cl := heroku.New(app, api)
