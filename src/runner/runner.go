@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	log.SetFlags(log.Lshortfile)
+	log.SetFlags(0)
 }
 
 var timeout_error = errors.New("timeout")
