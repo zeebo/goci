@@ -48,12 +48,16 @@ func unschedule(id string) {
 func run_test_buffer() {
 	var buffer []string
 	for {
-		select {
-		case id := <-buffer_test:
-			buffer = append(buffer, id)
-		case num_tests <- true:
-			schedule_run <- buffer[0]
-			buffer = buffer[1:]
+		if len(buffer) > 0 {
+			select {
+			case id := <-buffer_test:
+				buffer = append(buffer, id)
+			case num_tests <- true:
+				schedule_run <- buffer[0]
+				buffer = buffer[1:]
+			}
+		} else {
+			buffer = append(buffer, <-buffer_test)
 		}
 	}
 }
