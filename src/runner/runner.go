@@ -20,6 +20,7 @@ var timeout_error = errors.New("timeout")
 func timeout(cmd *exec.Cmd, dur time.Duration) (ok bool) {
 	done := make(chan bool, 1)
 	if err := cmd.Start(); err != nil {
+		log.Println("error starting command:", err)
 		return
 	}
 	defer cmd.Process.Kill()

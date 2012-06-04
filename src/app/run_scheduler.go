@@ -33,7 +33,7 @@ func cull_runner(id, proc string) func() {
 		//search for the process with the given UPID
 		procs, err := hclient.List()
 		if err != nil {
-			log.Printf("error culling (list) %s[%s]: %s", proc, id, err)
+			log.Printf("%s error culling (list) %s: %s", id, proc, err)
 			return
 		}
 
@@ -46,13 +46,13 @@ func cull_runner(id, proc string) func() {
 		}
 
 		if pid == "" {
-			log.Printf("couldn't cull %s[%s]: process not found", proc, id)
+			log.Printf("%s couldn't cull %s: process not found", id, proc)
 			return
 		}
 
 		err = hclient.Kill(pid)
 		if err != nil {
-			log.Printf("error culling (kill) %s[%s]: %s", proc, id, err)
+			log.Printf("%s error culling (kill) %s: %s", id, proc, err)
 			return
 		}
 	}
@@ -78,10 +78,10 @@ func run_run_scheduler() {
 		cmd := fmt.Sprintf("bin/runner %s", req)
 		proc, err := spawn_runner(cmd)
 		if err != nil {
-			error_test(id, fmt.Sprintf("error spawning %s", id, err))
+			error_test(id, fmt.Sprintf("error spawning %s", err))
 			continue
 		}
-		log.Printf("spawned %s for %s", proc, id)
+		log.Printf("%s spawned %s", proc)
 		time.AfterFunc(90*time.Second, cull_runner(id, proc))
 	}
 }
