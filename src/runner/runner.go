@@ -15,6 +15,10 @@ import (
 	"time"
 )
 
+func init() {
+	log.SetFlags(log.Lshortfile)
+}
+
 var timeout_error = errors.New("timeout")
 
 func timeout(cmd *exec.Cmd, dur time.Duration) (ok bool) {
@@ -52,7 +56,7 @@ func main() {
 	//define a little helper that closes on the error value and error url
 	post_error := func(msg string) {
 		error_message := fmt.Sprintf("%s: %s", msg, err.Error())
-		log.Println("error", error_message)
+		log.Println(error_message)
 		http.Post(error_url, "text/plain", strings.NewReader(error_message))
 	}
 
@@ -111,7 +115,6 @@ func main() {
 	finished := timeout(cmd, time.Minute)
 
 	if finished {
-		log.Println("test ran sucessfully")
 		http.Post(post, "text/plain", &buf)
 	} else {
 		err = timeout_error
