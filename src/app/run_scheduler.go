@@ -8,6 +8,7 @@ import (
 
 var (
 	schedule_run = make(chan string)
+	run_buffer   = make(chan bool, 1)
 )
 
 func spawn_runner(cmd string) (proc string, err error) {

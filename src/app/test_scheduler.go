@@ -19,6 +19,7 @@ func run_test_scheduler() {
 			active_tests[id] = t
 			active_tests_lock.Unlock()
 
+			run_buffer <- true
 			schedule_run <- id
 		case id := <-test_complete:
 			active_tests_lock.Lock()
@@ -27,6 +28,13 @@ func run_test_scheduler() {
 				delete(active_tests, id)
 				save_item <- t
 			}
+
+			//try to read one from the run_buffer
+			select {
+			case <-run_buffer:
+			default:
+			}
+
 			active_tests_lock.Unlock()
 		}
 	}
