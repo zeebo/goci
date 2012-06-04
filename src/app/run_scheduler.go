@@ -15,7 +15,7 @@ func spawn_runner(cmd string) (proc string, err error) {
 	if err != nil {
 		return
 	}
-	proc = p.Process
+	proc = p.UPID
 	return
 }
 
@@ -24,23 +24,51 @@ func cull_runner(id, proc string) func() {
 		active_tests_lock.RLock()
 		defer active_tests_lock.RUnlock()
 
-		test, ex := active_tests[id]
-		if !ex {
+		if _, ex := active_tests[id]; !ex {
 			return
 		}
 
-		log.Println(id, "timeout")
+		error_test(id, "timeout")
 
-		test.Error = "timeout"
-		test.Finish()
-
-		err := hclient.Kill(proc)
+		//search for the process with the given UPID
+		procs, err := hclient.List()
 		if err != nil {
-			log.Printf("error culling %s[%s]: %s", proc, id, err)
+			log.Printf("error culling (list) %s[%s]: %s", proc, id, err)
+			return
 		}
 
-		test_complete <- id
+		var pid string
+		for _, p := range procs {
+			if p.UPID == proc {
+				pid = p.Process
+				break
+			}
+		}
+
+		if pid == "" {
+			log.Printf("couldn't cull %s[%s]: process not found", proc, id)
+			return
+		}
+
+		err = hclient.Kill(pid)
+		if err != nil {
+			log.Printf("error culling (kill) %s[%s]: %s", proc, id, err)
+			return
+		}
 	}
+}
+
+func error_test(id, msg string) {
+	active_tests_lock.RLock()
+	defer active_tests_lock.RUnlock()
+
+	log.Printf(id, msg)
+
+	test := active_tests[id]
+	test.Error = msg
+	test.Finish()
+
+	test_complete <- id
 }
 
 func run_run_scheduler() {
@@ -50,17 +78,8 @@ func run_run_scheduler() {
 		cmd := fmt.Sprintf("bin/runner %s", req)
 		proc, err := spawn_runner(cmd)
 		if err != nil {
-			msg := fmt.Sprintf("error spawning %s: %s", id, err)
-			log.Printf(msg)
-			active_tests_lock.RLock()
-			defer active_tests_lock.RUnlock()
-
-			test := active_tests[id]
-			test.Error = msg
-			test.Finish()
-
-			test_complete <- id
-			return
+			error_test(id, fmt.Sprintf("error spawning %s", id, err))
+			continue
 		}
 		log.Printf("spawned %s for %s", proc, id)
 		time.AfterFunc(90*time.Second, cull_runner(id, proc))
