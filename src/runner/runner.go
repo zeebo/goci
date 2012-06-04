@@ -76,7 +76,6 @@ func main() {
 		post_error("error downloading binary")
 		return
 	}
-
 	defer resp.Body.Close()
 
 	_, err = io.Copy(bin, resp.Body)
@@ -88,6 +87,12 @@ func main() {
 	err = bin.Sync()
 	if err != nil {
 		post_error("error flusing binary to disk")
+		return
+	}
+
+	err = bin.Close()
+	if err != nil {
+		post_error("error closing the binary")
 		return
 	}
 

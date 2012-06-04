@@ -62,7 +62,7 @@ func error_test(id, msg string) {
 	active_tests_lock.RLock()
 	defer active_tests_lock.RUnlock()
 
-	log.Printf(id, msg)
+	log.Println(id, msg)
 
 	test := active_tests[id]
 	test.Error = msg
@@ -81,7 +81,7 @@ func run_run_scheduler() {
 			error_test(id, fmt.Sprintf("error spawning %s", err))
 			continue
 		}
-		log.Printf("%s spawned %s", proc)
+		log.Printf("%s spawned %s", id, proc)
 		time.AfterFunc(90*time.Second, cull_runner(id, proc))
 	}
 }
