@@ -75,6 +75,8 @@ func error_test(id, msg string) {
 func run_run_scheduler() {
 	host := env("HOST", "localhost:"+env("PORT", "9080"))
 	for id := range schedule_run {
+		run_buffer <- true
+
 		req := build_runner_url(host, id)
 		cmd := fmt.Sprintf("bin/runner %s", req)
 		proc, err := spawn_runner(cmd)
