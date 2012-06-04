@@ -8,7 +8,6 @@ import (
 
 var (
 	schedule_run = make(chan string)
-	run_buffer   = make(chan bool, 1)
 )
 
 func spawn_runner(cmd string) (proc string, err error) {
@@ -75,8 +74,6 @@ func error_test(id, msg string) {
 func run_run_scheduler() {
 	host := env("HOST", "localhost:"+env("PORT", "9080"))
 	for id := range schedule_run {
-		run_buffer <- true
-
 		req := build_runner_url(host, id)
 		cmd := fmt.Sprintf("bin/runner %s", req)
 		proc, err := spawn_runner(cmd)
