@@ -1,11 +1,8 @@
 package heroku
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -93,11 +90,7 @@ func (c *Client) Run(command string) (p *Process, err error) {
 	}
 	defer resp.Body.Close()
 
-	var buf bytes.Buffer
-	io.Copy(&buf, resp.Body)
-	log.Println("run resp:", buf.String())
-
-	dec := json.NewDecoder(&buf)
+	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&p)
 	return
 }

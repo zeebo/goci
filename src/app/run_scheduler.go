@@ -15,7 +15,6 @@ func spawn_runner(cmd string) (proc string, err error) {
 	if err != nil {
 		return
 	}
-	log.Printf("running %s on %s", cmd, p)
 	proc = p.Process
 	return
 }
