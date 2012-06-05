@@ -2,6 +2,7 @@ package builder
 
 import (
 	"bytes"
+	"encoding/gob"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,15 +11,19 @@ import (
 
 var GOROOT = os.Getenv("GOROOT")
 
+func init() {
+	gob.Register(&cmdError{})
+}
+
 type cmdError struct {
-	msg    string
-	err    error
-	args   []string
-	output string
+	Msg    string
+	Err    string
+	Args   []string
+	Output string
 }
 
 func (t *cmdError) Error() string {
-	return fmt.Sprintf("%s: %s\nargs: %s\noutput: %s", t.msg, t.err.Error(), t.args, t.output)
+	return fmt.Sprintf("%s: %s\nargs: %s\noutput: %s", t.Msg, t.Err, t.Args, t.Output)
 }
 
 func gopathCmd(gopath, action, arg string, args ...string) (cmd *exec.Cmd) {
@@ -44,10 +49,10 @@ func testbuild(gopath, pack, dir string) (err error) {
 	e := cmd.Run()
 	if !cmd.ProcessState.Success() {
 		err = &cmdError{
-			msg:    fmt.Sprintf("Error building a %s binary", pack),
-			err:    e,
-			args:   cmd.Args,
-			output: buf.String(),
+			Msg:    fmt.Sprintf("Error building a %s binary", pack),
+			Err:    e.Error(),
+			Args:   cmd.Args,
+			Output: buf.String(),
 		}
 	}
 	return
@@ -61,10 +66,10 @@ func get(gopath string, packs ...string) (err error) {
 	e := cmd.Run()
 	if !cmd.ProcessState.Success() {
 		err = &cmdError{
-			msg:    "Error building the code + deps",
-			err:    e,
-			args:   cmd.Args,
-			output: buf.String(),
+			Msg:    "Error building the code + deps",
+			Err:    e.Error(),
+			Args:   cmd.Args,
+			Output: buf.String(),
 		}
 	}
 	return
@@ -79,10 +84,10 @@ func list(gopath string) (packs []string, err error) {
 	err = cmd.Run()
 	if err != nil {
 		err = &cmdError{
-			msg:    "Error listing the packages",
-			err:    err,
-			args:   cmd.Args,
-			output: buf.String(),
+			Msg:    "Error listing the packages",
+			Err:    err.Error(),
+			Args:   cmd.Args,
+			Output: buf.String(),
 		}
 		return
 	}
@@ -122,10 +127,10 @@ func copy(src, dst string) (err error) {
 	err = cmd.Run()
 	if err != nil {
 		err = &cmdError{
-			msg:    "Error copying files",
-			err:    err,
-			args:   cmd.Args,
-			output: "",
+			Msg:    "Error copying files",
+			Err:    err.Error(),
+			Args:   cmd.Args,
+			Output: "",
 		}
 	}
 	return

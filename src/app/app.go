@@ -3,8 +3,10 @@ package main
 import (
 	"code.google.com/p/gorilla/pat"
 	"code.google.com/p/gorilla/sessions"
+	"launchpad.net/mgo"
 	"log"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"thegoods.biz/tmplmgr"
 )
@@ -34,8 +36,8 @@ var (
 		},
 		BaseTitle: appname,
 	}
-
 	router = pat.New()
+	db     *mgo.Database
 )
 
 func main() {
@@ -52,6 +54,25 @@ func main() {
 	go run_test_scheduler()
 	go run_run_scheduler()
 	go run_saver()
+
+	//connect to mongo
+	var db_path, db_name = "localhost", appname
+	if conf := env("DATABASE_URL", ""); conf != "" {
+		db_path = conf
+		parsed, err := url.Parse(conf)
+		if err != nil {
+			log.Fatalf("Error parsing DATABASE_URL: %q: %s", conf, err)
+		}
+		db_name = parsed.Path[1:]
+	}
+	log.Printf("\tdb_path: %s\n\tdb_name: %s", db_path, db_name)
+
+	db_sess, err := mgo.Dial(db_path)
+	if err != nil {
+		log.Fatalf("error connecting to database: %s", err)
+	}
+	db_sess.SetMode(mgo.Strong, true)
+	db = db_sess.DB(db_name)
 
 	//set up our handlers
 	handleGet("/bins/{id}", handlerFunc(handle_test_request), "test_request")

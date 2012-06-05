@@ -11,6 +11,10 @@ var (
 )
 
 func spawn_runner(cmd string) (proc string, err error) {
+	if env("DEBUG", "") != "" {
+		return
+	}
+
 	p, err := hclient.Run(cmd)
 	if err != nil {
 		return
@@ -29,6 +33,10 @@ func cull_runner(id, proc string) func() {
 		}
 
 		error_test(id, "timeout")
+
+		if env("DEBUG", "") != "" {
+			return
+		}
 
 		//search for the process with the given UPID
 		procs, err := hclient.List()

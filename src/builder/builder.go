@@ -1,12 +1,17 @@
 package builder
 
 import (
+	"encoding/gob"
 	"io/ioutil"
 	"os"
 	"path"
 	fp "path/filepath"
 	"runtime"
 )
+
+func init() {
+	gob.Register(build{})
+}
 
 var exeSuffix = func() string {
 	if runtime.GOOS == "windows" {
@@ -32,22 +37,22 @@ type Build interface {
 }
 
 type build struct {
-	paths []string
-	base  string
-	err   error
-	rev   string
+	Ps   []string
+	base string
+	Err  error
+	Rev  string
 }
 
 func (b build) Revision() string {
-	return b.rev
+	return b.Rev
 }
 
 func (b build) Error() error {
-	return b.err
+	return b.Err
 }
 
 func (b build) Paths() []string {
-	return b.paths
+	return b.Ps
 }
 
 func (b build) Cleanup() (err error) {
@@ -129,7 +134,7 @@ func createBuilds(w Work, e environ) (res []Build, err error) {
 		bui := createBuild(rev, e)
 
 		//if we didn't create any binaries, don't keep the dump directory around
-		if len(bui.paths) == 0 {
+		if len(bui.Ps) == 0 {
 			bui.Cleanup()
 			bui.base = ""
 		}
@@ -146,42 +151,42 @@ func createBuilds(w Work, e environ) (res []Build, err error) {
 
 func createBuild(rev string, e environ) (bui build) {
 	var packs []string
-	bui.rev = rev
+	bui.Rev = rev
 
 	//make a new directory for the builds of this revision
-	bui.base, bui.err = ioutil.TempDir("", rev)
-	if bui.err != nil {
+	bui.base, bui.Err = ioutil.TempDir("", rev)
+	if bui.Err != nil {
 		return
 	}
 
 	//checkout the revision we need
-	bui.err = e.vcs.Checkout(e.tmpRepo, rev)
-	if bui.err != nil {
+	bui.Err = e.vcs.Checkout(e.tmpRepo, rev)
+	if bui.Err != nil {
 		return
 	}
 
 	//copy the repo to the srcDir
-	bui.err = copy(e.tmpRepo+string(fp.Separator)+".", e.srcDir)
-	if bui.err != nil {
+	bui.Err = copy(e.tmpRepo+string(fp.Separator)+".", e.srcDir)
+	if bui.Err != nil {
 		return
 	}
 
 	//figure out what packages need to be built
-	packs, bui.err = list(e.gopath)
-	if bui.err != nil {
+	packs, bui.Err = list(e.gopath)
+	if bui.Err != nil {
 		return
 	}
 
 	//run a get to build deps
-	bui.err = get(e.gopath, packs...)
-	if bui.err != nil {
+	bui.Err = get(e.gopath, packs...)
+	if bui.Err != nil {
 		return
 	}
 
 	//build the binaries and move them to a temporary directory
 	for _, pack := range packs {
-		bui.err = testbuild(e.gopath, pack, bui.base)
-		if bui.err != nil {
+		bui.Err = testbuild(e.gopath, pack, bui.base)
+		if bui.Err != nil {
 			return
 		}
 
@@ -194,7 +199,7 @@ func createBuild(rev string, e environ) (bui build) {
 		//not exist if there are no test files, so only add it if something
 		//is there.
 		if _, err := os.Stat(path); err == nil {
-			bui.paths = append(bui.paths, path)
+			bui.Ps = append(bui.Ps, path)
 		}
 	}
 

@@ -2,6 +2,8 @@ package main
 
 import (
 	"builder"
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"log"
 	"time"
@@ -13,7 +15,7 @@ var work_queue = make(chan builder.Work, queue_size)
 
 type TaskInfo struct {
 	When  time.Time
-	ID    string
+	ID    string `bson:"_id"`
 	Error string
 }
 
@@ -22,8 +24,26 @@ func (t TaskInfo) GetInfo() TaskInfo {
 }
 
 type Work struct {
-	TaskInfo
-	Work builder.Work
+	TaskInfo `bson:",inline"`
+	Work     builder.Work `bson:"-"`
+	GobWork  []byte
+}
+
+func (w *Work) Freeze() {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	if err := enc.Encode(&w.Work); err != nil {
+		panic(err)
+	}
+	w.GobWork = buf.Bytes()
+}
+
+func (w *Work) Thaw() {
+	r := bytes.NewReader(w.GobWork)
+	dec := gob.NewDecoder(r)
+	if err := dec.Decode(&w.Work); err != nil {
+		panic(err)
+	}
 }
 
 func (w *Work) WholeID() string {
@@ -31,11 +51,29 @@ func (w *Work) WholeID() string {
 }
 
 type Build struct {
-	TaskInfo
-	WorkID string
-	Build  builder.Build
+	TaskInfo `bson:",inline"`
+	WorkID   string
+	Build    builder.Build `bson:"-"`
+	GobBuild []byte
 
 	poke chan bool
+}
+
+func (b *Build) Freeze() {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	if err := enc.Encode(&b.Build); err != nil {
+		panic(err)
+	}
+	b.GobBuild = buf.Bytes()
+}
+
+func (b *Build) Thaw() {
+	r := bytes.NewReader(b.GobBuild)
+	dec := gob.NewDecoder(r)
+	if err := dec.Decode(&b.Build); err != nil {
+		panic(err)
+	}
 }
 
 func (b *Build) cleanup(num int) {
@@ -55,10 +93,10 @@ func (b *Build) WholeID() string {
 }
 
 type Test struct {
-	TaskInfo
-	WorkID  string
-	BuildID string
-	Path    string
+	TaskInfo `bson:",inline"`
+	WorkID   string
+	BuildID  string
+	Path     string
 
 	Output   string
 	Passed   bool

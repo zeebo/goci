@@ -2,11 +2,16 @@ package github
 
 import (
 	"builder"
+	"encoding/gob"
 	"encoding/json"
 	"io"
 	"net/url"
 	"time"
 )
+
+func init() {
+	gob.Register(&HookMessage{})
+}
 
 type HookMessage struct {
 	Before, After, Ref string
