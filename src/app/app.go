@@ -62,11 +62,11 @@ func main() {
 
 	//connect to mongo
 	var db_path, db_name = "localhost", appname
-	if conf := env("DATABASE_URL", ""); conf != "" {
+	if conf := env("MONGOLAB_URI", ""); conf != "" {
 		db_path = conf
 		parsed, err := url.Parse(conf)
 		if err != nil {
-			log.Fatalf("Error parsing DATABASE_URL: %q: %s", conf, err)
+			log.Fatalf("Error parsing MONGOLAB_URI: %q: %s", conf, err)
 		}
 		db_name = parsed.Path[1:]
 	}
@@ -88,6 +88,7 @@ func main() {
 	handlePost("/hooks/github/workspace", handlerFunc(handle_github_hook_workspace), "github_hook_workspace")
 
 	handleRequest("/foo", handlerFunc(handle_simple_work), "foo")
+	handleRequest("/dump/{coll}/{id}", handlerFunc(handle_dump), "dump")
 
 	//add our index with 404 support
 	handleRequest("/", handlerFunc(handle_index), "index")

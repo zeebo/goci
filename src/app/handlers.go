@@ -10,6 +10,5 @@ func handle_index(w http.ResponseWriter, req *http.Request, ctx *Context) {
 		return
 	}
 	w.Header().Set("Content-type", "text/html")
-	ctx.Set("content", "Content!")
 	base_execute(w, ctx, tmpl_root("blocks", "index.block"))
 }

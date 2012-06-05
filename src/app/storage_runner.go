@@ -33,10 +33,10 @@ func run_saver() {
 		good := id.GetInfo().Error == ""
 		log.Println(id.WholeID(), "save. good:", good)
 		if !good {
-			log.Printf("%s error: %q", id.WholeID(), id.GetInfo().Error)
+			log.Printf("%s error: %q", id.WholeID(), cap(id.GetInfo().Error, 50))
 		}
 		if t, ok := id.(*Test); ok && good {
-			log.Printf("%s passed: %v output: %q", id.WholeID(), t.Passed, t.Output)
+			log.Printf("%s passed: %v output: %q", id.WholeID(), t.Passed, cap(t.Output, 50))
 		}
 
 		//see if it needs to freeze before storage
@@ -49,6 +49,14 @@ func run_saver() {
 			log.Printf("%s error saving: %s", id.WholeID(), err)
 		}
 	}
+}
+
+func cap(s string, max int) (v string) {
+	if max > len(s) {
+		max = len(s)
+	}
+	v = s[:max]
+	return
 }
 
 //helper load function that auto unthaws things
