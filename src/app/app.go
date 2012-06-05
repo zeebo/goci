@@ -3,6 +3,7 @@ package main
 import (
 	"code.google.com/p/gorilla/pat"
 	"code.google.com/p/gorilla/sessions"
+	"heroku"
 	"launchpad.net/mgo"
 	"log"
 	"net/http"
@@ -36,11 +37,15 @@ var (
 		},
 		BaseTitle: appname,
 	}
-	router = pat.New()
-	db     *mgo.Database
+	router  = pat.New()
+	db      *mgo.Database
+	hclient *heroku.Client
 )
 
 func main() {
+	//set up our heroku client
+	hclient = heroku.New(need_env("APPNAME"), need_env("APIKEY"))
+
 	//set our compiler mode
 	tmplmgr.CompileMode(mode)
 

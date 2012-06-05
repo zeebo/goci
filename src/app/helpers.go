@@ -50,6 +50,13 @@ func env(key, def string) (k string) {
 	return
 }
 
+func need_env(key string) (val string) {
+	if val = os.Getenv(key); val == "" {
+		panic("key not found: " + key)
+	}
+	return
+}
+
 // Serves static files from filesystemDir when any request is made matching
 // requestPrefix
 func serve_static(requestPrefix, filesystemDir string) {
