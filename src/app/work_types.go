@@ -23,6 +23,14 @@ type Work struct {
 	TaskInfo `bson:",inline"`
 	Work     builder.Work `bson:"-"`
 	GobWork  []byte
+
+	RepoPath  string
+	Workspace bool
+
+	Link       string `bson:",omitempty"`
+	Name       string `bson:",omitempty"`
+	ImportPath string `bson:",omitempty"`
+	Blurb      string `bson:",omitempty"`
 }
 
 func (w *Work) Freeze() {
@@ -148,9 +156,32 @@ func new_build(build builder.Build, work *Work) (b *Build) {
 }
 
 func new_work(work builder.Work) (w *Work) {
-	w = &Work{
-		TaskInfo: new_info(),
-		Work:     work,
+	type Linker interface {
+		Link() string
 	}
+	type Namer interface {
+		ProjectName() string
+	}
+	type Blurber interface {
+		Blurb() string
+	}
+
+	w = &Work{
+		TaskInfo:   new_info(),
+		Work:       work,
+		ImportPath: work.ImportPath(),
+		RepoPath:   work.RepoPath(),
+		Workspace:  work.IsWorkspace(),
+	}
+	if l, ok := work.(Linker); ok {
+		w.Link = l.Link()
+	}
+	if n, ok := work.(Namer); ok {
+		w.Name = n.ProjectName()
+	}
+	if b, ok := work.(Blurber); ok {
+		w.Blurb = b.Blurb()
+	}
+
 	return
 }

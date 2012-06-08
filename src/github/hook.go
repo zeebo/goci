@@ -91,5 +91,17 @@ func (h *HookMessage) Revisions() (revs []string) {
 	return
 }
 
+func (h *HookMessage) ProjectName() string {
+	return h.Repository.Name
+}
+
+func (h *HookMessage) Link() string {
+	return h.Repository.URL
+}
+
+func (h *HookMessage) Blurb() string {
+	return h.Repository.Description
+}
+
 //ensure our HookMessage is a valid work item
 var _ builder.Work = &HookMessage{}
