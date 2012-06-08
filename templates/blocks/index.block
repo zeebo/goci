@@ -1,5 +1,7 @@
 {% define "content" %}
 <div class="hero-unit">
-<h1>{% .content %}</h1>
+<h1>GoCI</h1>
+<h2>Go Continuous Integration</h2>
+<p>Coming soon</p>
 </div>
 {% end %}
