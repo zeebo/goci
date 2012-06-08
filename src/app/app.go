@@ -60,6 +60,7 @@ func main() {
 
 	//add blocks to base template
 	base_template.Blocks(tmpl_root("*.block"))
+	base_template.Call("reverse", reverse)
 
 	//set up the environment which kicks off the work queue
 	go run_setup()
@@ -101,6 +102,7 @@ func main() {
 	handlePost("/bins/{id}", handlerFunc(handle_test_response), "test_response")
 
 	handleGet("/status/{id}", handlerFunc(handle_work_status), "status")
+	handleGet("/build/{id}", handlerFunc(handle_build_info), "build_info")
 
 	handlePost("/hooks/github/package", handlerFunc(handle_github_hook_package), "github_hook_package")
 	handlePost("/hooks/github/workspace", handlerFunc(handle_github_hook_workspace), "github_hook_workspace")

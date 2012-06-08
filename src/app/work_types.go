@@ -21,10 +21,6 @@ type TaskInfo struct {
 	Error string
 }
 
-func (t TaskInfo) GetInfo() TaskInfo {
-	return t
-}
-
 type Work struct {
 	TaskInfo `bson:",inline"`
 	Work     builder.Work `bson:"-"`
@@ -33,6 +29,7 @@ type Work struct {
 
 	RepoPath  string
 	Workspace bool
+	Status    WorkStatus
 
 	Link       string `bson:",omitempty"`
 	Name       string `bson:",omitempty"`
@@ -42,48 +39,6 @@ type Work struct {
 	poke chan *Build
 }
 
-func (w *Work) Freeze() {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	if err := enc.Encode(&w.Work); err != nil {
-		panic(err)
-	}
-	w.GobWork = buf.Bytes()
-
-	for _, b := range w.Builds {
-		b.Freeze()
-	}
-}
-
-func (w *Work) Thaw() {
-	r := bytes.NewReader(w.GobWork)
-	dec := gob.NewDecoder(r)
-	if err := dec.Decode(&w.Work); err != nil {
-		panic(err)
-	}
-
-	for _, b := range w.Builds {
-		b.Thaw()
-	}
-}
-
-func (w *Work) WholeID() string {
-	return w.ID
-}
-
-func (w *Work) cleanup(num int) {
-	defer func() { save_item <- w }()
-	defer log.Println(w.WholeID(), "clean up")
-
-	for i := 0; i < num; i++ {
-		b, ok := <-w.poke
-		if !ok {
-			return
-		}
-		w.Builds = append(w.Builds, b)
-	}
-}
-
 type Build struct {
 	TaskInfo `bson:",inline"`
 	WorkID   string
@@ -91,43 +46,11 @@ type Build struct {
 	GobBuild Bytes
 	Tests    []*Test
 
+	Revision string
+	Passed   bool
+
 	poke chan *Test
 	done chan *Build
-}
-
-func (b *Build) Freeze() {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	if err := enc.Encode(&b.Build); err != nil {
-		panic(err)
-	}
-	b.GobBuild = buf.Bytes()
-}
-
-func (b *Build) Thaw() {
-	r := bytes.NewReader(b.GobBuild)
-	dec := gob.NewDecoder(r)
-	if err := dec.Decode(&b.Build); err != nil {
-		panic(err)
-	}
-}
-
-func (b *Build) cleanup(num int) {
-	defer func() { b.done <- b }()
-	defer log.Println(b.WholeID(), "clean up")
-	defer b.Build.Cleanup()
-
-	for i := 0; i < num; i++ {
-		t, ok := <-b.poke
-		if !ok {
-			return
-		}
-		b.Tests = append(b.Tests, t)
-	}
-}
-
-func (b *Build) WholeID() string {
-	return fmt.Sprintf("%s:%s", b.WorkID, b.ID)
 }
 
 type Test struct {
@@ -142,21 +65,6 @@ type Test struct {
 	Duration time.Duration
 
 	done chan *Test
-}
-
-func (t *Test) Start() {
-	if t.Started.IsZero() {
-		t.Started = time.Now()
-	}
-}
-
-func (t *Test) Finish() {
-	t.Duration = time.Since(t.Started)
-	t.done <- t
-}
-
-func (t *Test) WholeID() string {
-	return fmt.Sprintf("%s:%s:%s", t.WorkID, t.BuildID, t.ID)
 }
 
 func new_info() (t TaskInfo) {
@@ -183,6 +91,8 @@ func new_build(build builder.Build, work *Work) (b *Build) {
 		TaskInfo: new_info(),
 		Build:    build,
 		WorkID:   work.ID,
+		Revision: build.Revision(),
+		Passed:   true,
 
 		poke: make(chan *Test),
 		done: work.poke,
@@ -221,4 +131,130 @@ func new_work(work builder.Work) (w *Work) {
 	}
 
 	return
+}
+
+func (t TaskInfo) GetInfo() TaskInfo {
+	return t
+}
+
+func (w *Work) DisplayName() (r string) {
+	switch {
+	case w.ImportPath != "":
+		r = w.ImportPath
+	case w.Name != "":
+		r = w.Name
+	case w.RepoPath != "":
+		r = w.RepoPath
+	}
+	return
+}
+
+func (w *Work) Freeze() {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	if err := enc.Encode(&w.Work); err != nil {
+		panic(err)
+	}
+	w.GobWork = buf.Bytes()
+
+	for _, b := range w.Builds {
+		b.Freeze()
+	}
+}
+
+func (w *Work) Thaw() {
+	r := bytes.NewReader(w.GobWork)
+	dec := gob.NewDecoder(r)
+	if err := dec.Decode(&w.Work); err != nil {
+		panic(err)
+	}
+
+	for _, b := range w.Builds {
+		b.Thaw()
+	}
+}
+
+func (w *Work) WholeID() string {
+	return w.ID
+}
+
+func (w *Work) update_status() {
+	var passed, failed = true, true
+	for _, b := range w.Builds {
+		passed = passed && b.Passed
+		failed = failed && !b.Passed
+	}
+	switch {
+	case passed && !failed:
+		w.Status = WorkStatusPassed
+	case failed && !passed:
+		w.Status = WorkStatusFailed
+	default:
+		w.Status = WorkStatusWary
+	}
+}
+
+func (w *Work) cleanup(num int) {
+	defer func() { save_item <- w }()
+	defer w.update_status()
+	defer log.Println(w.WholeID(), "clean up")
+
+	for i := 0; i < num; i++ {
+		b, ok := <-w.poke
+		if !ok {
+			return
+		}
+		w.Builds = append(w.Builds, b)
+	}
+}
+
+func (b *Build) Freeze() {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	if err := enc.Encode(&b.Build); err != nil {
+		panic(err)
+	}
+	b.GobBuild = buf.Bytes()
+}
+
+func (b *Build) Thaw() {
+	r := bytes.NewReader(b.GobBuild)
+	dec := gob.NewDecoder(r)
+	if err := dec.Decode(&b.Build); err != nil {
+		panic(err)
+	}
+}
+
+func (b *Build) cleanup(num int) {
+	defer func() { b.done <- b }()
+	defer log.Println(b.WholeID(), "clean up")
+	defer b.Build.Cleanup()
+
+	for i := 0; i < num; i++ {
+		t, ok := <-b.poke
+		if !ok {
+			return
+		}
+		b.Tests = append(b.Tests, t)
+		b.Passed = b.Passed && t.Passed
+	}
+}
+
+func (b *Build) WholeID() string {
+	return fmt.Sprintf("%s:%s", b.WorkID, b.ID)
+}
+
+func (t *Test) Start() {
+	if t.Started.IsZero() {
+		t.Started = time.Now()
+	}
+}
+
+func (t *Test) Finish() {
+	t.Duration = time.Since(t.Started)
+	t.done <- t
+}
+
+func (t *Test) WholeID() string {
+	return fmt.Sprintf("%s:%s:%s", t.WorkID, t.BuildID, t.ID)
 }

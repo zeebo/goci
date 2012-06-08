@@ -17,6 +17,7 @@ type TestWork struct {
 	FRepoPath   string
 	FImportPath string
 	Workspace   bool
+	FLink       string
 }
 
 func (t *TestWork) Revisions() []string { return t.FRevisions }
@@ -24,6 +25,7 @@ func (t *TestWork) VCS() builder.VCS    { return t.vcs }
 func (t *TestWork) RepoPath() string    { return t.FRepoPath }
 func (t *TestWork) ImportPath() string  { return t.FImportPath }
 func (t *TestWork) IsWorkspace() bool   { return t.Workspace }
+func (t *TestWork) Link() string        { return t.FLink }
 
 var test_work = &TestWork{
 	FRevisions: []string{
@@ -36,6 +38,7 @@ var test_work = &TestWork{
 	FRepoPath:   "git://github.com/zeebo/irc",
 	FImportPath: "github.com/zeebo/irc",
 	Workspace:   false,
+	FLink:       "http://github.com/zeebo/irc",
 }
 
 //our basic handle index that demonstrates how to get data from the context

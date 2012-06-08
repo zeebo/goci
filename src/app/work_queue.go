@@ -29,6 +29,7 @@ func run_work_queue() {
 			b := new_build(build, w)
 			if err := build.Error(); err != nil {
 				b.Error = err.Error()
+				b.Passed = false
 				b.cleanup(0)
 				continue
 			}

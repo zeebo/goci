@@ -2,6 +2,6 @@
 <div class="hero-unit">
 	<h1>500!</h1>
 	<p>There was an internal serivce error processing your request.</p>
-	<p>Fortunately our crack team of trained monkeys is already on the job!</p>
+	<p>Fortunately our crack team of trained gophers is already on the job!</p>
 </div>
 {% end %}

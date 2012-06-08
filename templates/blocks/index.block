@@ -1,7 +1,33 @@
 {% define "content" %}
-<div class="hero-unit">
-<h1>GoCI</h1>
-<h2>Go Continuous Integration</h2>
-<p>Coming soon</p>
+{% if .Recent %}
+<div class="row">
+	<div class="span12">
+		<div class="well">
+			<h2>Recent Results</h2>
+			<table class="table">
+				<thead>
+					<th>Project</th>
+					<th>Revision</th>
+					<th>Date</th>
+					<th>Status</th>
+				</thead>
+{% range $w := .Recent %}
+	{% range $b := $w.Builds %}
+				<tr>
+					{% if $w.Link %}
+					<td><a href="{% $w.Link %}">{% $w.DisplayName %}</a></td>
+					{% else %}
+					<td>{% $w.DisplayName %}</td>
+					{% end %}
+					<td><a href="{% reverse "build_info" "id" $b.ID %}">{% $b.Revision %}</a></td>
+					<td>{% $b.When.Format "Jan 02, 2006 03:04:05 PM" %}</td>
+					<td>{% if $b.Passed %}<span class="label label-success">Passed</span>{% else %}<span class="label label-important">Failed</span>{% end %}</td>
+				</tr>
+	{% end %}
+{% end %}
+			</table>
+		</div>
+	</div>
 </div>
+{% end %}
 {% end %}

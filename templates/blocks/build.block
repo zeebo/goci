@@ -1,0 +1,14 @@
+{% define "content" %}
+{% if .Build.Passed %}
+	<h2>Build Status: Passed</h2>
+{% else %}
+	<h2>Build Status: Failed</h2>
+	{% if .Build.Error %}<pre>{% .Build.Error %}</pre>{% end %}
+{% end %}
+{% range $t := .Build.Tests %}
+	<h3>Test: {% if $t.Passed %}Passed{% else %}Failed{% end %}</h3>
+	<pre>{% $t.Output %}</pre>
+{% else %}
+	{% if .Build.Passed %}<p>No tests</p>{% end %}
+{% end %}
+{% end %}
