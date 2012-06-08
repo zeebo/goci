@@ -112,10 +112,10 @@ func newEnviron(w Work) (e environ, err error) {
 func CreateBuilds(w Work) (items []Build, err error) {
 	//create a new environment for the work
 	e, err := newEnviron(w)
+	defer e.Cleanup()
 	if err != nil {
 		return
 	}
-	defer e.Cleanup()
 
 	//grab the build items
 	items, err = createBuilds(w, e)
