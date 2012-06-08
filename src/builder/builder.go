@@ -2,12 +2,15 @@ package builder
 
 import (
 	"encoding/gob"
+	"errors"
 	"io/ioutil"
 	"os"
 	"path"
-	fp "path/filepath"
 	"runtime"
+	fp "path/filepath"
 )
+
+var ErrTooMany = errors.New("too many revisions in that work item")
 
 func init() {
 	gob.Register(build{})
@@ -110,6 +113,11 @@ func newEnviron(w Work) (e environ, err error) {
 }
 
 func CreateBuilds(w Work) (items []Build, err error) {
+	if len(w.Revisions()) > 5 {
+		err = ErrTooMany
+		return
+	}
+
 	//create a new environment for the work
 	e, err := newEnviron(w)
 	defer e.Cleanup()
