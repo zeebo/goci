@@ -38,11 +38,7 @@ func unschedule(id string) {
 	defer active_tests_lock.Unlock()
 
 	<-num_tests
-	t, ok := active_tests[id]
-	if ok {
-		delete(active_tests, id)
-		save_item <- t
-	}
+	delete(active_tests, id)
 }
 
 func run_test_buffer() {

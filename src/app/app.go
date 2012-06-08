@@ -5,6 +5,7 @@ import (
 	"code.google.com/p/gorilla/sessions"
 	"heroku"
 	"launchpad.net/mgo"
+	"launchpad.net/mgo/bson"
 	"log"
 	"net/http"
 	"net/url"
@@ -13,8 +14,9 @@ import (
 )
 
 const (
-	appname   = "goci"
-	store_key = "foobar"
+	appname    = "goci"
+	store_key  = "foobar"
+	collection = "worklog"
 )
 
 var (
@@ -41,6 +43,12 @@ var (
 	db_name = appname
 	db      *mgo.Database
 	hclient *heroku.Client
+)
+
+const (
+	Byte = 1 << (iota * 10)
+	Kilobyte
+	Megabyte
 )
 
 func main() {
@@ -80,16 +88,25 @@ func main() {
 	db_sess.SetMode(mgo.Strong, true)
 	db = db_sess.DB(db_name)
 
+	//ensure that the database has the work collection
+	err = db.Run(bson.D{{"create", collection}, {"size", 200 * Megabyte}, {"capped", true}}, nil)
+	if e, ok := err.(*mgo.QueryError); err != nil && (!ok || e.Message != "collection already exists") {
+		log.Fatal("error creating collection: ", err)
+	}
+	log.Println("collection created")
+
 	//set up our handlers
 	handleGet("/bins/{id}", handlerFunc(handle_test_request), "test_request")
 	handlePost("/bins/{id}/err", handlerFunc(handle_test_error), "test_error") //more specific one has to be listed first
 	handlePost("/bins/{id}", handlerFunc(handle_test_response), "test_response")
 
+	handleGet("/status/{id}", handlerFunc(handle_work_status), "status")
+
 	handlePost("/hooks/github/package", handlerFunc(handle_github_hook_package), "github_hook_package")
 	handlePost("/hooks/github/workspace", handlerFunc(handle_github_hook_workspace), "github_hook_workspace")
 
 	handleRequest("/foo", handlerFunc(handle_simple_work), "foo")
-	handleRequest("/dump/{coll}/{id}", handlerFunc(handle_dump), "dump")
+	handleRequest("/dump/{id}", handlerFunc(handle_dump), "dump")
 
 	//add our index with 404 support
 	handleRequest("/", handlerFunc(handle_index), "index")

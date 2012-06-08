@@ -18,10 +18,11 @@ func run_work_queue() {
 		builds, err := builder.CreateBuilds(work)
 		if err != nil {
 			w.Error = err.Error()
-			save_item <- w
+			w.cleanup(0)
 			continue
 		}
-		save_item <- w
+
+		go w.cleanup(len(builds))
 
 		//build the work struct out to include all the tests
 		for _, build := range builds {
@@ -29,19 +30,15 @@ func run_work_queue() {
 			if err := build.Error(); err != nil {
 				b.Error = err.Error()
 				b.cleanup(0)
-				save_item <- b
 				continue
 			}
-			save_item <- b
 
 			paths := build.Paths()
+			go b.cleanup(len(paths))
 			for _, path := range paths {
 				t := new_test(path, b, w)
 				schedule_test <- t
 			}
-
-			//launch a goroutine to handle cleanup after x tests have run
-			go b.cleanup(len(paths))
 		}
 	}
 }

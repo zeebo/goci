@@ -8,45 +8,21 @@ type ider interface {
 }
 
 var (
-	save_item = make(chan ider)
+	save_item = make(chan *Work)
 )
 
 func run_saver() {
-	type freezer interface {
-		Freeze()
-	}
-
-	for id := range save_item {
-		var coll string
-		switch id.(type) {
-		case *Work:
-			coll = "Work"
-		case *Build:
-			coll = "Build"
-		case *Test:
-			coll = "Test"
-		default:
-			log.Printf("don't know how to save an item of type %T", id)
-			continue
-		}
-
-		good := id.GetInfo().Error == ""
-		log.Println(id.WholeID(), "save. good:", good)
+	for w := range save_item {
+		good := w.GetInfo().Error == ""
+		log.Println(w.WholeID(), "save. good:", good)
 		if !good {
-			log.Printf("%s error: %q", id.WholeID(), cap(id.GetInfo().Error, 50))
+			log.Printf("%s error: %q", w.WholeID(), cap(w.GetInfo().Error, 50))
 		}
-		if t, ok := id.(*Test); ok && good {
-			log.Printf("%s passed: %v output: %q", id.WholeID(), t.Passed, cap(t.Output, 50))
-		}
-
-		//see if it needs to freeze before storage
-		if p, ok := id.(freezer); ok {
-			p.Freeze()
-		}
+		w.Freeze()
 
 		//perform the save
-		if err := db.C(coll).Insert(id); err != nil {
-			log.Printf("%s error saving: %s", id.WholeID(), err)
+		if err := db.C(collection).Insert(w); err != nil {
+			log.Printf("%s error saving: %s", w.WholeID(), err)
 		}
 	}
 }
@@ -60,13 +36,10 @@ func cap(s string, max int) (v string) {
 }
 
 //helper load function that auto unthaws things
-func load(coll string, sel interface{}, it interface{}) (err error) {
-	type thawer interface {
-		Thaw()
-	}
-	err = db.C(coll).Find(sel).One(it)
-	if t, ok := it.(thawer); ok && err == nil {
-		t.Thaw()
+func load(sel interface{}) (w *Work, err error) {
+	err = db.C(collection).Find(sel).One(&w)
+	if err == nil {
+		w.Thaw()
 	}
 	return
 }

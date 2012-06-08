@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+type Bytes []byte
+
+func (b Bytes) Format(s fmt.State, c rune) {
+	fmt.Fprint(s, "[]byte{...}")
+}
+
 type TaskInfo struct {
 	When  time.Time
 	ID    string `bson:"_id"`
@@ -22,7 +28,8 @@ func (t TaskInfo) GetInfo() TaskInfo {
 type Work struct {
 	TaskInfo `bson:",inline"`
 	Work     builder.Work `bson:"-"`
-	GobWork  []byte
+	GobWork  Bytes
+	Builds   []*Build
 
 	RepoPath  string
 	Workspace bool
@@ -31,6 +38,8 @@ type Work struct {
 	Name       string `bson:",omitempty"`
 	ImportPath string `bson:",omitempty"`
 	Blurb      string `bson:",omitempty"`
+
+	poke chan *Build
 }
 
 func (w *Work) Freeze() {
@@ -40,6 +49,10 @@ func (w *Work) Freeze() {
 		panic(err)
 	}
 	w.GobWork = buf.Bytes()
+
+	for _, b := range w.Builds {
+		b.Freeze()
+	}
 }
 
 func (w *Work) Thaw() {
@@ -48,19 +61,38 @@ func (w *Work) Thaw() {
 	if err := dec.Decode(&w.Work); err != nil {
 		panic(err)
 	}
+
+	for _, b := range w.Builds {
+		b.Thaw()
+	}
 }
 
 func (w *Work) WholeID() string {
 	return w.ID
 }
 
+func (w *Work) cleanup(num int) {
+	defer func() { save_item <- w }()
+	defer log.Println(w.WholeID(), "clean up")
+
+	for i := 0; i < num; i++ {
+		b, ok := <-w.poke
+		if !ok {
+			return
+		}
+		w.Builds = append(w.Builds, b)
+	}
+}
+
 type Build struct {
 	TaskInfo `bson:",inline"`
 	WorkID   string
 	Build    builder.Build `bson:"-"`
-	GobBuild []byte
+	GobBuild Bytes
+	Tests    []*Test
 
-	poke chan bool
+	poke chan *Test
+	done chan *Build
 }
 
 func (b *Build) Freeze() {
@@ -81,14 +113,16 @@ func (b *Build) Thaw() {
 }
 
 func (b *Build) cleanup(num int) {
+	defer func() { b.done <- b }()
 	defer log.Println(b.WholeID(), "clean up")
 	defer b.Build.Cleanup()
 
 	for i := 0; i < num; i++ {
-		_, ok := <-b.poke
+		t, ok := <-b.poke
 		if !ok {
 			return
 		}
+		b.Tests = append(b.Tests, t)
 	}
 }
 
@@ -107,7 +141,7 @@ type Test struct {
 	Started  time.Time
 	Duration time.Duration
 
-	done chan bool
+	done chan *Test
 }
 
 func (t *Test) Start() {
@@ -118,7 +152,7 @@ func (t *Test) Start() {
 
 func (t *Test) Finish() {
 	t.Duration = time.Since(t.Started)
-	t.done <- true
+	t.done <- t
 }
 
 func (t *Test) WholeID() string {
@@ -150,7 +184,8 @@ func new_build(build builder.Build, work *Work) (b *Build) {
 		Build:    build,
 		WorkID:   work.ID,
 
-		poke: make(chan bool),
+		poke: make(chan *Test),
+		done: work.poke,
 	}
 	return
 }
@@ -172,6 +207,8 @@ func new_work(work builder.Work) (w *Work) {
 		ImportPath: work.ImportPath(),
 		RepoPath:   work.RepoPath(),
 		Workspace:  work.IsWorkspace(),
+
+		poke: make(chan *Build),
 	}
 	if l, ok := work.(Linker); ok {
 		w.Link = l.Link()

@@ -25,7 +25,14 @@ func (w WorkStatus) String() (r string) {
 }
 
 var work_status_job = mgo.MapReduce{
-	Map: `function() { emit(this.buildid, this.passed); }`,
+	Map: `function() {
+	      	this.builds.forEach(function(build) {
+	      		build.tests.forEach(function(test) {
+	      			emit(build._id, test.passed);
+	      		});
+	      	});
+	      }`,
+
 	Reduce: `function(key, values) {
 	         	var result = true;
 	         	values.forEach(function(value) {
@@ -42,7 +49,7 @@ func work_status(db *mgo.Database, id string) (status WorkStatus, err error) {
 		ID    string `bson:"_id"`
 		Value bool
 	}
-	_, err = db.C("Test").Find(d{"workid": id}).MapReduce(work_status_job, &res)
+	_, err = db.C(collection).Find(d{"_id": id}).MapReduce(work_status_job, &res)
 	if err != nil {
 		return
 	}
