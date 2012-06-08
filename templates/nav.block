@@ -1,0 +1,39 @@
+{% define "nav" %}
+	{% range $item := .Meta.Nav %}
+			{% template "list_item" $item %}
+	{% end %}
+{% end %}
+
+{% define "sub_nav" %}
+	{% if .Meta.SubNav %}
+      <div class="subnav subnav-fixed">
+        <ul class="nav nav-pills">
+			{% range $item := .Meta.SubNav %}
+				{% template "list_item" $item %}
+			{% end %}
+        </ul>
+      </div>
+	{% end %}
+{% end %}
+
+{% define "nav_padding" %}
+    <style type="text/css">
+      section {
+        padding-top: {% . %}px;
+        margin-top: -{% . %}px;
+      }
+      body { padding-top: {% . %}px; }
+    </style>
+{% end %}
+
+{% define "list_item" %}
+	{% if .IsDivider %}
+		<li class="divider"></li>
+	{% else %}
+		{% if .IsHeader %}
+			<li class="nav-header">{% .Title %}</li>
+		{% else %}
+			<li{% if .Class %} class="{% .Class %}"{% end %}><a href="{% .Href %}">{% .Title %}</a></li>
+		{% end %}
+	{% end %}
+{% end %}

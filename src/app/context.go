@@ -27,6 +27,11 @@ func init_context(req *http.Request) (c *Context) {
 		DB:      db.Session.Clone().DB(db_name),
 		State:   current_state,
 	}
+
+	if req.URL.Path != "/" {
+		c.Meta.Nav.SetActive(req.URL.Path)
+	}
+
 	return
 }
 

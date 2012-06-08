@@ -65,3 +65,14 @@ func handle_build_info(w http.ResponseWriter, req *http.Request, ctx *Context) {
 	ctx.Set("Build", bd)
 	base_execute(w, ctx, tmpl_root("blocks", "build.block"))
 }
+
+func handle_how(w http.ResponseWriter, req *http.Request, ctx *Context) {
+	w.Header().Set("Content-type", "text/html")
+	ctx.Meta.SubNav = navList{
+		&navBase{"Info", "#info", nil},
+		&navBase{"Github", "#github", nil},
+		&navBase{"Bitbucket", "#bitbucket", nil},
+		&navBase{"General", "#general", nil},
+	}
+	base_execute(w, ctx, tmpl_root("blocks", "how.block"))
+}

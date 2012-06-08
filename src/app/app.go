@@ -37,7 +37,7 @@ var (
 			"jquery-ui.min.js",
 			"bootstrap.js",
 		},
-		BaseTitle: appname,
+		BaseTitle: "GoCI",
 	}
 	router  = pat.New()
 	db_name = appname
@@ -111,11 +111,21 @@ func main() {
 	handlePost("/hooks/github/package", handlerFunc(handle_github_hook_package), "github_hook_package")
 	handlePost("/hooks/github/workspace", handlerFunc(handle_github_hook_workspace), "github_hook_workspace")
 
+	handleGet("/how", handlerFunc(handle_how), "how")
+
 	handleRequest("/foo", handlerFunc(handle_simple_work), "foo")
 	handleRequest("/dump/{id}", handlerFunc(handle_dump), "dump")
 
 	//add our index with 404 support
 	handleRequest("/", handlerFunc(handle_index), "index")
+
+	//build the nav and subnav
+	base_meta.Nav = navList{
+		&navBase{"Recent", reverse("index"), nil},
+		&navBase{"Projects", reverse("index"), nil},
+		&navBase{"How", reverse("how"), nil},
+	}
+	base_meta.SubNav = navList{}
 
 	//set up our router
 	http.Handle("/", router)

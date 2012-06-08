@@ -1,4 +1,10 @@
 {% define "content" %}
+
+      <div class="hero-unit">
+        <h1>GoCI</h1>
+        <h2>Go Continuous Integration</h2>
+      </div>
+
 {% if .Recent %}
 <div class="row">
 	<div class="span12">

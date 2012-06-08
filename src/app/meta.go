@@ -17,6 +17,8 @@ func (l list) Dup() (r list) {
 type Meta struct {
 	CSS       list
 	JS        list
+	Nav       navList
+	SubNav    navList
 	BaseTitle string
 	Title     string
 }
@@ -25,6 +27,8 @@ func (m *Meta) Dup() *Meta {
 	return &Meta{
 		CSS:       m.CSS.Dup(),
 		JS:        m.JS.Dup(),
+		Nav:       m.Nav.Dup(),
+		SubNav:    m.SubNav.Dup(),
 		Title:     m.Title,
 		BaseTitle: m.BaseTitle,
 	}
