@@ -38,6 +38,7 @@ var (
 		BaseTitle: appname,
 	}
 	router  = pat.New()
+	db_name = appname
 	db      *mgo.Database
 	hclient *heroku.Client
 )
@@ -61,7 +62,7 @@ func main() {
 	go run_saver()
 
 	//connect to mongo
-	var db_path, db_name = "localhost", appname
+	db_path := "localhost"
 	if conf := env("MONGOLAB_URI", ""); conf != "" {
 		db_path = conf
 		parsed, err := url.Parse(conf)
