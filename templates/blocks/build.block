@@ -7,7 +7,8 @@
 {% end %}
 {% range $t := .Build.Tests %}
 	<h3>Test: {% if $t.Passed %}Passed{% else %}Failed{% end %}</h3>
-	<pre>{% $t.Output %}</pre>
+	{% if $t.Output %}<pre>{% $t.Output %}</pre>{% end %}
+	{% if $t.Error %}<pre>{% $t.Error %}</pre>{% end %}
 {% else %}
 	{% if .Build.Passed %}<p>No tests</p>{% end %}
 {% end %}

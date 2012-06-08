@@ -70,6 +70,10 @@ func main() {
 	go run_run_scheduler()
 	go run_saver()
 
+	//set up the state changer
+	go state_manager()
+	change_state <- StateSetup
+
 	//connect to mongo
 	db_path := "localhost"
 	if conf := env("MONGOLAB_URI", ""); conf != "" {

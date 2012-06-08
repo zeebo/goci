@@ -11,6 +11,7 @@ type Context struct {
 	Session *sessions.Session
 	Meta    *Meta
 	Data    d
+	State   State
 	DB      *mgo.Database
 }
 
@@ -24,6 +25,7 @@ func init_context(req *http.Request) (c *Context) {
 		Meta:    base_meta.Dup(),
 		Data:    d{},
 		DB:      db.Session.Clone().DB(db_name),
+		State:   current_state,
 	}
 	return
 }
@@ -44,7 +46,7 @@ func (c *Context) Tmpl() (ret d) {
 	for key, val := range c.Data {
 		ret[key] = val
 	}
-	ret["Meta"], ret["Session"] = c.Meta, c.Session
+	ret["Meta"], ret["Session"], ret["State"] = c.Meta, c.Session, c.State
 	return ret
 }
 

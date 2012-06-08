@@ -10,7 +10,10 @@ const queue_size = 100
 var work_queue = make(chan builder.Work, queue_size)
 
 func run_work_queue() {
+	done := make(chan bool)
 	for work := range work_queue {
+		change_state <- StateRunning
+
 		log.Println("got work item:", work.RepoPath())
 		w := new_work(work)
 
@@ -18,11 +21,11 @@ func run_work_queue() {
 		builds, err := builder.CreateBuilds(work)
 		if err != nil {
 			w.Error = err.Error()
-			w.cleanup(0)
+			w.cleanup(0, nil)
 			continue
 		}
 
-		go w.cleanup(len(builds))
+		go w.cleanup(len(builds), done)
 
 		//build the work struct out to include all the tests
 		for _, build := range builds {
@@ -41,5 +44,9 @@ func run_work_queue() {
 				schedule_test <- t
 			}
 		}
+
+		//wait for the work to finish
+		<-done
+		change_state <- StateIdle
 	}
 }

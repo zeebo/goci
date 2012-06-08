@@ -41,5 +41,6 @@ func run_setup() {
 	group.Wait()
 
 	log.Println("setup complete. running queue")
+	change_state <- StateIdle
 	go run_work_queue()
 }
