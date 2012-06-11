@@ -49,6 +49,8 @@ const (
 	Byte = 1 << (iota * 10)
 	Kilobyte
 	Megabyte
+
+	capsize = 100 * Megabyte
 )
 
 func main() {
@@ -94,7 +96,7 @@ func main() {
 	db = db_sess.DB(db_name)
 
 	//ensure that the database has the work collection
-	err = db.Run(bson.D{{"create", collection}, {"size", 200 * Megabyte}, {"capped", true}}, nil)
+	err = db.Run(bson.D{{"create", collection}, {"size", capsize}, {"capped", true}}, nil)
 	if e, ok := err.(*mgo.QueryError); err != nil && (!ok || e.Message != "collection already exists") {
 		log.Fatal("error creating collection: ", err)
 	}
