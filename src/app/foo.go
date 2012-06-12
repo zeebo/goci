@@ -13,7 +13,7 @@ func init() {
 
 type TestWork struct {
 	FRevisions  []string
-	vcs         builder.VCS
+	FVCS        builder.VCS
 	FRepoPath   string
 	FImportPath string
 	Workspace   bool
@@ -21,7 +21,7 @@ type TestWork struct {
 }
 
 func (t *TestWork) Revisions() []string { return t.FRevisions }
-func (t *TestWork) VCS() builder.VCS    { return t.vcs }
+func (t *TestWork) VCS() builder.VCS    { return t.FVCS }
 func (t *TestWork) RepoPath() string    { return t.FRepoPath }
 func (t *TestWork) ImportPath() string  { return t.FImportPath }
 func (t *TestWork) IsWorkspace() bool   { return t.Workspace }
@@ -34,7 +34,7 @@ var test_work = &TestWork{
 		"c97d0b46f86c1d1294b9351c01349177e38ef2b3", //working with tests
 		"b1a6b6797e2009e1dac7ccd5515f8aee17df6774", //tests that fail to compile
 	},
-	vcs:         builder.Git,
+	FVCS:        builder.Git,
 	FRepoPath:   "git://github.com/zeebo/irc",
 	FImportPath: "github.com/zeebo/irc",
 	Workspace:   false,

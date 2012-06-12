@@ -17,6 +17,7 @@ const (
 	appname    = "goci"
 	store_key  = "foobar"
 	collection = "worklog"
+	work_coll  = "workqueue"
 )
 
 var (
@@ -72,6 +73,10 @@ func main() {
 	go run_run_scheduler()
 	go run_saver()
 
+	//spawn the mongo work goroutines
+	go run_mgo_work_queue()
+	go run_mgo_queue_dispatcher()
+
 	//set up the state changer
 	go state_manager()
 	change_state <- StateSetup
@@ -101,6 +106,12 @@ func main() {
 		log.Fatal("error creating collection: ", err)
 	}
 	log.Println("collection created")
+
+	//set all processing things to false to clean up any old ones
+	err = db.C(work_coll).UpdateAll(d{"processing": true}, d{"$set": d{"processing": false}})
+	if err != nil && err != mgo.NotFound {
+		log.Fatal("error resetting processing values: ", err)
+	}
 
 	//set up our handlers
 	handleGet("/bins/{id}", handlerFunc(handle_test_request), "test_request")

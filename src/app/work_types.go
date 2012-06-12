@@ -195,15 +195,10 @@ func (w *Work) update_status() {
 	}
 }
 
-func (w *Work) cleanup(num int, done chan bool) {
+func (w *Work) wait_for(num int, done chan bool) {
 	defer func() {
-		if done != nil {
-			done <- true
-		}
+		done <- true
 	}()
-	defer func() { save_item <- w }()
-	defer w.update_status()
-	defer log.Println(w.WholeID(), "clean up")
 
 	for i := 0; i < num; i++ {
 		b, ok := <-w.poke

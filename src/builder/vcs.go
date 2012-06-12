@@ -2,6 +2,7 @@ package builder
 
 import (
 	"bytes"
+	"encoding/gob"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -12,11 +13,15 @@ type VCS interface {
 	Clone(repo, dir string) (err error)
 }
 
-type vcs struct {
-	name string
+func init() {
+	gob.Register(&vcs{})
+}
 
-	clone    string
-	checkout string
+type vcs struct {
+	Name string
+
+	FClone    string
+	FCheckout string
 }
 
 var (
@@ -26,17 +31,17 @@ var (
 
 var (
 	vcsGit = &vcs{
-		name: "git",
+		Name: "git",
 
-		clone:    "clone {repo} {dir}",
-		checkout: "checkout {rev}",
+		FClone:    "clone {repo} {dir}",
+		FCheckout: "checkout {rev}",
 	}
 
 	vcsHg = &vcs{
-		name: "hg",
+		Name: "hg",
 
-		clone:    "clone -U {repo} {dir}",
-		checkout: "update -r {rev}",
+		FClone:    "clone -U {repo} {dir}",
+		FCheckout: "update -r {rev}",
 	}
 )
 
@@ -49,7 +54,7 @@ type vcsError struct {
 }
 
 func (v *vcsError) Error() string {
-	return fmt.Sprintf("%s: %s\nvcs: %s\nargs: %s\noutput: %s", v.msg, v.err.Error(), v.vcs.name, v.args, v.output)
+	return fmt.Sprintf("%s: %s\nvcs: %s\nargs: %s\noutput: %s", v.msg, v.err.Error(), v.vcs.Name, v.args, v.output)
 }
 
 func expand(s string, vals map[string]string) string {
@@ -68,12 +73,12 @@ func (v *vcs) expandCmd(cmd string, keyval ...string) (c *exec.Cmd) {
 	for i := 0; i < len(keyval); i += 2 {
 		vals[keyval[i]] = keyval[i+1]
 	}
-	c = exec.Command(v.name, expandSplit(cmd, vals)...)
+	c = exec.Command(v.Name, expandSplit(cmd, vals)...)
 	return
 }
 
 func (v *vcs) Checkout(dir, rev string) (err error) {
-	cmd := v.expandCmd(v.checkout, "rev", rev)
+	cmd := v.expandCmd(v.FCheckout, "rev", rev)
 	var buf bytes.Buffer
 	cmd.Dir = dir
 	cmd.Stdout = &buf
@@ -93,7 +98,7 @@ func (v *vcs) Checkout(dir, rev string) (err error) {
 }
 
 func (v *vcs) Clone(repo, dir string) (err error) {
-	cmd := v.expandCmd(v.clone, "repo", repo, "dir", dir)
+	cmd := v.expandCmd(v.FClone, "repo", repo, "dir", dir)
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
