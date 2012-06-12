@@ -1,32 +1,46 @@
 package main
 
 import (
+	"bitbucket"
+	"builder"
 	"github"
+	"io"
 	"log"
 	"net/http"
 	"strings"
 )
 
-func handle_github_hook_package(w http.ResponseWriter, req *http.Request, ctx *Context) {
-	var m github.HookMessage
+type work_loader interface {
+	builder.Work
+	Load(io.Reader) error
+}
+
+func perform_hook(w http.ResponseWriter, req *http.Request, ctx *Context, l work_loader) {
 	body := strings.NewReader(req.FormValue("payload"))
-	if err := m.Load(body); err != nil {
+	if err := l.Load(body); err != nil {
 		log.Println("error loading hook message from github:", err)
 		perform_status(w, ctx, http.StatusInternalServerError)
 		return
 	}
-	m.Workspace = false
-	work_queue <- &m
+	work_queue <- l
+}
+
+func handle_github_hook_package(w http.ResponseWriter, req *http.Request, ctx *Context) {
+	m := &github.HookMessage{Workspace: false}
+	perform_hook(w, req, ctx, m)
 }
 
 func handle_github_hook_workspace(w http.ResponseWriter, req *http.Request, ctx *Context) {
-	var m github.HookMessage
-	body := strings.NewReader(req.FormValue("payload"))
-	if err := m.Load(body); err != nil {
-		log.Println("error loading hook message from github:", err)
-		perform_status(w, ctx, http.StatusInternalServerError)
-		return
-	}
-	m.Workspace = true
-	work_queue <- &m
+	m := &github.HookMessage{Workspace: true}
+	perform_hook(w, req, ctx, m)
+}
+
+func handle_bitbucket_hook_package(w http.ResponseWriter, req *http.Request, ctx *Context) {
+	m := &bitbucket.HookMessage{Workspace: false}
+	perform_hook(w, req, ctx, m)
+}
+
+func handle_bitbucket_hook_workspace(w http.ResponseWriter, req *http.Request, ctx *Context) {
+	m := &bitbucket.HookMessage{Workspace: true}
+	perform_hook(w, req, ctx, m)
 }
