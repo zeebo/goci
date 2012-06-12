@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"time"
+	fp "path/filepath"
 )
 
 type Bytes []byte
@@ -262,4 +263,10 @@ func (t *Test) Finish() {
 
 func (t *Test) WholeID() string {
 	return fmt.Sprintf("%s:%s:%s", t.WorkID, t.BuildID, t.ID)
+}
+
+func (t *Test) BaseName() string {
+	b := fp.Base(t.Path)
+	ext := fp.Ext(b)
+	return b[:len(b)-len(ext)]
 }
