@@ -43,9 +43,20 @@
 <div class="row">
 	<div class="span12">
 		<h2>Bitbucket</h2>
-		<div class="well">
-			Coming soon
-		</div>
+		<table class="table">
+			<thead>
+				<th>Type</th>
+				<th>URL</th>
+			</thead>
+			<tr>
+				<td>Workspace</td>
+				<td>http://goci.me{% reverse "bitbucket_hook_workspace" %}</td>
+			</tr>
+			<tr>
+				<td>Package</td>
+				<td>http://goci.me{% reverse "bitbucket_hook_package" %}</td>
+			</tr>
+		</table>
 	</div>
 </div>
 
