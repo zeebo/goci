@@ -77,17 +77,14 @@ func (h *HookMessage) LoadBytes(p []byte) (err error) {
 }
 
 func (h *HookMessage) RepoPath() (p string) {
-	parsed, err := url.Parse(h.ImportPath())
-	if err != nil {
-		panic(err)
+	parsed := url.URL{
+		Host:   "bitbucket.org",
+		Path:   path.Clean(h.Repository.Absolute_URL),
+		Scheme: "https",
 	}
-
-	switch h.Repository.SCM {
-	case "git":
+	if h.Repository.SCM == "git" {
 		parsed.Scheme = "git"
 		parsed.Path += ".git"
-	case "hg":
-		parsed.Scheme = "https"
 	}
 
 	p = parsed.String()

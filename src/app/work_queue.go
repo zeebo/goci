@@ -22,6 +22,7 @@ func run_work_queue() {
 		if err != nil {
 			w.Error = err.Error()
 			w.cleanup(0, nil)
+			change_state <- StateIdle
 			continue
 		}
 
