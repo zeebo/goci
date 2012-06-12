@@ -29,7 +29,18 @@
 					<td>{% $b.When.Format "Jan 02, 2006 03:04:05 PM" %}</td>
 					<td>{% if $b.Passed %}<span class="label label-success">Passed</span>{% else %}<span class="label label-important">Failed</span>{% end %}</td>
 				</tr>
-	{% end %}
+	{% else %}
+				<tr>
+					{% if $w.Link %}
+					<td><a href="{% $w.Link %}">{% $w.DisplayName %}</a></td>
+					{% else %}
+					<td>{% $w.DisplayName %}</td>
+					{% end %}
+					<td>No builds{% if $w.Error %} - Error building code{% end %}</td>
+					<td>{% $w.When.Format "Jan 02, 2006 03:04:05 PM" %}</td>
+					<td>{% if $w.Error %}<span class="label label-important">Failed</span>{% else %}<span class="label label-success">Passed</span>{% end %}</td>
+				</tr>
+	{% end%}
 {% end %}
 			</table>
 		</div>
