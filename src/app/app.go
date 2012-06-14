@@ -125,6 +125,8 @@ func main() {
 	handlePost("/hooks/github/workspace", handlerFunc(handle_github_hook_workspace), "github_hook_workspace")
 	handlePost("/hooks/bitbucket/package", handlerFunc(handle_bitbucket_hook_package), "bitbucket_hook_package")
 	handlePost("/hooks/bitbucket/workspace", handlerFunc(handle_bitbucket_hook_workspace), "bitbucket_hook_workspace")
+	handlePost("/hooks/google/package/{vcs}", handlerFunc(handle_google_hook_package), "google_hook_package")
+	handlePost("/hooks/google/workspace/{vcs}", handlerFunc(handle_google_hook_workspace), "google_hook_workspace")
 
 	handleGet("/how", handlerFunc(handle_how), "how")
 
