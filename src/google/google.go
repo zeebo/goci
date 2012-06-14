@@ -30,7 +30,7 @@ type Commit struct {
 	Author     string
 	Timestamp  int64
 	Message    string
-	Path_Count string
+	Path_Count int
 
 	Added    []string
 	Modified []string
@@ -76,7 +76,7 @@ func (h *HookMessage) LoadBytes(p []byte) (err error) {
 func (h *HookMessage) RepoPath() (p string) {
 	parsed := url.URL{
 		Host:   "code.google.com",
-		Path:   path.Join("p", h.Project_Name),
+		Path:   path.Join("/p", h.Project_Name),
 		Scheme: "https",
 	}
 	//TODO: support svn

@@ -17,7 +17,7 @@ func (u *unserializeTest) perform(t *testing.T) {
 		return
 	}
 	if !reflect.DeepEqual(ex, u.expect) {
-		t.Errorf("Expeced %+v. Got %+v", u.expect, ex)
+		t.Errorf("Expeced %#v. Got %#v", u.expect, ex)
 	}
 }
 
@@ -25,12 +25,48 @@ type testCase interface {
 	perform(t *testing.T)
 }
 
-const example_packet = ``
+const example_packet = `{
+	"project_name": "goci",
+	"repository_path": "https://code.google.com/p/goci/",
+	"revision_count": 1,
+	"revisions": [
+		{
+			"added": [ "/src/google/google_test.go" ],
+			"author": "jeff <leterip@me.com>",
+			"message": "added stub test file for google messages\n",
+			"modified": [],
+			"path_count": 1,
+			"removed": [],
+			"revision": "49f4264c954ee50aef8cd6826a17a8d1f8500ab1",
+			"timestamp": 1339708892,
+			"url": "http://goci.googlecode.com/git-history/49f4264c954ee50aef8cd6826a17a8d1f8500ab1/"
+		}
+	]
+}`
 
 func TestUnserialize(t *testing.T) {
 	cases := []unserializeTest{
-		{[]byte(example_packet), HookMessage{}},
-	}
+		{[]byte(example_packet), HookMessage{
+			Project_Name:    "goci",
+			Repository_Path: "https://code.google.com/p/goci/",
+			Revision_Count:  1,
+			Commits: []Commit{
+				{
+					Revision:   "49f4264c954ee50aef8cd6826a17a8d1f8500ab1",
+					URL:        "http://goci.googlecode.com/git-history/49f4264c954ee50aef8cd6826a17a8d1f8500ab1/",
+					Author:     "jeff <leterip@me.com>",
+					Timestamp:  1339708892,
+					Message:    "added stub test file for google messages\n",
+					Path_Count: 1,
+					Added:      []string{"/src/google/google_test.go"},
+					Modified:   []string{},
+					Removed:    []string{},
+				},
+			},
+			Workspace: false,
+			Vcs:       nil,
+		},
+		}}
 
 	for _, c := range cases {
 		c.perform(t)
@@ -42,13 +78,12 @@ func TestHookMessagePaths(t *testing.T) {
 	if err := ex.LoadBytes([]byte(example_packet)); err != nil {
 		t.Fatal(err)
 	}
-	if v, ex := ex.RepoPath(), "https://bitbucket.org/zeebo/broker-test"; v != ex {
+	if v, ex := ex.RepoPath(), "https://code.google.com/p/goci"; v != ex {
 		t.Fatalf("Expected %+v. Got %+v", ex, v)
 	}
 	if v, ex := ex.Revisions(), []string{
-		"5f46ab03da45361d8d3b5a35a8f6a54298934c70",
-		"76eb9439c0e7a95c0b47a8036faf25b2bcd54e4c",
+		"49f4264c954ee50aef8cd6826a17a8d1f8500ab1",
 	}; !reflect.DeepEqual(v, ex) {
-		t.Fatalf("Expected %+v. Got %+v", ex, v)
+		t.Fatalf("Expected %#v. Got %#v", ex, v)
 	}
 }
