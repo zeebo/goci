@@ -1,0 +1,6 @@
+{% define "content" %}
+<div class="hero-unit">
+	<h1>200!</h1>
+	<p>Totally ok</p>
+</div>
+{% end %}
