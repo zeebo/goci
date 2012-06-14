@@ -5,6 +5,7 @@ src/*
 !src/github/
 !src/env/
 !src/heroku/
+!src/google/
 !src/killer/
 !src/runner/
 !src/bitbucket/
