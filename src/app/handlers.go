@@ -72,6 +72,7 @@ func handle_how(w http.ResponseWriter, req *http.Request, ctx *Context) {
 		&navBase{"Info", "#info", nil},
 		&navBase{"Github", "#github", nil},
 		&navBase{"Bitbucket", "#bitbucket", nil},
+		&navBase{"Google Code", "#google", nil},
 		&navBase{"General", "#general", nil},
 	}
 	base_execute(w, ctx, tmpl_root("blocks", "how.block"))

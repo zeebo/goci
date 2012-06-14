@@ -59,7 +59,37 @@
 		</table>
 	</div>
 </div>
+</section>
 
+
+<section id="google">
+<div class="row">
+	<div class="span12">
+		<h2>Google Code</h2>
+		<table class="table">
+			<thead>
+				<th>Type</th>
+				<th>URL</th>
+			</thead>
+			<tr>
+				<td>Workspace (git)</td>
+				<td>http://goci.me{% reverse "google_hook_workspace" "vcs" "git" %}</td>
+			</tr>
+			<tr>
+				<td>Workspace (hg)</td>
+				<td>http://goci.me{% reverse "google_hook_workspace" "vcs" "hg" %}</td>
+			</tr>
+			<tr>
+				<td>Package (git)</td>
+				<td>http://goci.me{% reverse "google_hook_package" "vcs" "git" %}</td>
+			</tr>
+			<tr>
+				<td>Package (hg)</td>
+				<td>http://goci.me{% reverse "google_hook_package" "vcs" "hg" %}</td>
+			</tr>
+		</table>
+	</div>
+</div>
 </section>
 
 <section id="general">
