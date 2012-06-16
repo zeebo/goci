@@ -25,8 +25,8 @@ func spawn_runner(cmd string) (proc string, err error) {
 
 func cull_runner(id, proc string) func() {
 	return func() {
-		TestLock.RLock()
-		defer TestLock.RUnlock()
+		active_tests_lock.RLock()
+		defer active_tests_lock.RUnlock()
 
 		if _, ex := active_tests[id]; !ex {
 			return
@@ -67,8 +67,8 @@ func cull_runner(id, proc string) func() {
 }
 
 func error_test(id, msg string) {
-	TestLock.RLock()
-	defer TestLock.RUnlock()
+	active_tests_lock.RLock()
+	defer active_tests_lock.RUnlock()
 
 	log.Println(id, msg)
 
