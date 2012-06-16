@@ -1,10 +1,10 @@
-# Goci
+# GoCI
 
-Goci is a continuous integration server for go that has support for
-github post commit hooks on projects that have the layout like a gopath
-or projects that are packages in the main directory.
+GoCI is a continuous integration server for go that has support for
+github/bitbucket/google code post commit hooks on projects that have
+the layout like a gopath or projects that are packages in the main directory
+(regular, go gettable projects).
 
 ## How to use
 
-Just add http://zeeb.shadynasty.biz/github/hook as a post commit hook.
-Website coming.
+http://goci.me/how
