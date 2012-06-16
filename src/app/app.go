@@ -106,7 +106,7 @@ func main() {
 	//build the nav and subnav
 	base_meta.Nav = navList{
 		&navBase{"Recent", reverse("index"), nil},
-		&navBase{"Projects", reverse("index"), nil},
+		// &navBase{"Projects", reverse("index"), nil},
 		&navBase{"How", reverse("how"), nil},
 	}
 	base_meta.SubNav = navList{}
