@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"worker"
 )
 
 type work_loader interface {
@@ -23,7 +24,7 @@ func perform_hook(w http.ResponseWriter, req *http.Request, ctx *Context, l work
 		perform_status(w, ctx, http.StatusInternalServerError)
 		return
 	}
-	work_queue <- l
+	worker.Schedule(l)
 }
 
 func perform_google_hook(w http.ResponseWriter, req *http.Request, ctx *Context, m *google.HookMessage) {
@@ -41,7 +42,7 @@ func perform_google_hook(w http.ResponseWriter, req *http.Request, ctx *Context,
 		perform_status(w, ctx, http.StatusOK)
 		return
 	}
-	work_queue <- m
+	worker.Schedule(m)
 }
 
 func handle_github_hook_package(w http.ResponseWriter, req *http.Request, ctx *Context) {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/rand"
 	"fmt"
 	"io"
 	"log"
@@ -63,20 +62,4 @@ func serve_static(requestPrefix, filesystemDir string) {
 	fileServer := http.FileServer(http.Dir(filesystemDir))
 	handler := http.StripPrefix(requestPrefix, fileServer)
 	http.Handle(requestPrefix+"/", handler)
-}
-
-func new_id() string {
-	const idSize = 10
-	var (
-		buf [idSize]byte
-		n   int
-	)
-	for n < idSize {
-		m, err := rand.Read(buf[n:])
-		if err != nil {
-			log.Panicf("error generating a random id [%d bytes of %d]: %v", n, idSize, err)
-		}
-		n += m
-	}
-	return fmt.Sprintf("%X", buf)
 }

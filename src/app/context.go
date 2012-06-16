@@ -2,17 +2,17 @@ package main
 
 import (
 	"code.google.com/p/gorilla/sessions"
-	"launchpad.net/mgo"
 	"log"
 	"net/http"
+	"worker"
 )
 
 type Context struct {
 	Session *sessions.Session
 	Meta    *Meta
 	Data    d
-	State   State
-	DB      *mgo.Database
+	State   worker.State
+	Context *worker.Context
 }
 
 func init_context(req *http.Request) (c *Context) {
@@ -24,8 +24,8 @@ func init_context(req *http.Request) (c *Context) {
 		Session: session,
 		Meta:    base_meta.Dup(),
 		Data:    d{},
-		DB:      db.Session.Clone().DB(db_name),
-		State:   current_state,
+		State:   worker.GetState(),
+		Context: worker.NewContext(),
 	}
 
 	if req.URL.Path != "/" {
@@ -41,7 +41,7 @@ func (c *Context) Save(req *http.Request, w http.ResponseWriter) {
 
 func (c *Context) Close() {
 	//perform any cleanup of resources acquired in init_context
-	c.DB.Session.Close()
+	c.Context.Close()
 }
 
 //Called in the base template to flatten all the data into one dictionary

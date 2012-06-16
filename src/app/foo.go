@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"log"
 	"net/http"
+	"worker"
 )
 
 func init() {
@@ -44,6 +45,6 @@ var test_work = &TestWork{
 //our basic handle index that demonstrates how to get data from the context
 //inside a template
 func handle_simple_work(w http.ResponseWriter, req *http.Request, ctx *Context) {
-	work_queue <- test_work
+	worker.Schedule(test_work)
 	log.Println("sent item in")
 }

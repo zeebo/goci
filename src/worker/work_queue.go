@@ -17,6 +17,10 @@ var (
 	mgo_work_queue = make(chan mongoWorkValue)
 )
 
+func Schedule(w builder.Work) {
+	work_queue <- w
+}
+
 type mongoWorkValue struct {
 	ID   bson.ObjectId
 	Work builder.Work
@@ -56,7 +60,7 @@ func run_mgo_work_queue() {
 		}
 
 		//check if the number is bigger than the queue size
-		n, err := db.C(work_coll).Find(d{"processing": false}).Count()
+		n, err := db.C(workqueue).Find(d{"processing": false}).Count()
 		if err != nil {
 			log.Println("unable to check current queue size:", err)
 			continue
@@ -67,7 +71,7 @@ func run_mgo_work_queue() {
 		}
 
 		//add it
-		if err := db.C(work_coll).Insert(mw); err != nil {
+		if err := db.C(workqueue).Insert(mw); err != nil {
 			log.Println("error adding work item into queue:", err)
 		}
 	}
@@ -82,7 +86,7 @@ func run_mgo_queue_dispatcher() {
 	var mw mongoWork
 	for _ = range ticker.C {
 		//grab some work from the queue
-		err := db.C(work_coll).Find(d{"processing": false}).One(&mw)
+		err := db.C(workqueue).Find(d{"processing": false}).One(&mw)
 		if err == mgo.NotFound {
 			continue
 		}
@@ -100,7 +104,7 @@ func run_mgo_queue_dispatcher() {
 		}
 
 		//set it to processing
-		if err := db.C(work_coll).Update(d{"_id": mw.ID}, d{"$set": d{"processing": true}}); err != nil {
+		if err := db.C(workqueue).Update(d{"_id": mw.ID}, d{"$set": d{"processing": true}}); err != nil {
 			log.Println("error updating the work item to being processed:", err)
 			continue
 		}
@@ -110,7 +114,7 @@ func run_mgo_queue_dispatcher() {
 }
 
 func remove_work_item(id bson.ObjectId) {
-	if err := db.C(work_coll).Remove(d{"_id": id}); err != nil {
+	if err := db.C(workqueue).Remove(d{"_id": id}); err != nil {
 		log.Printf("error removing work id %s from database: %s", id, err)
 	}
 }

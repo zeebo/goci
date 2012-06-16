@@ -11,7 +11,7 @@ var (
 )
 
 func spawn_runner(cmd string) (proc string, err error) {
-	if debug {
+	if config.Debug {
 		return
 	}
 
@@ -25,8 +25,8 @@ func spawn_runner(cmd string) (proc string, err error) {
 
 func cull_runner(id, proc string) func() {
 	return func() {
-		active_tests_lock.RLock()
-		defer active_tests_lock.RUnlock()
+		TestLock.RLock()
+		defer TestLock.RUnlock()
 
 		if _, ex := active_tests[id]; !ex {
 			return
@@ -34,7 +34,7 @@ func cull_runner(id, proc string) func() {
 
 		error_test(id, "timeout")
 
-		if debug {
+		if config.Debug {
 			return
 		}
 
@@ -67,8 +67,8 @@ func cull_runner(id, proc string) func() {
 }
 
 func error_test(id, msg string) {
-	active_tests_lock.RLock()
-	defer active_tests_lock.RUnlock()
+	TestLock.RLock()
+	defer TestLock.RUnlock()
 
 	log.Println(id, msg)
 
@@ -81,7 +81,7 @@ func error_test(id, msg string) {
 
 func run_run_scheduler() {
 	for id := range schedule_run {
-		req := build_runner_url(host, id) //TODO: figure out how to do this
+		req := config.BuildURL(id)
 		cmd := fmt.Sprintf("bin/runner %s", req)
 		proc, err := spawn_runner(cmd)
 		if err != nil {

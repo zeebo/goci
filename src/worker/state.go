@@ -31,3 +31,7 @@ func state_manager() {
 	for current_state = range change_state {
 	}
 }
+
+func GetState() State {
+	return current_state
+}

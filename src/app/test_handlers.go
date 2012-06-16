@@ -1,26 +1,21 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"worker"
 )
 
-func build_runner_url(host, id string) (req string) {
-	req = fmt.Sprintf("http://%s%s", host, reverse("test_request", "id", id))
-	return
-}
-
 func handle_test_request(w http.ResponseWriter, req *http.Request, ctx *Context) {
-	active_tests_lock.RLock()
-	defer active_tests_lock.RUnlock()
+	worker.TestLock.RLock()
+	defer worker.TestLock.RUnlock()
 
 	id := req.FormValue(":id")
-	test, ex := active_tests[id]
+	test, ex := worker.GetTest(id)
 	if !ex {
 		log.Printf("test id not found: %q", id)
 		perform_status(w, ctx, http.StatusNotFound)
@@ -43,11 +38,11 @@ func handle_test_request(w http.ResponseWriter, req *http.Request, ctx *Context)
 }
 
 func handle_test_response(w http.ResponseWriter, req *http.Request, ctx *Context) {
-	active_tests_lock.RLock()
-	defer active_tests_lock.RUnlock()
+	worker.TestLock.RLock()
+	defer worker.TestLock.RUnlock()
 
 	id := req.URL.Query().Get(":id")
-	test, ex := active_tests[id]
+	test, ex := worker.GetTest(id)
 	if !ex {
 		log.Printf("test id not found: %q", id)
 		perform_status(w, ctx, http.StatusNotFound)
@@ -64,16 +59,15 @@ func handle_test_response(w http.ResponseWriter, req *http.Request, ctx *Context
 	test.Output = s
 	test.Passed = strings.HasSuffix(s, "\nPASS\n")
 	test.Finish()
-
-	test_complete <- id
+	worker.Complete(test)
 }
 
 func handle_test_error(w http.ResponseWriter, req *http.Request, ctx *Context) {
-	active_tests_lock.RLock()
-	defer active_tests_lock.RUnlock()
+	worker.TestLock.RLock()
+	defer worker.TestLock.RUnlock()
 
 	id := req.URL.Query().Get(":id")
-	test, ex := active_tests[id]
+	test, ex := worker.GetTest(id)
 	if !ex {
 		log.Printf("test id not found: %q", id)
 		perform_status(w, ctx, http.StatusNotFound)
@@ -88,6 +82,5 @@ func handle_test_error(w http.ResponseWriter, req *http.Request, ctx *Context) {
 	}
 	test.Error = string(by)
 	test.Finish()
-
-	test_complete <- id
+	worker.Complete(test)
 }

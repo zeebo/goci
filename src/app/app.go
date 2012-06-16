@@ -3,21 +3,17 @@ package main
 import (
 	"code.google.com/p/gorilla/pat"
 	"code.google.com/p/gorilla/sessions"
-	"heroku"
-	"launchpad.net/mgo"
-	"launchpad.net/mgo/bson"
 	"log"
 	"net/http"
 	"net/url"
 	"path/filepath"
 	"thegoods.biz/tmplmgr"
+	"worker"
 )
 
 const (
-	appname    = "goci"
-	store_key  = "foobar"
-	collection = "worklog"
-	work_coll  = "workqueue"
+	appname   = "goci"
+	store_key = "foobar"
 )
 
 var (
@@ -40,24 +36,10 @@ var (
 		},
 		BaseTitle: "GoCI",
 	}
-	router  = pat.New()
-	db_name = appname
-	db      *mgo.Database
-	hclient *heroku.Client
-)
-
-const (
-	Byte = 1 << (iota * 10)
-	Kilobyte
-	Megabyte
-
-	capsize = 100 * Megabyte
+	router = pat.New()
 )
 
 func main() {
-	//set up our heroku client
-	hclient = heroku.New(need_env("APPNAME"), need_env("APIKEY"))
-
 	//set our compiler mode
 	tmplmgr.CompileMode(mode)
 
@@ -65,60 +47,37 @@ func main() {
 	base_template.Blocks(tmpl_root("*.block"))
 	base_template.Call("reverse", reverse)
 
-	//set up the environment which kicks off the work queue
-	go run_setup()
-
-	//spawn our service goroutines
-	go run_test_scheduler()
-	go run_run_scheduler()
-	go run_saver()
-
-	//spawn the mongo work goroutines
-	go run_mgo_work_queue()
-	go run_mgo_queue_dispatcher()
-
-	//set up the state changer
-	go state_manager()
-	change_state <- StateSetup
-
-	//connect to mongo
-	db_path := "localhost"
+	//get our mongo credentials
+	var db_name, db_path = appname, "localhost"
 	if conf := env("MONGOLAB_URI", ""); conf != "" {
 		db_path = conf
 		parsed, err := url.Parse(conf)
 		if err != nil {
-			log.Fatalf("Error parsing MONGOLAB_URI: %q: %s", conf, err)
+			log.Fatal("Error parsing DATABASE_URL: %q: %s", conf, err)
 		}
 		db_name = parsed.Path[1:]
 	}
 	log.Printf("\tdb_path: %s\n\tdb_name: %s", db_path, db_name)
 
-	db_sess, err := mgo.Dial(db_path)
-	if err != nil {
-		log.Fatalf("error connecting to database: %s", err)
+	//build our config
+	config := worker.Config{
+		Debug:  env("DEBUG", "") != "",
+		App:    need_env("APPNAME"),
+		Api:    need_env("APIKEY"),
+		Name:   db_name,
+		URL:    db_path,
+		GOROOT: need_env("GOROOT"),
+		Host:   need_env("HOST"),
 	}
-	db_sess.SetMode(mgo.Strong, true)
-	db = db_sess.DB(db_name)
 
-	//ensure that the database has the work collection
-	err = db.Run(bson.D{{"create", collection}, {"size", capsize}, {"capped", true}}, nil)
-	if e, ok := err.(*mgo.QueryError); err != nil && (!ok || e.Message != "collection already exists") {
-		log.Fatal("error creating collection: ", err)
-	}
-	log.Println("collection created")
-
-	//set all processing things to false to clean up any old ones
-	err = db.C(work_coll).UpdateAll(d{"processing": true}, d{"$set": d{"processing": false}})
-	if err != nil && err != mgo.NotFound {
-		log.Fatal("error resetting processing values: ", err)
-	}
+	//run the worker setup
+	go worker.Setup(config)
 
 	//set up our handlers
 	handleGet("/bins/{id}", handlerFunc(handle_test_request), "test_request")
 	handlePost("/bins/{id}/err", handlerFunc(handle_test_error), "test_error") //more specific one has to be listed first
 	handlePost("/bins/{id}", handlerFunc(handle_test_response), "test_response")
 
-	handleGet("/status/{id}", handlerFunc(handle_work_status), "status")
 	handleGet("/build/{id}", handlerFunc(handle_build_info), "build_info")
 
 	handlePost("/hooks/github/package", handlerFunc(handle_github_hook_package), "github_hook_package")
@@ -130,8 +89,8 @@ func main() {
 
 	handleGet("/how", handlerFunc(handle_how), "how")
 
+	//debug handler
 	handleRequest("/foo", handlerFunc(handle_simple_work), "foo")
-	handleRequest("/dump/{id}", handlerFunc(handle_dump), "dump")
 
 	//add our index with 404 support
 	handleRequest("/", handlerFunc(handle_index), "index")

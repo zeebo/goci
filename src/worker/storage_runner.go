@@ -21,7 +21,7 @@ func run_saver() {
 		w.Freeze()
 
 		//perform the save
-		if err := db.C(collection).Insert(w); err != nil {
+		if err := db.C(worklog).Insert(w); err != nil {
 			log.Printf("%s error saving: %s", w.WholeID(), err)
 		}
 	}
@@ -37,7 +37,7 @@ func cap(s string, max int) (v string) {
 
 //helper load function that auto unthaws things
 func load(sel interface{}) (w *Work, err error) {
-	err = db.C(collection).Find(sel).One(&w)
+	err = db.C(worklog).Find(sel).One(&w)
 	if err == nil {
 		w.Thaw()
 	}
