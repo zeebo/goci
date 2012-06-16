@@ -17,13 +17,16 @@ const (
 )
 
 var (
-	mode          = tmplmgr.Development
+	mode = tmplmgr.Production
+
+	//TODO: make sure these things happen after the env import
 	assets_dir    = filepath.Join(env("APPROOT", ""), "assets")
 	template_dir  = filepath.Join(env("APPROOT", ""), "templates")
 	dist_dir      = filepath.Join(env("APPROOT", ""), "dist")
 	base_template = tmplmgr.Parse(tmpl_root("base.tmpl"))
-	store         = sessions.NewCookieStore([]byte(store_key))
-	base_meta     = &Meta{
+
+	store     = sessions.NewCookieStore([]byte(store_key))
+	base_meta = &Meta{
 		CSS: list{
 			"bootstrap-superhero.min.css",
 			"bootstrap-responsive.min.css",
@@ -40,6 +43,11 @@ var (
 )
 
 func main() {
+	//revert to development mode if debug is set
+	if env("DEBUG", "") != "" {
+		mode = tmplmgr.Development
+	}
+
 	//set our compiler mode
 	tmplmgr.CompileMode(mode)
 
