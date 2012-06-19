@@ -55,11 +55,3 @@ func need_env(key string) (val string) {
 	}
 	return
 }
-
-// Serves static files from filesystemDir when any request is made matching
-// requestPrefix
-func serve_static(requestPrefix, filesystemDir string) {
-	fileServer := http.FileServer(http.Dir(filesystemDir))
-	handler := http.StripPrefix(requestPrefix, fileServer)
-	http.Handle(requestPrefix+"/", handler)
-}

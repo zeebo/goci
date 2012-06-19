@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"sync"
 	"thegoods.biz/httpbuf"
+	"time"
 )
 
 type runner interface {
@@ -77,6 +80,76 @@ func handlePost(pattern string, handler http.Handler, name string) {
 func handleRequest(pattern string, handler http.Handler, name string) {
 	handleGet(pattern, handler, name)
 	handlePost(pattern, handler, name)
+}
+
+type staticHandler struct {
+	h   http.Handler
+	buf *httpbuf.Buffer
+	o   sync.Once
+}
+
+func (s *staticHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if s.buf == nil {
+		s.o.Do(func() {
+			s.buf = new(httpbuf.Buffer)
+			s.h.ServeHTTP(s.buf, req)
+
+			//remove any Set-Cookie headers from the map as this
+			//could cause session jacking!
+			delete(s.buf.Header(), "Set-Cookie")
+		})
+	}
+	s.buf.Apply(w)
+}
+
+//cache takes a handler and wraps it in a staticHandler which caches the output
+//forever. Obviously this is unsuitable for any dynamic content.
+func cache(h http.Handler) http.Handler {
+	return &staticHandler{h: h}
+}
+
+func timelog(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		defer func(n time.Time) { log.Println("time spent:", time.Since(n)) }(time.Now())
+		h.ServeHTTP(w, req)
+	})
+}
+
+// Serves static files from filesystemDir when any request is made matching
+// requestPrefix
+func serve_static(requestPrefix, filesystemDir string) {
+	fileServer := http.FileServer(http.Dir(filesystemDir))
+	handler := http.StripPrefix(requestPrefix, fileServer)
+	http.Handle(requestPrefix+"/", handler)
+}
+
+func serve_static_cached(requestPrefix, filesystemDir string) {
+	fileServer := http.FileServer(http.Dir(filesystemDir))
+	handler := http.StripPrefix(requestPrefix, fileServer)
+	cached := path_cache(handler)
+	http.Handle(requestPrefix+"/", cached)
+}
+
+type pathCacher struct {
+	h http.Handler
+	m map[string]*staticHandler
+}
+
+func (p *pathCacher) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	s, ex := p.m[req.URL.Path]
+	if !ex {
+		s = &staticHandler{h: p.h}
+		p.m[req.URL.Path] = s
+	}
+	s.ServeHTTP(w, req)
+}
+
+//path_cache takes a handler and makes each path a separate cached handler.
+func path_cache(h http.Handler) http.Handler {
+	return &pathCacher{
+		h: h,
+		m: map[string]*staticHandler{},
+	}
 }
 
 func reverse(name string, things ...interface{}) string {

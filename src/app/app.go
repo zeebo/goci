@@ -100,7 +100,7 @@ func main() {
 	handlePost("/hooks/google/package/{vcs}", handlerFunc(handle_google_hook_package), "google_hook_package")
 	handlePost("/hooks/google/workspace/{vcs}", handlerFunc(handle_google_hook_workspace), "google_hook_workspace")
 
-	handleGet("/how", handlerFunc(handle_how), "how")
+	handleGet("/how", cache(handlerFunc(handle_how)), "how")
 
 	//debug handler
 	handleRequest("/foo", handlerFunc(handle_simple_work), "foo")
@@ -118,7 +118,8 @@ func main() {
 
 	//set up our router
 	http.Handle("/", router)
-	serve_static("/assets", asset_root(""))
+	// serve_static("/assets", asset_root(""))
+	serve_static_cached("/assets", asset_root(""))
 	if err := http.ListenAndServe(":"+env("PORT", "9080"), nil); err != nil {
 		log.Fatal(err)
 	}
