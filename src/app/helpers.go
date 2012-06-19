@@ -21,6 +21,13 @@ func base_execute(w io.Writer, ctx interface{}, blocks ...string) (err error) {
 
 func perform_status(w http.ResponseWriter, ctx *Context, status int) {
 	w.WriteHeader(status)
+
+	//this status is for a machine if there is no context
+	if ctx == nil {
+		return
+	}
+
+	//display a nice status for the user
 	block := fmt.Sprintf(tmpl_root("status", "%d.block"), status)
 	if err := base_template.Execute(w, ctx, block); err != nil {
 		log.Println(err)

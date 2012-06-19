@@ -86,26 +86,26 @@ func main() {
 		log.Print("setup complete")
 	}()
 
-	//set up our handlers
-	handleGet("/bins/{id}", handlerFunc(handle_test_request), "test_request")
-	handlePost("/bins/{id}/err", handlerFunc(handle_test_error), "test_error") //more specific one has to be listed first
-	handlePost("/bins/{id}", handlerFunc(handle_test_response), "test_response")
+	//these handlers don't need contexts or anything special as they aren't seen by humans
+	handleGet("/bins/{id}", http.HandlerFunc(handle_test_request), "test_request")
+	handlePost("/bins/{id}/err", http.HandlerFunc(handle_test_error), "test_error") //more specific one has to be listed first
+	handlePost("/bins/{id}", http.HandlerFunc(handle_test_response), "test_response")
 
-	handleGet("/build/{id}", handlerFunc(handle_build_info), "build_info")
-
-	handlePost("/hooks/github/package", handlerFunc(handle_github_hook_package), "github_hook_package")
-	handlePost("/hooks/github/workspace", handlerFunc(handle_github_hook_workspace), "github_hook_workspace")
-	handlePost("/hooks/bitbucket/package", handlerFunc(handle_bitbucket_hook_package), "bitbucket_hook_package")
-	handlePost("/hooks/bitbucket/workspace", handlerFunc(handle_bitbucket_hook_workspace), "bitbucket_hook_workspace")
-	handlePost("/hooks/google/package/{vcs}", handlerFunc(handle_google_hook_package), "google_hook_package")
-	handlePost("/hooks/google/workspace/{vcs}", handlerFunc(handle_google_hook_workspace), "google_hook_workspace")
-
-	handleGet("/how", cache(handlerFunc(handle_how)), "how")
+	//hooks that don't need to be seen by humans
+	handlePost("/hooks/github/package", http.HandlerFunc(handle_github_hook_package), "github_hook_package")
+	handlePost("/hooks/github/workspace", http.HandlerFunc(handle_github_hook_workspace), "github_hook_workspace")
+	handlePost("/hooks/bitbucket/package", http.HandlerFunc(handle_bitbucket_hook_package), "bitbucket_hook_package")
+	handlePost("/hooks/bitbucket/workspace", http.HandlerFunc(handle_bitbucket_hook_workspace), "bitbucket_hook_workspace")
+	handlePost("/hooks/google/package/{vcs}", http.HandlerFunc(handle_google_hook_package), "google_hook_package")
+	handlePost("/hooks/google/workspace/{vcs}", http.HandlerFunc(handle_google_hook_workspace), "google_hook_workspace")
 
 	//debug handler
 	handleRequest("/foo", handlerFunc(handle_simple_work), "foo")
 
-	//add our index with 404 support
+	handleGet("/build/{id}", handlerFunc(handle_build_info), "build_info")
+	handleGet("/how", cache(handlerFunc(handle_how)), "how")
+
+	//this needs to go last due to how the gorilla/mux package matches (first rather than most)
 	handleRequest("/", handlerFunc(handle_index), "index")
 
 	//build the nav and subnav
