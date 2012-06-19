@@ -21,31 +21,42 @@ const (
 	Kilobyte
 	Megabyte
 
-	capsize = 100 * Megabyte
+	capsize = 75 * Megabyte
 )
 
 //collection names
 const (
 	worklog   = "worklog"
 	workqueue = "workqueue"
+	testlog   = "testlog"
 )
 
 //helper type
 type d map[string]interface{}
 
+func create_capped_collection(name string) error {
+	err := db.Run(bson.D{{"create", name}, {"size", capsize}, {"capped", true}}, nil)
+	if e, ok := err.(*mgo.QueryError); err != nil && (!ok || e.Message != "collection already exists") {
+		return err
+	}
+	return nil
+}
+
+var goroutine_spawn sync.Once
+
 //run the setup to run the work
-func Setup(c Config) {
-	//spawn our service goroutines
-	go run_test_scheduler()
-	go run_run_scheduler()
-	go run_saver()
+func Setup(c Config) error {
+	//spawn our service goroutines once
+	goroutine_spawn.Do(func() {
+		go run_test_scheduler()
+		go run_run_scheduler()
+		go run_saver()
+		go run_mgo_work_queue()
+		go run_mgo_queue_dispatcher()
+		go state_manager()
+	})
 
-	//spawn the mongo work goroutines
-	go run_mgo_work_queue()
-	go run_mgo_queue_dispatcher()
-
-	//set up the state changer
-	go state_manager()
+	//set our state as setup
 	change_state <- StateSetup
 
 	//store the config
@@ -61,16 +72,21 @@ func Setup(c Config) {
 	db = config.BuildMongoDatabase()
 
 	//make sure that mongo is set up properly
-	err := db.Run(bson.D{{"create", worklog}, {"size", capsize}, {"capped", true}}, nil)
-	if e, ok := err.(*mgo.QueryError); err != nil && (!ok || e.Message != "collection already exists") {
-		log.Fatal("error creating collection: ", err)
+	collections := []string{
+		worklog,
+		// testlog,
 	}
-	log.Println("collection created")
+	for _, c := range collections {
+		if err := create_capped_collection(c); err != nil {
+			return err
+		}
+		log.Println("created collection:", c)
+	}
 
-	//set all processing things to false to clean up any old ones
-	err = db.C(workqueue).UpdateAll(d{"processing": true}, d{"$set": d{"processing": false}})
+	//set all processing things to false to clean up any old ones (doesn't scale)
+	err := db.C(workqueue).UpdateAll(d{"processing": true}, d{"$set": d{"processing": false}})
 	if err != nil && err != mgo.NotFound {
-		log.Fatal("error resetting processing values: ", err)
+		return err
 	}
 
 	log.Println("running setup...")
@@ -79,30 +95,36 @@ func Setup(c Config) {
 	//ensure we have the go tool and vcs in parallel
 	var group sync.WaitGroup
 	group.Add(2)
+	errors := make(chan error, 2)
 
 	//check the go tool
 	go func() {
 		if err := setup.EnsureTool(); err != nil {
-			log.Fatal(err)
+			errors <- err
 		}
-		log.Println("tooling complete")
 		group.Done()
 	}()
 
 	//check for hg + bzr
 	go func() {
 		if err := setup.EnsureVCS(); err != nil {
-			log.Fatal(err)
+			errors <- err
 		}
-		log.Println("vcs complete")
 		group.Done()
 	}()
 
 	group.Wait()
 
-	log.Println("setup complete. running queue")
+	//pull an error out if it occured
+	select {
+	case err := <-errors:
+		return err
+	default:
+	}
+
+	//no error so we're good!
 	change_state <- StateIdle
 
-	//run our processing queue
 	go run_work_queue()
+	return nil
 }

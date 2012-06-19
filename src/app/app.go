@@ -79,7 +79,12 @@ func main() {
 	}
 
 	//run the worker setup
-	go worker.Setup(config)
+	go func() {
+		if err := worker.Setup(config); err != nil {
+			log.Fatal("error during setup:", err)
+		}
+		log.Print("setup complete")
+	}()
 
 	//set up our handlers
 	handleGet("/bins/{id}", handlerFunc(handle_test_request), "test_request")
