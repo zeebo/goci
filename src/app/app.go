@@ -118,8 +118,7 @@ func main() {
 
 	//set up our router
 	http.Handle("/", router)
-	// serve_static("/assets", asset_root(""))
-	serve_static_cached("/assets", asset_root(""))
+	serve_static("/assets", asset_root(""))
 	if err := http.ListenAndServe(":"+env("PORT", "9080"), nil); err != nil {
 		log.Fatal(err)
 	}
