@@ -23,7 +23,7 @@
 					{% else %}
 					<td>{% $w.DisplayName %}</td>
 					{% end %}
-					<td><a href="{% reverse "build_info" "id" $b.ID %}">{% $b.Revision %}</a></td>
+					<td><a href="{% reverse "build_info" "id" $b.ID %}" class="fixed">{% $b.Revision %}</a></td>
 					<td>{% with $w.When.Local %}{% .Format "Jan 2, 2006 3:04:05 PM" %}{% end %}</td>
 					<td>{% if $b.Passed %}<span class="label label-success">Passed</span>{% else %}<span class="label label-important">Failed</span>{% end %}</td>
 				</tr>

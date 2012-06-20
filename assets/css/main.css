@@ -11,11 +11,17 @@ a.toggles {
   color:white;
   padding:10px 20px;
 }
+a.toggles:hover {
+  text-decoration: none;
+}
 .sidebar-nav {
   padding: 9px 0;
 }
 .no-sidebar {
   margin-left:0 !important;
+}
+.fixed {
+  font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
 }
 
 /* Subnav */
