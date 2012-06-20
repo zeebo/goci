@@ -75,6 +75,9 @@ func get(gopath string, packs ...string) (err error) {
 	return
 }
 
+const listTemplate = `{{ range .TestImports }}{{ . }}
+{{ end }}`
+
 func list(gopath string) (packs []string, err error) {
 	cmd := gopathCmd(gopath, "list", "./...")
 	var buf bytes.Buffer
@@ -100,6 +103,46 @@ func list(gopath string) (packs []string, err error) {
 			packs = append(packs, tr)
 		}
 	}
+
+	//list all the imports for the test files
+	cmd = gopathCmd(gopath, "list", "-f", listTemplate, "./...")
+	buf.Reset()
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+	cmd.Dir = gopath
+	err = cmd.Run()
+	if err != nil {
+		err = &cmdError{
+			Msg:    "Error listing the packages",
+			Err:    err.Error(),
+			Args:   cmd.Args,
+			Output: buf.String(),
+		}
+		packs = nil
+		return
+	}
+
+	//merge in the test imports
+	for _, p := range strings.Split(buf.String(), "\n") {
+		if strings.HasPrefix(p, "_") {
+			continue
+		}
+		if tr := strings.TrimSpace(p); len(tr) > 0 {
+			//do a search for tr
+			var found bool
+			for _, c := range packs {
+				if c == tr {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				packs = append(packs, tr)
+			}
+		}
+	}
+
 	return
 }
 
