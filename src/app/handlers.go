@@ -111,6 +111,17 @@ func handle_work_json(w http.ResponseWriter, req *http.Request, ctx *Context) {
 	}
 }
 
+func handle_work_html(w http.ResponseWriter, req *http.Request, ctx *Context) {
+	mw, err := worker.CurrentWork(ctx.Context)
+	if err != nil {
+		internal_error(w, req, ctx, err)
+	}
+	err = current_template.Execute(w, mw)
+	if err != nil {
+		internal_error(w, req, ctx, err)
+	}
+}
+
 func handle_all(w http.ResponseWriter, req *http.Request, ctx *Context) {
 	max, err := worker.CountWork(ctx.Context)
 	if err != nil {
@@ -120,7 +131,7 @@ func handle_all(w http.ResponseWriter, req *http.Request, ctx *Context) {
 
 	p := NewPagination(max, req.URL.Query())
 	low, hi := p.Range()
-	log.Println(low, hi)
+
 	ws, err := worker.WorkInRange(ctx.Context, low, hi)
 	if err != nil {
 		internal_error(w, req, ctx, err)

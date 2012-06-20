@@ -22,11 +22,12 @@ var (
 	mode = tmplmgr.Production
 
 	//TODO: make sure these things happen after the env import
-	assets_dir      = filepath.Join(env("APPROOT", ""), "assets")
-	template_dir    = filepath.Join(env("APPROOT", ""), "templates")
-	dist_dir        = filepath.Join(env("APPROOT", ""), "dist")
-	base_template   = tmplmgr.Parse(tmpl_root("base.tmpl"))
-	recent_template = tmplmgr.Parse(tmpl_root("recent.tmpl"))
+	assets_dir       = filepath.Join(env("APPROOT", ""), "assets")
+	template_dir     = filepath.Join(env("APPROOT", ""), "templates")
+	dist_dir         = filepath.Join(env("APPROOT", ""), "dist")
+	base_template    = tmplmgr.Parse(tmpl_root("base.tmpl"))
+	recent_template  = tmplmgr.Parse(tmpl_root("recent.tmpl"))
+	current_template = tmplmgr.Parse(tmpl_root("current.tmpl"))
 
 	store     = sessions.NewCookieStore([]byte(store_key))
 	base_meta = &Meta{
@@ -40,6 +41,7 @@ var (
 			"jquery-ui.min.js",
 			"bootstrap.js",
 			"status.js",
+			"main.js",
 		},
 		BaseTitle: "GoCI",
 	}
@@ -60,6 +62,7 @@ func main() {
 	base_template.Call("reverse", reverse)
 	recent_template.Blocks(tmpl_root("blocks", "recent.block"))
 	recent_template.Call("reverse", reverse)
+	current_template.Blocks(tmpl_root("blocks", "current.block"))
 
 	//get our mongo credentials
 	var db_name, db_path = appname, "localhost"
@@ -109,7 +112,7 @@ func main() {
 	handleRequest("/foo", handlerFunc(handle_simple_work), "foo")
 
 	handleGet("/build/{id}", handlerFunc(handle_build_info), "build_info")
-	// handleGet("/current/html", handlerFunc(handle_work_html), "current_html")
+	handleGet("/current/html", handlerFunc(handle_work_html), "current_html")
 	handleGet("/current", handlerFunc(handle_work_json), "current")
 	handleGet("/recent/html", handlerFunc(handle_recent_html), "recent_html")
 	handleGet("/recent", handlerFunc(handle_recent_json), "recent")

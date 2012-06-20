@@ -1,0 +1,12 @@
+{% define "current" %}
+      <div class="well sidebar-nav">
+        <ul class="nav nav-list">
+          <li class="nav-header">Queue</li>
+          {% range $w := . %}
+          <li{% if $w.Processing %} class="active"{% end %}><a href="#">{% $w.ImportPath %}</a></li>
+          {% else %}
+          <li><a href="#">Empty</a></li>
+          {% end %}
+        </ul>
+      </div><!--/.well -->
+{% end %}

@@ -6,7 +6,7 @@
       </div>
 
 {% if .Recent %}
-<div class="row" id="recent">
+<div class="row-fluid" id="recent">
 {% template "recent" .Recent %}
 </div>
 {% end %}

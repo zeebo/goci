@@ -1,6 +1,6 @@
 {% define "content" %}
 <section id="info">
-<div class="row">
+<div class="row-fluid">
 	<div class="span12">
 		<h2>Info</h2>
 		<div class="well">
@@ -18,7 +18,7 @@
 </section>
 
 <section id="github">
-<div class="row">
+<div class="row-fluid">
 	<div class="span12">
 		<h2>Github</h2>
 		<table class="table">
@@ -40,7 +40,7 @@
 </section>
 
 <section id="bitbucket">
-<div class="row">
+<div class="row-fluid">
 	<div class="span12">
 		<h2>Bitbucket</h2>
 		<table class="table">
@@ -63,7 +63,7 @@
 
 
 <section id="google">
-<div class="row">
+<div class="row-fluid">
 	<div class="span12">
 		<h2>Google Code</h2>
 		<table class="table">
@@ -93,7 +93,7 @@
 </section>
 
 <section id="general">
-<div class="row">
+<div class="row-fluid">
 	<div class="span12">
 		<h2>General</h2>
 		<div class="well">

@@ -2,6 +2,22 @@ body {
   padding-bottom: 40px;
 }
 
+a.toggles {
+  position:fixed;
+  left:0;
+  bottom:0;
+  display:block;
+  background-color:black;
+  color:white;
+  padding:10px 20px;
+}
+.sidebar-nav {
+  padding: 9px 0;
+}
+.no-sidebar {
+  margin-left:0 !important;
+}
+
 /* Subnav */
 .subnav {
   width: 100%;
