@@ -120,6 +120,10 @@ func main() {
 	handleGet("/how", cache(handlerFunc(handle_how)), "how")
 	handleGet("/all", handlerFunc(handle_all), "all")
 
+	//project views, must bypass pat on the first one
+	router.Handle("/project/{import:.*}", handlerFunc(handle_project_detail)).Name("project_detail")
+	handleGet("/project", handlerFunc(handle_project_list), "project_list")
+
 	//this needs to go last due to how the gorilla/mux package matches (first rather than most)
 	handleRequest("/", handlerFunc(handle_index), "index")
 
@@ -128,6 +132,7 @@ func main() {
 		&navBase{"Recent", reverse("index"), nil},
 		// &navBase{"Projects", reverse("index"), nil},
 		&navBase{"All", reverse("all"), nil},
+		&navBase{"List", reverse("project_list"), nil},
 		&navBase{"How", reverse("how"), nil},
 	}
 	base_meta.SubNav = navList{}

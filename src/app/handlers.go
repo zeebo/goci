@@ -83,6 +83,7 @@ func handle_recent_html(w http.ResponseWriter, req *http.Request, ctx *Context) 
 		internal_error(w, req, ctx, err)
 		return
 	}
+	w.Header().Set("Content-Type", "text/html")
 	err = recent_template.Execute(w, ws)
 	if err != nil {
 		internal_error(w, req, ctx, err)
@@ -116,6 +117,7 @@ func handle_work_html(w http.ResponseWriter, req *http.Request, ctx *Context) {
 	if err != nil {
 		internal_error(w, req, ctx, err)
 	}
+	w.Header().Set("Content-Type", "text/html")
 	err = current_template.Execute(w, mw)
 	if err != nil {
 		internal_error(w, req, ctx, err)
@@ -128,11 +130,50 @@ func handle_all(w http.ResponseWriter, req *http.Request, ctx *Context) {
 		internal_error(w, req, ctx, err)
 		return
 	}
+	w.Header().Set("Content-Type", "text/html")
 
 	p := NewPagination(max, req.URL.Query())
 	low, hi := p.Range()
 
 	ws, err := worker.WorkInRange(ctx.Context, low, hi)
+	if err != nil {
+		internal_error(w, req, ctx, err)
+		return
+	}
+
+	ctx.Set("Work", ws)
+	ctx.Set("Pagination", p)
+	base_execute(w, ctx, tmpl_root("blocks", "all.block"), tmpl_root("blocks", "recent.block"))
+}
+
+func handle_project_list(w http.ResponseWriter, req *http.Request, ctx *Context) {
+	paths, err := worker.WorkImportPaths(ctx.Context)
+	if err != nil {
+		internal_error(w, req, ctx, err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html")
+
+	ctx.Set("Paths", paths)
+	base_execute(w, ctx, tmpl_root("blocks", "project", "list.block"))
+}
+
+func handle_project_detail(w http.ResponseWriter, req *http.Request, ctx *Context) {
+	path := req.FormValue(":import")
+	if path == "" {
+		perform_status(w, ctx, http.StatusNotFound)
+		return
+	}
+	max, err := worker.CountWorkFor(ctx.Context, path)
+	if err != nil {
+		internal_error(w, req, ctx, err)
+		return
+	}
+
+	p := NewPagination(max, req.URL.Query())
+	low, hi := p.Range()
+
+	ws, err := worker.WorkWithImportPathInRange(ctx.Context, path, low, hi)
 	if err != nil {
 		internal_error(w, req, ctx, err)
 		return

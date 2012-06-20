@@ -1,0 +1,20 @@
+{% define "content" %}
+{% template "pagination" .Pagination %}
+<div class="row-fluid">
+	<div class="span12">
+		<div class="well">
+			<table class="table">
+				<thead>
+					<th>Project</th>
+				</thead>
+{% range $p := .Paths %}
+				<tr>
+					<td><a href="{% reverse "project_detail" "import" $p %}">{% $p %}</a></td>
+				</tr>
+{% end %}
+			</table>
+		</div>
+	</div>
+</div>
+{% template "pagination" .Pagination %}
+{% end %}
