@@ -92,14 +92,5 @@
 </div>
 </section>
 
-<section id="general">
-<div class="row-fluid">
-	<div class="span12">
-		<h2>General</h2>
-		<div class="well">
-			Coming soon
-		</div>
-	</div>
-</div>
 </section>
 {% end %}
