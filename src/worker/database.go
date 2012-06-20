@@ -1,7 +1,7 @@
 package worker
 
 func GetRecentWork(ctx *Context, limit int) (ws []*Work, err error) {
-	err = ctx.db.C(worklog).Find(nil).Sort(d{"$natural": -1}).Limit(10).All(&ws)
+	err = ctx.db.C(worklog).Find(nil).Sort(d{"$natural": -1}).Limit(limit).All(&ws)
 	return
 }
 
