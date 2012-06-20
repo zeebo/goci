@@ -29,7 +29,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </a>
-          <span class="brand" style="float: right">Status: {% .State %}</span>
+          <span class="brand" style="float: right">Status: <span id="status">{% .State %}</span></span>
           <div class="nav-collapse">
             <ul class="nav">
               {% template "nav" . %}

@@ -64,6 +64,11 @@ func handle_how(w http.ResponseWriter, req *http.Request, ctx *Context) {
 	base_execute(w, ctx, tmpl_root("blocks", "how.block"))
 }
 
+func handle_status(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-type", "text/plain")
+	fmt.Fprint(w, worker.GetState())
+}
+
 func send_json(w http.ResponseWriter, val interface{}) (err error) {
 	w.Header().Set("Content-type", "application/json")
 	enc := json.NewEncoder(w)

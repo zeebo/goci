@@ -38,6 +38,7 @@ var (
 			"jquery-ui.min.js",
 			"bootstrap.js",
 			"recent.js",
+			"status.js",
 		},
 		BaseTitle: "GoCI",
 	}
@@ -111,6 +112,7 @@ func main() {
 	handleGet("/current", handlerFunc(handle_work_json), "current")
 	handleGet("/recent/html", handlerFunc(handle_recent_html), "recent_html")
 	handleGet("/recent", handlerFunc(handle_recent_json), "recent")
+	handleGet("/status", http.HandlerFunc(handle_status), "status")
 	handleGet("/how", cache(handlerFunc(handle_how)), "how")
 
 	//this needs to go last due to how the gorilla/mux package matches (first rather than most)
