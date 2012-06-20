@@ -22,7 +22,7 @@ func handle_index(w http.ResponseWriter, req *http.Request, ctx *Context) {
 		return
 	}
 	ctx.Set("Recent", ws)
-	base_execute(w, ctx, tmpl_root("blocks", "index.block"))
+	base_execute(w, ctx, tmpl_root("blocks", "index.block"), tmpl_root("blocks", "recent.block"))
 }
 
 func handle_build_info(w http.ResponseWriter, req *http.Request, ctx *Context) {

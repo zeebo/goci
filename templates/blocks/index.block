@@ -6,45 +6,8 @@
       </div>
 
 {% if .Recent %}
-<div class="row">
-	<div class="span12">
-		<div class="well">
-			<h2>Recent Results</h2>
-			<table class="table">
-				<thead>
-					<th>Project</th>
-					<th>Revision</th>
-					<th>Date</th>
-					<th>Status</th>
-				</thead>
-{% range $w := .Recent %}
-	{% range $b := $w.Builds %}
-				<tr>
-					{% if $w.Link %}
-					<td><a href="{% $w.Link %}">{% $w.DisplayName %}</a></td>
-					{% else %}
-					<td>{% $w.DisplayName %}</td>
-					{% end %}
-					<td><a href="{% reverse "build_info" "id" $b.ID %}">{% $b.Revision %}</a></td>
-					<td>{% with $w.When.Local %}{% .Format "Jan 2, 2006 3:04:05 PM" %}{% end %}</td>
-					<td>{% if $b.Passed %}<span class="label label-success">Passed</span>{% else %}<span class="label label-important">Failed</span>{% end %}</td>
-				</tr>
-	{% else %}
-				<tr>
-					{% if $w.Link %}
-					<td><a href="{% $w.Link %}">{% $w.DisplayName %}</a></td>
-					{% else %}
-					<td>{% $w.DisplayName %}</td>
-					{% end %}
-					<td>No builds{% if $w.Error %} - Error building code{% end %}</td>
-					<td>{% with $w.When.Local %}{% .Format "Jan 2, 2006 3:04:05 PM" %}{% end %}</td>
-					<td>{% if $w.Error %}<span class="label label-important">Failed</span>{% else %}<span class="label label-success">Passed</span>{% end %}</td>
-				</tr>
-	{% end%}
-{% end %}
-			</table>
-		</div>
-	</div>
+<div class="row" id="recent">
+{% template "recent" .Recent %}
 </div>
 {% end %}
 {% end %}
