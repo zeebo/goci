@@ -109,3 +109,24 @@ func handle_work_json(w http.ResponseWriter, req *http.Request, ctx *Context) {
 		log.Println("error responding with json:", err)
 	}
 }
+
+func handle_all(w http.ResponseWriter, req *http.Request, ctx *Context) {
+	max, err := worker.CountWork(ctx.Context)
+	if err != nil {
+		internal_error(w, req, ctx, err)
+		return
+	}
+
+	p := NewPagination(max, req.URL.Query())
+	low, hi := p.Range()
+	log.Println(low, hi)
+	ws, err := worker.WorkInRange(ctx.Context, low, hi)
+	if err != nil {
+		internal_error(w, req, ctx, err)
+		return
+	}
+
+	ctx.Set("Work", ws)
+	ctx.Set("Pagination", p)
+	base_execute(w, ctx, tmpl_root("blocks", "all.block"), tmpl_root("blocks", "recent.block"))
+}

@@ -116,6 +116,7 @@ func main() {
 	handleGet("/recent", handlerFunc(handle_recent_json), "recent")
 	handleGet("/status", http.HandlerFunc(handle_status), "status")
 	handleGet("/how", cache(handlerFunc(handle_how)), "how")
+	handleGet("/all", handlerFunc(handle_all), "all")
 
 	//this needs to go last due to how the gorilla/mux package matches (first rather than most)
 	handleRequest("/", handlerFunc(handle_index), "index")
@@ -124,6 +125,7 @@ func main() {
 	base_meta.Nav = navList{
 		&navBase{"Recent", reverse("index"), nil},
 		// &navBase{"Projects", reverse("index"), nil},
+		&navBase{"All", reverse("all"), nil},
 		&navBase{"How", reverse("how"), nil},
 	}
 	base_meta.SubNav = navList{}

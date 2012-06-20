@@ -14,3 +14,14 @@ func CurrentWork(ctx *Context) (w []*mongoWork, err error) {
 	err = ctx.db.C(workqueue).Find(nil).Limit(queue_size).All(&w)
 	return
 }
+
+func CountWork(ctx *Context) (n int, err error) {
+	n, err = ctx.db.C(worklog).Find(nil).Count()
+	return
+}
+
+func WorkInRange(ctx *Context, low, hi int) (ws []*Work, err error) {
+	count := hi - low + 1
+	err = ctx.db.C(worklog).Find(nil).Skip(low).Limit(count).All(&ws)
+	return
+}

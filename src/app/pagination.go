@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"net/url"
 	"strconv"
 )
@@ -13,8 +14,8 @@ type Pagination struct {
 }
 
 const (
-	pagination_perpage = "perpage"
-	pagination_current = "page"
+	perpage = "perpage"
+	current = "page"
 )
 
 func NewPagination(max int, query url.Values) (p *Pagination) {
@@ -23,11 +24,11 @@ func NewPagination(max int, query url.Values) (p *Pagination) {
 		PerPage: 20,
 		Current: 1,
 	}
-	per_page := query.Get(pagination_perpage)
+	per_page := query.Get(perpage)
 	if n, err := strconv.ParseInt(per_page, 10, 32); err == nil {
 		p.PerPage = int(n)
 	}
-	current := query.Get(pagination_current)
+	current := query.Get(current)
 	if n, err := strconv.ParseInt(current, 10, 32); err == nil {
 		p.Current = int(n)
 	}
@@ -40,13 +41,6 @@ func NewPagination(max int, query url.Values) (p *Pagination) {
 		p.PerPage = 1
 	}
 	return
-}
-
-func (p *Pagination) PageLink(n int) string {
-	return url.Values{
-		pagination_perpage: {fmt.Sprint(p.PerPage)},
-		pagination_current: {fmt.Sprint(n)},
-	}.Encode()
 }
 
 func (p *Pagination) Last() int {
@@ -112,4 +106,11 @@ func (p *Pagination) Range() (low, hi int) {
 	}
 
 	return
+}
+
+func (p *Pagination) PageLink(n int) template.URL {
+	return template.URL(url.Values{
+		perpage: {fmt.Sprint(p.PerPage)},
+		current: {fmt.Sprint(n)},
+	}.Encode())
 }

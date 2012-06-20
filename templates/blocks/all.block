@@ -1,0 +1,11 @@
+{% define "content" %}
+{% template "pagination" .Pagination %}
+<div class="row">
+	<div class="span12">
+		<div class="well">
+			{% template "work_table" .Work %}
+		</div>
+	</div>
+</div>
+{% template "pagination" .Pagination %}
+{% end %}
