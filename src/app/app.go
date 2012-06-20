@@ -39,7 +39,6 @@ var (
 			"jquery.min.js",
 			"jquery-ui.min.js",
 			"bootstrap.js",
-			"recent.js",
 			"status.js",
 		},
 		BaseTitle: "GoCI",
