@@ -31,10 +31,33 @@ func TestExternalThings(t *testing.T) {
 	w := &testWork{
 		revisions: []string{
 			"467d3ae22642ddadbaf6a0693c02d18b24fb7d35",
+			"467d3ae22642ddadbaf6a0693c02d18b24fb7d35", //test it twice
 		},
 		vcs:        Git,
 		repoPath:   "git://github.com/ftrvxmtrx/omgfsm",
 		importPath: "github.com/ftrvxmtrx/omgfsm",
+		workspace:  false,
+	}
+
+	reps, err := CreateBuilds(w)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, r := range reps {
+		t.Logf("%q", r)
+		t.Log("cleanup:", r.Cleanup())
+	}
+}
+
+func TestEndsWithGo(t *testing.T) {
+	w := &testWork{
+		revisions: []string{
+			"f53321b13ccf26ce15b24f8fb6dc07d8af981716",
+		},
+		vcs:        Git,
+		repoPath:   "git://github.com/dustin/aprs.go",
+		importPath: "github.com/dustin/aprs.go",
 		workspace:  false,
 	}
 

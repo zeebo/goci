@@ -88,6 +88,7 @@ func (e environ) CleanGopath() {
 	if e.gopath != "" {
 		os.RemoveAll(fp.Join(e.gopath, "pkg"))
 		os.RemoveAll(fp.Join(e.gopath, "bin"))
+		os.RemoveAll(fp.Join(e.gopath, "src"))
 	}
 }
 
