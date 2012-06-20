@@ -68,7 +68,7 @@ func WorkWithImportPathInRange(ctx *Context, path string, low, hi int) (ws []*Wo
 	err = q.
 		Skip(low).
 		Limit(count).
-		Sort(d{"woen": -1}).
+		Sort(d{"when": -1}).
 		All(&ws)
 	return
 }
