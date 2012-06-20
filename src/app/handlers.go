@@ -16,7 +16,7 @@ func handle_index(w http.ResponseWriter, req *http.Request, ctx *Context) {
 		return
 	}
 	w.Header().Set("Content-type", "text/html")
-	ws, err := worker.GetRecentWork(ctx.Context, 10)
+	ws, err := worker.GetRecentWork(ctx.Context, recent_amount)
 	if err != nil {
 		internal_error(w, req, ctx, err)
 		return
@@ -77,7 +77,7 @@ func send_json(w http.ResponseWriter, val interface{}) (err error) {
 }
 
 func handle_recent_html(w http.ResponseWriter, req *http.Request, ctx *Context) {
-	ws, err := worker.GetRecentWork(ctx.Context, 10)
+	ws, err := worker.GetRecentWork(ctx.Context, recent_amount)
 	if err != nil {
 		internal_error(w, req, ctx, err)
 		return
@@ -89,7 +89,7 @@ func handle_recent_html(w http.ResponseWriter, req *http.Request, ctx *Context) 
 }
 
 func handle_recent_json(w http.ResponseWriter, req *http.Request, ctx *Context) {
-	ws, err := worker.GetRecentWork(ctx.Context, 10)
+	ws, err := worker.GetRecentWork(ctx.Context, recent_amount)
 	if err != nil {
 		internal_error(w, req, ctx, err)
 		return

@@ -14,6 +14,8 @@ import (
 const (
 	appname   = "goci"
 	store_key = "foobar"
+
+	recent_amount = 20
 )
 
 var (
