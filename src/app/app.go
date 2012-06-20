@@ -32,8 +32,8 @@ var (
 	store     = sessions.NewCookieStore([]byte(store_key))
 	base_meta = &Meta{
 		CSS: list{
-			"bootstrap-cyborg.min.css",
-			"bootstrap-responsive.min.css",
+			"bootstrap-superhero.min.css",
+			// "bootstrap-responsive.min.css",
 			"main.css",
 		},
 		JS: list{
