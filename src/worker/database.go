@@ -9,3 +9,8 @@ func GetWorkFromBuild(ctx *Context, id string) (wk *Work, err error) {
 	err = ctx.db.C(worklog).Find(d{"builds._id": id}).One(&wk)
 	return
 }
+
+func CurrentWork(ctx *Context) (w []*mongoWork, err error) {
+	err = ctx.db.C(workqueue).Find(nil).Limit(queue_size).All(&w)
+	return
+}

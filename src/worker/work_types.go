@@ -38,35 +38,38 @@ func (w WorkStatus) String() (r string) {
 	return
 }
 
-type TaskInfo struct {
-	When  time.Time
-	ID    string `bson:"_id"`
-	Error string
+func (w WorkStatus) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"%s"`, w)), nil
 }
 
 type Work struct {
-	TaskInfo `bson:",inline"`
-	Work     builder.Work `bson:"-"`
-	GobWork  Bytes
-	Builds   []*Build
+	When  time.Time
+	ID    string `bson:"_id" json:"-"`
+	Error string `json:",omitempty"`
+
+	Work    builder.Work `bson:"-" json:"-"`
+	GobWork Bytes        `json:"-"`
+	Builds  []*Build
 
 	RepoPath  string
 	Workspace bool
 	Status    WorkStatus
 
-	Link       string `bson:",omitempty"`
-	Name       string `bson:",omitempty"`
-	ImportPath string `bson:",omitempty"`
-	Blurb      string `bson:",omitempty"`
+	Link       string `bson:",omitempty" json:",omitempty"`
+	Name       string `bson:",omitempty" json:",omitempty"`
+	ImportPath string `bson:",omitempty" json:",omitempty"`
+	Blurb      string `bson:",omitempty" json:",omitempty"`
 
 	poke chan *Build
 }
 
 type Build struct {
-	TaskInfo `bson:",inline"`
-	WorkID   string
-	Build    builder.Build `bson:"-"`
-	GobBuild Bytes
+	ID    string `bson:"_id" json:"-"`
+	Error string `json:",omitempty"`
+
+	WorkID   string        `json:"-"`
+	Build    builder.Build `bson:"-" json:"-"`
+	GobBuild Bytes         `json:"-"`
 	Tests    []*Test
 
 	Revision string
@@ -77,12 +80,14 @@ type Build struct {
 }
 
 type Test struct {
-	TaskInfo `bson:",inline"`
-	WorkID   string
-	BuildID  string
-	Path     string
+	ID    string `bson:"_id" json:"-"`
+	Error string `json:",omitempty"`
 
-	Output   string
+	WorkID  string `json:"-"`
+	BuildID string `json:"-"`
+	Path    string `json:"-"`
+
+	Output   string `json:",omitempty"`
 	Passed   bool
 	Started  time.Time
 	Duration time.Duration
@@ -90,18 +95,12 @@ type Test struct {
 	done chan *Test //ref to the build channel
 }
 
-func new_info() (t TaskInfo) {
-	t.When = time.Now()
-	t.ID = new_id()
-	return
-}
-
 func new_test(path string, build *Build, work *Work) (t *Test) {
 	t = &Test{
-		TaskInfo: new_info(),
-		Path:     path,
-		BuildID:  build.ID,
-		WorkID:   work.ID,
+		ID:      new_id(),
+		Path:    path,
+		BuildID: build.ID,
+		WorkID:  work.ID,
 
 		done: build.poke,
 	}
@@ -111,7 +110,7 @@ func new_test(path string, build *Build, work *Work) (t *Test) {
 
 func new_build(build builder.Build, work *Work) (b *Build) {
 	b = &Build{
-		TaskInfo: new_info(),
+		ID:       new_id(),
 		Build:    build,
 		WorkID:   work.ID,
 		Revision: build.Revision(),
@@ -135,7 +134,8 @@ func new_work(work builder.Work) (w *Work) {
 	}
 
 	w = &Work{
-		TaskInfo:   new_info(),
+		When:       time.Now(),
+		ID:         new_id(),
 		Work:       work,
 		ImportPath: work.ImportPath(),
 		RepoPath:   work.RepoPath(),
@@ -154,10 +154,6 @@ func new_work(work builder.Work) (w *Work) {
 	}
 
 	return
-}
-
-func (t TaskInfo) GetInfo() TaskInfo {
-	return t
 }
 
 func (w *Work) DisplayName() (r string) {

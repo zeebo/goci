@@ -103,6 +103,8 @@ func main() {
 	handleRequest("/foo", handlerFunc(handle_simple_work), "foo")
 
 	handleGet("/build/{id}", handlerFunc(handle_build_info), "build_info")
+	handleGet("/current", handlerFunc(handle_work_json), "current")
+	handleGet("/recent", handlerFunc(handle_recent_json), "recent")
 	handleGet("/how", cache(handlerFunc(handle_how)), "how")
 
 	//this needs to go last due to how the gorilla/mux package matches (first rather than most)

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"worker"
 )
@@ -60,4 +62,33 @@ func handle_how(w http.ResponseWriter, req *http.Request, ctx *Context) {
 		&navBase{"General", "#general", nil},
 	}
 	base_execute(w, ctx, tmpl_root("blocks", "how.block"))
+}
+
+func send_json(w http.ResponseWriter, val interface{}) (err error) {
+	w.Header().Set("Content-type", "application/json")
+	enc := json.NewEncoder(w)
+	err = enc.Encode(val)
+	return
+}
+
+func handle_recent_json(w http.ResponseWriter, req *http.Request, ctx *Context) {
+	ws, err := worker.GetRecentWork(ctx.Context, 10)
+	if err != nil {
+		internal_error(w, req, ctx, err)
+		return
+	}
+	if err := send_json(w, ws); err != nil {
+		log.Println("error responding with json:", err)
+	}
+}
+
+func handle_work_json(w http.ResponseWriter, req *http.Request, ctx *Context) {
+	mw, err := worker.CurrentWork(ctx.Context)
+	if err != nil {
+		internal_error(w, req, ctx, err)
+		return
+	}
+	if err := send_json(w, mw); err != nil {
+		log.Println("error responding with json:", err)
+	}
 }

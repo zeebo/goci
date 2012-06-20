@@ -27,8 +27,8 @@ type mongoWorkValue struct {
 }
 
 type mongoWork struct {
-	ID   bson.ObjectId `bson:"_id,omitempty"`
-	Work []byte
+	ID   bson.ObjectId `bson:"_id,omitempty" json:"-"`
+	Work []byte        `json:"-"`
 
 	//some info for fancy display
 	ImportPath   string

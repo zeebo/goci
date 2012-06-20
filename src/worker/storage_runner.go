@@ -4,7 +4,6 @@ import "log"
 
 type ider interface {
 	WholeID() string
-	GetInfo() TaskInfo
 }
 
 var (
@@ -13,10 +12,10 @@ var (
 
 func run_saver() {
 	for w := range save_item {
-		good := w.GetInfo().Error == ""
+		good := w.Error == ""
 		log.Println(w.WholeID(), "save. good:", good)
 		if !good {
-			log.Printf("%s error: %q", w.WholeID(), cap(w.GetInfo().Error, 50))
+			log.Printf("%s error: %q", w.WholeID(), cap(w.Error, 50))
 		}
 		w.Freeze()
 
