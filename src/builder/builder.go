@@ -158,7 +158,7 @@ func createBuilds(w Work, e environ) (res []Build, err error) {
 }
 
 func createBuild(rev string, e environ) (bui build) {
-	var packs []string
+	var packs, testpacks []string
 	bui.Rev = rev
 
 	//make a new directory for the builds of this revision
@@ -180,13 +180,17 @@ func createBuild(rev string, e environ) (bui build) {
 	}
 
 	//figure out what packages need to be built
-	packs, bui.Err = list(e.gopath)
+	packs, testpacks, bui.Err = list(e.gopath)
 	if bui.Err != nil {
 		return
 	}
 
+	merged := make([]string, 0, len(packs)+len(testpacks))
+	merged = append(merged, packs...)
+	merged = append(merged, testpacks...)
+
 	//run a get to build deps
-	bui.Err = get(e.gopath, packs...)
+	bui.Err = get(e.gopath, merged...)
 	if bui.Err != nil {
 		return
 	}

@@ -27,6 +27,28 @@ func TestCreateBuildsNonWorkspace(t *testing.T) {
 	}
 }
 
+func TestExternalThings(t *testing.T) {
+	w := &testWork{
+		revisions: []string{
+			"467d3ae22642ddadbaf6a0693c02d18b24fb7d35",
+		},
+		vcs:        Git,
+		repoPath:   "git://github.com/ftrvxmtrx/omgfsm",
+		importPath: "github.com/ftrvxmtrx/omgfsm",
+		workspace:  false,
+	}
+
+	reps, err := CreateBuilds(w)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, r := range reps {
+		t.Logf("%q", r)
+		t.Log("cleanup:", r.Cleanup())
+	}
+}
+
 func TestCreateBuildsWorkspace(t *testing.T) {
 	w := &testWork{
 		revisions: []string{
