@@ -71,6 +71,18 @@ func send_json(w http.ResponseWriter, val interface{}) (err error) {
 	return
 }
 
+func handle_recent_html(w http.ResponseWriter, req *http.Request, ctx *Context) {
+	ws, err := worker.GetRecentWork(ctx.Context, 10)
+	if err != nil {
+		internal_error(w, req, ctx, err)
+		return
+	}
+	err = recent_template.Execute(w, ws)
+	if err != nil {
+		internal_error(w, req, ctx, err)
+	}
+}
+
 func handle_recent_json(w http.ResponseWriter, req *http.Request, ctx *Context) {
 	ws, err := worker.GetRecentWork(ctx.Context, 10)
 	if err != nil {
