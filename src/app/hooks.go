@@ -74,3 +74,15 @@ func handle_google_hook_workspace(w http.ResponseWriter, req *http.Request) {
 	m := &google.HookMessage{Workspace: true}
 	perform_google_hook(w, req, m)
 }
+
+func handle_go_get(w http.ResponseWriter, req *http.Request) {
+	imp := req.FormValue(":import")
+	if imp == "" {
+		log.Println("handle_go_get: package name empty")
+		perform_status(w, nil, http.StatusNotFound)
+		return
+	}
+	worker.Schedule(Package{
+		Import: imp,
+	})
+}

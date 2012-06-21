@@ -114,6 +114,7 @@ func main() {
 	handlePost("/hooks/github", http.HandlerFunc(handle_github_hook_package), "github_hook")
 	handlePost("/hooks/bitbucket", http.HandlerFunc(handle_bitbucket_hook_package), "bitbucket_hook")
 	handlePost("/hooks/google/{vcs}", http.HandlerFunc(handle_google_hook_package), "google_hook")
+	router.Handle("/hooks/go/{import:.*}", http.HandlerFunc(handle_go_get)).Name("go_hook")
 
 	//debug handler
 	handleRequest("/foo", handlerFunc(handle_simple_work), "foo")
