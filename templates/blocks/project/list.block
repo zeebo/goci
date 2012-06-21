@@ -12,7 +12,7 @@
 				<tr>
 					<td><a href="{% reverse "project_detail" "import" $p.ImportPath %}">{% $p.ImportPath %}</a></td>
 					<td>{% with $p.When.Local %}{% .Format "Jan 2, 2006 3:04:05 PM" %}{% end %}</td>
-					<td>{% $p.Status %}</td>
+					<td><span class="label label-{% $p.Status.LabelType %}">{% $p.Status %}</span></td>
 				</tr>
 {% end %}
 			</table>

@@ -38,6 +38,20 @@ func (w WorkStatus) String() (r string) {
 	return
 }
 
+func (w WorkStatus) LabelType() (r string) {
+	switch w {
+	case WorkStatusPassed:
+		r = "success"
+	case WorkStatusFailed:
+		r = "important"
+	case WorkStatusWary:
+		r = "warning"
+	default:
+		panic("unknown work status")
+	}
+	return
+}
+
 func (w WorkStatus) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`"%s"`, w)), nil
 }
