@@ -251,24 +251,36 @@ func createBuild(rev string, e environ) (bui build) {
 func createGoinstallBuild(w Work) (bui build, err error) {
 	bui.Rev = "Latest"
 
-	p := w.ImportPath()
+	pack := w.ImportPath()
 
 	//make a new directory for the build
-	bui.base, bui.Err = ioutil.TempDir("", hash(p))
+	bui.base, bui.Err = ioutil.TempDir("", hash(pack))
 	if bui.Err != nil {
 		return
 	}
 
-	bui.Err = getUpdate(GOPATH, p)
+	bui.Err = get(GOPATH, pack)
 	if bui.Err != nil {
 		return
 	}
 
-	bui.Err = testbuild(GOPATH, p, bui.base)
+	//find all the deps for the tests and build those
+	var testpacks []string
+	_, testpacks, bui.Err = listPackage(GOPATH, pack)
 	if bui.Err != nil {
 		return
 	}
 
-	bui.appendPath(p)
+	bui.Err = get(GOPATH, testpacks...)
+	if bui.Err != nil {
+		return
+	}
+
+	bui.Err = testbuild(GOPATH, pack, bui.base)
+	if bui.Err != nil {
+		return
+	}
+
+	bui.appendPath(pack)
 	return
 }

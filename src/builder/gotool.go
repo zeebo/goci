@@ -62,25 +62,8 @@ func testbuild(gopath, pack, dir string) (err error) {
 }
 
 func get(gopath string, packs ...string) (err error) {
-	action := append([]string{"-tags", "goci"}, packs...)
+	action := append([]string{"-u", "-tags", "goci"}, packs...)
 	cmd := gopathCmd(gopath, "get", "-v", action...)
-	var buf bytes.Buffer
-	cmd.Stdout = &buf
-	cmd.Stderr = &buf
-	e := cmd.Run()
-	if !cmd.ProcessState.Success() {
-		err = &cmdError{
-			Msg:    "Error building the code + deps",
-			Err:    e.Error(),
-			Args:   cmd.Args,
-			Output: buf.String(),
-		}
-	}
-	return
-}
-
-func getUpdate(gopath string, path string) (err error) {
-	cmd := gopathCmd(gopath, "get", "-v", "-u", "-tags", "goci", path)
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
@@ -100,7 +83,12 @@ const listTemplate = `{{ range .TestImports }}{{ . }}
 {{ end }}`
 
 func list(gopath string) (packs, testpacks []string, err error) {
-	cmd := gopathCmd(gopath, "list", "./...")
+	packs, testpacks, err = listPackage(gopath, "./...")
+	return
+}
+
+func listPackage(gopath string, pack string) (packs, testpacks []string, err error) {
+	cmd := gopathCmd(gopath, "list", pack)
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
@@ -126,7 +114,7 @@ func list(gopath string) (packs, testpacks []string, err error) {
 	}
 
 	//list all the imports for the test files
-	cmd = gopathCmd(gopath, "list", "-f", listTemplate, "./...")
+	cmd = gopathCmd(gopath, "list", "-f", listTemplate, pack)
 	buf.Reset()
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
