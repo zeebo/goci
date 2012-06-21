@@ -4,11 +4,15 @@
 		<div class="well">
 			<table class="table">
 				<thead>
-					<th>Project</th>
+					<th>Import Path</th>
+					<th>When</th>
+					<th>Status</th>
 				</thead>
-{% range $p := .Paths %}
+{% range $p := .Statuses %}
 				<tr>
-					<td><a href="{% reverse "project_detail" "import" $p %}">{% $p %}</a></td>
+					<td><a href="{% reverse "project_detail" "import" $p.ImportPath %}">{% $p.ImportPath %}</a></td>
+					<td>{% with $p.When.Local %}{% .Format "Jan 2, 2006 3:04:05 PM" %}{% end %}</td>
+					<td>{% $p.Status %}</td>
 				</tr>
 {% end %}
 			</table>

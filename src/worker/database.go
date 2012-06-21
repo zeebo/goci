@@ -1,6 +1,9 @@
 package worker
 
-import "launchpad.net/mgo"
+import (
+	"launchpad.net/mgo"
+	"time"
+)
 
 func GetRecentWork(ctx *Context, limit int) (ws []*Work, err error) {
 	err = ctx.db.C(worklog).
@@ -73,9 +76,54 @@ func WorkWithImportPathInRange(ctx *Context, path string, low, hi int) (ws []*Wo
 	return
 }
 
-func WorkImportPaths(ctx *Context) (ps []string, err error) {
-	err = ctx.db.C(worklog).
+type WorkStatusResult struct {
+	ImportPath string
+	When       time.Time
+	Status     WorkStatus
+}
+
+var work_status_job = mgo.MapReduce{
+	Map: `function() { emit(this.importpath, {
+			when: this.when,
+			status: this.status
+		});
+	}`,
+	Reduce: `function(key, values) {
+		var result = values.shift();
+		values.forEach(function(value) {
+			if (result.when < value.when) {
+				result = value;
+			}
+		});
+		return result;
+	}`,
+}
+
+func WorkStatusList(ctx *Context) (ws []WorkStatusResult, err error) {
+	var res []struct {
+		ImportPath string `bson:"_id"`
+		Value      struct {
+			When   time.Time
+			Status WorkStatus
+		}
+	}
+
+	_, err = ctx.db.C(worklog).
 		Find(nil).
-		Distinct("importpath", &ps)
+		MapReduce(work_status_job, &res)
+
+	if err != nil {
+		return
+	}
+
+	//copy in
+	for _, v := range res {
+		ws = append(ws, WorkStatusResult{
+			ImportPath: v.ImportPath,
+			When:       v.Value.When,
+			Status:     v.Value.Status,
+		})
+	}
+
 	return
 }

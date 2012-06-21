@@ -147,14 +147,14 @@ func handle_all(w http.ResponseWriter, req *http.Request, ctx *Context) {
 }
 
 func handle_project_list(w http.ResponseWriter, req *http.Request, ctx *Context) {
-	paths, err := worker.WorkImportPaths(ctx.Context)
+	status, err := worker.WorkStatusList(ctx.Context)
 	if err != nil {
 		internal_error(w, req, ctx, err)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html")
 
-	ctx.Set("Paths", paths)
+	ctx.Set("Statuses", status)
 	base_execute(w, ctx, tmpl_root("blocks", "project", "list.block"))
 }
 
