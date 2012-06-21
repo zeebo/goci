@@ -5,88 +5,43 @@
 		<h2>Info</h2>
 		<div class="well">
 			<p>
-			GoCI is capable of building two classes of go projects: regular
-			go-gettable import paths, and entire gopath setups.
-			An example of a go-gettable (package) package is <a href="http://github.com/zeebo/irc">here</a>.
-			An example of an entire gopath setup (workspace) is <a href="http://github.com/zeebo/goci">here</a>.
-			First figure out what type of project you are trying to test so that
-			you can post to the correct url.
+			GoCI tests packages by interfacing with the source control hosting 
+			website's post-commit hook mechanism. Just add the url corresponding
+			to the source control hosting site you are using to the post-commit
+			hook area, and push a commit. This area is usually found in the admin
+			or project settings portion of the website. Happy testing!
 			</p>
 		</div>
 	</div>
 </div>
 </section>
 
-<section id="github">
+<section id="hooks">
 <div class="row-fluid">
 	<div class="span12">
-		<h2>Github</h2>
+		<h2>URLs</h2>
 		<table class="table">
 			<thead>
-				<th>Type</th>
+				<th>Website</th>
 				<th>URL</th>
 			</thead>
 			<tr>
-				<td>Workspace</td>
-				<td>http://goci.me{% reverse "github_hook_workspace" %}</td>
+				<td>Github</td>
+				<td>http://goci.me{% reverse "github_hook" %}</td>
 			</tr>
 			<tr>
-				<td>Package</td>
-				<td>http://goci.me{% reverse "github_hook_package" %}</td>
+				<td>BitBucket</td>
+				<td>http://goci.me{% reverse "bitbucket_hook" %}</td>
 			</tr>
-		</table>
-	</div>
-</div>
-</section>
+			<tr>
+				<td>Google Code (git)</td>
+				<td>http://goci.me{% reverse "google_hook" "vcs" "git" %}</td>
+			</tr>
+			<tr>
+				<td>Google Code (hg)</td>
+				<td>http://goci.me{% reverse "google_hook" "vcs" "hg" %}</td>
+			</tr>
 
-<section id="bitbucket">
-<div class="row-fluid">
-	<div class="span12">
-		<h2>Bitbucket</h2>
-		<table class="table">
-			<thead>
-				<th>Type</th>
-				<th>URL</th>
-			</thead>
-			<tr>
-				<td>Workspace</td>
-				<td>http://goci.me{% reverse "bitbucket_hook_workspace" %}</td>
-			</tr>
-			<tr>
-				<td>Package</td>
-				<td>http://goci.me{% reverse "bitbucket_hook_package" %}</td>
-			</tr>
-		</table>
-	</div>
-</div>
-</section>
-
-
-<section id="google">
-<div class="row-fluid">
-	<div class="span12">
-		<h2>Google Code</h2>
-		<table class="table">
-			<thead>
-				<th>Type</th>
-				<th>URL</th>
-			</thead>
-			<tr>
-				<td>Workspace (git)</td>
-				<td>http://goci.me{% reverse "google_hook_workspace" "vcs" "git" %}</td>
-			</tr>
-			<tr>
-				<td>Workspace (hg)</td>
-				<td>http://goci.me{% reverse "google_hook_workspace" "vcs" "hg" %}</td>
-			</tr>
-			<tr>
-				<td>Package (git)</td>
-				<td>http://goci.me{% reverse "google_hook_package" "vcs" "git" %}</td>
-			</tr>
-			<tr>
-				<td>Package (hg)</td>
-				<td>http://goci.me{% reverse "google_hook_package" "vcs" "hg" %}</td>
-			</tr>
 		</table>
 	</div>
 </div>

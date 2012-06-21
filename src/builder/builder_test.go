@@ -72,6 +72,29 @@ func TestEndsWithGo(t *testing.T) {
 	}
 }
 
+func TestStrangeLayout(t *testing.T) {
+	w := &testWork{
+		revisions: []string{
+			"8597510c796a7214804c507dcc879dcd474d547c",
+		},
+		vcs:        HG,
+		repoPath:   "https://code.google.com/p/go-charset",
+		importPath: "code.google.com/p/go-charset",
+		workspace:  false,
+	}
+
+	reps, err := CreateBuilds(w)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, r := range reps {
+		t.Logf("%q", r)
+		t.Log("cleanup:", r.Cleanup())
+	}
+
+}
+
 func TestCreateBuildsWorkspace(t *testing.T) {
 	w := &testWork{
 		revisions: []string{
@@ -82,6 +105,28 @@ func TestCreateBuildsWorkspace(t *testing.T) {
 		repoPath:   "git://github.com/goods/starter",
 		importPath: "",
 		workspace:  true,
+	}
+
+	reps, err := CreateBuilds(w)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, r := range reps {
+		t.Logf("%q", r)
+		t.Log("cleanup:", r.Cleanup())
+	}
+}
+
+func TestCreateBuildsWorkspaceAsProject(t *testing.T) {
+	w := &testWork{
+		revisions: []string{
+			"185f3c1735c482a280d00ae09f15b4f6b05f6d22",
+		},
+		vcs:        Git,
+		repoPath:   "git://github.com/zeebo/goci",
+		importPath: "",
+		workspace:  false,
 	}
 
 	reps, err := CreateBuilds(w)

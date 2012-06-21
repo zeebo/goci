@@ -51,7 +51,7 @@ func handle_github_hook_package(w http.ResponseWriter, req *http.Request) {
 }
 
 func handle_github_hook_workspace(w http.ResponseWriter, req *http.Request) {
-	m := &github.HookMessage{Workspace: true}
+	m := &github.HookMessage{Workspace: false}
 	perform_hook(w, req, m)
 }
 
@@ -61,7 +61,7 @@ func handle_bitbucket_hook_package(w http.ResponseWriter, req *http.Request) {
 }
 
 func handle_bitbucket_hook_workspace(w http.ResponseWriter, req *http.Request) {
-	m := &bitbucket.HookMessage{Workspace: true}
+	m := &bitbucket.HookMessage{Workspace: false}
 	perform_hook(w, req, m)
 }
 
@@ -71,6 +71,6 @@ func handle_google_hook_package(w http.ResponseWriter, req *http.Request) {
 }
 
 func handle_google_hook_workspace(w http.ResponseWriter, req *http.Request) {
-	m := &google.HookMessage{Workspace: true}
+	m := &google.HookMessage{Workspace: false}
 	perform_google_hook(w, req, m)
 }

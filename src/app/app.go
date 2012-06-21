@@ -100,13 +100,18 @@ func main() {
 	handlePost("/bins/{id}/err", http.HandlerFunc(handle_test_error), "test_error") //more specific one has to be listed first
 	handlePost("/bins/{id}", http.HandlerFunc(handle_test_response), "test_response")
 
-	//hooks that don't need to be seen by humans
+	//hooks that don't need to be seen by humans: deprecated
 	handlePost("/hooks/github/package", http.HandlerFunc(handle_github_hook_package), "github_hook_package")
 	handlePost("/hooks/github/workspace", http.HandlerFunc(handle_github_hook_workspace), "github_hook_workspace")
 	handlePost("/hooks/bitbucket/package", http.HandlerFunc(handle_bitbucket_hook_package), "bitbucket_hook_package")
 	handlePost("/hooks/bitbucket/workspace", http.HandlerFunc(handle_bitbucket_hook_workspace), "bitbucket_hook_workspace")
 	handlePost("/hooks/google/package/{vcs}", http.HandlerFunc(handle_google_hook_package), "google_hook_package")
 	handlePost("/hooks/google/workspace/{vcs}", http.HandlerFunc(handle_google_hook_workspace), "google_hook_workspace")
+
+	//new hooks: everything is a project
+	handlePost("/hooks/github", http.HandlerFunc(handle_github_hook_package), "github_hook")
+	handlePost("/hooks/bitbucket", http.HandlerFunc(handle_bitbucket_hook_package), "bitbucket_hook")
+	handlePost("/hooks/google/{vcs}", http.HandlerFunc(handle_google_hook_package), "google_hook")
 
 	//debug handler
 	handleRequest("/foo", handlerFunc(handle_simple_work), "foo")
