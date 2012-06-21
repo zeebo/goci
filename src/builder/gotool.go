@@ -59,7 +59,8 @@ func testbuild(gopath, pack, dir string) (err error) {
 }
 
 func get(gopath string, packs ...string) (err error) {
-	cmd := gopathCmd(gopath, "get", "-tags", "goci", "-v", packs...)
+	action := append([]string{"-tags", "goci"}, packs...)
+	cmd := gopathCmd(gopath, "get", "-v", action...)
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf

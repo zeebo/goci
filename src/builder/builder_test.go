@@ -118,28 +118,6 @@ func TestCreateBuildsWorkspace(t *testing.T) {
 	}
 }
 
-func TestCreateBuildsWorkspaceAsProject(t *testing.T) {
-	w := &testWork{
-		revisions: []string{
-			"185f3c1735c482a280d00ae09f15b4f6b05f6d22",
-		},
-		vcs:        Git,
-		repoPath:   "git://github.com/zeebo/goci",
-		importPath: "",
-		workspace:  false,
-	}
-
-	reps, err := CreateBuilds(w)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for _, r := range reps {
-		t.Logf("%q", r)
-		t.Log("cleanup:", r.Cleanup())
-	}
-}
-
 func TestCreateBuildsWorkspaceGoci(t *testing.T) {
 	w := &testWork{
 		revisions: []string{
