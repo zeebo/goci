@@ -230,7 +230,7 @@ func createBuild(rev string, e environ) (bui build) {
 	merged = append(merged, testpacks...)
 
 	//run a get to build deps
-	bui.Err = get(e.gopath, merged...)
+	bui.Err = get(e.gopath, false, merged...)
 	if bui.Err != nil {
 		return
 	}
@@ -259,7 +259,7 @@ func createGoinstallBuild(w Work) (bui build, err error) {
 		return
 	}
 
-	bui.Err = get(GOPATH, pack)
+	bui.Err = get(GOPATH, true, pack)
 	if bui.Err != nil {
 		return
 	}
@@ -271,7 +271,7 @@ func createGoinstallBuild(w Work) (bui build, err error) {
 		return
 	}
 
-	bui.Err = get(GOPATH, testpacks...)
+	bui.Err = get(GOPATH, true, testpacks...)
 	if bui.Err != nil {
 		return
 	}
