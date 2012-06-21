@@ -4,6 +4,23 @@ package builder
 
 import "testing"
 
+func TestGoGetPackage(t *testing.T) {
+	w := &testWork{
+		importPath: "github.com/zeebo/irc",
+		workType:   WorkTypeGoinstall,
+	}
+
+	reps, err := CreateBuilds(w)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, r := range reps {
+		t.Logf("%q", r)
+		t.Log("cleanup:", r.Cleanup())
+	}
+}
+
 func TestCreateBuildsNonWorkspace(t *testing.T) {
 	w := &testWork{
 		revisions: []string{

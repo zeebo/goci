@@ -9,7 +9,10 @@ import (
 	"strings"
 )
 
-var GOROOT = os.Getenv("GOROOT")
+var (
+	GOROOT = os.Getenv("GOROOT")
+	GOPATH = os.Getenv("GOPATH")
+)
 
 func init() {
 	gob.Register(&cmdError{})
@@ -61,6 +64,23 @@ func testbuild(gopath, pack, dir string) (err error) {
 func get(gopath string, packs ...string) (err error) {
 	action := append([]string{"-tags", "goci"}, packs...)
 	cmd := gopathCmd(gopath, "get", "-v", action...)
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+	e := cmd.Run()
+	if !cmd.ProcessState.Success() {
+		err = &cmdError{
+			Msg:    "Error building the code + deps",
+			Err:    e.Error(),
+			Args:   cmd.Args,
+			Output: buf.String(),
+		}
+	}
+	return
+}
+
+func getUpdate(gopath string, path string) (err error) {
+	cmd := gopathCmd(gopath, "get", "-v", "-u", "-tags", "goci", path)
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf

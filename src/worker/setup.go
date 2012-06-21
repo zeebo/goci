@@ -3,6 +3,7 @@ package worker
 import (
 	"builder"
 	"heroku"
+	"io/ioutil"
 	"launchpad.net/mgo"
 	"launchpad.net/mgo/bson"
 	"log"
@@ -65,6 +66,13 @@ func Setup(c Config) error {
 	//set the goroot env var to the default in the env
 	setup.GOROOT, builder.GOROOT = config.GOROOT, config.GOROOT
 
+	//create a temporary GOPATH for the go-gettable stuff
+	dir, err := ioutil.TempDir("", "gopath")
+	if err != nil {
+		return err
+	}
+	builder.GOPATH = dir
+
 	//build cached heroku client
 	hclient = config.BuildHerokuClient()
 
@@ -84,7 +92,7 @@ func Setup(c Config) error {
 	}
 
 	//set all processing things to false to clean up any old ones (doesn't scale)
-	err := db.C(workqueue).UpdateAll(d{"processing": true}, d{"$set": d{"processing": false}})
+	err = db.C(workqueue).UpdateAll(d{"processing": true}, d{"$set": d{"processing": false}})
 	if err != nil && err != mgo.NotFound {
 		return err
 	}

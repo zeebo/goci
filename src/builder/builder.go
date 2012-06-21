@@ -76,6 +76,20 @@ func (b build) Cleanup() (err error) {
 	return
 }
 
+func (bui *build) appendPath(pack string) {
+	//what the go tool does from inspecting the source
+	_, elem := path.Split(pack)
+	name := elem + ".test" + exeSuffix
+	path := fp.Join(bui.base, name)
+
+	//make sure that binary exists before we add it to the paths. it may
+	//not exist if there are no test files, so only add it if something
+	//is there.
+	if _, err := os.Stat(path); err == nil {
+		bui.Ps = append(bui.Ps, path)
+	}
+}
+
 var _ Build = build{}
 
 type environ struct {
@@ -129,6 +143,16 @@ func newEnviron(w Work) (e environ, err error) {
 }
 
 func CreateBuilds(w Work) (items []Build, err error) {
+	//check if we have a goget thing here
+	if w.WorkType() == WorkTypeGoinstall {
+		var item build
+		item, err = createGoinstallBuild(w)
+		if err == nil {
+			items = append(items, item)
+		}
+		return
+	}
+
 	if len(w.Revisions()) > 5 {
 		err = ErrTooMany
 		return
@@ -218,18 +242,33 @@ func createBuild(rev string, e environ) (bui build) {
 			return
 		}
 
-		//what the go tool does from inspecting the source
-		_, elem := path.Split(pack)
-		name := elem + ".test" + exeSuffix
-		path := fp.Join(bui.base, name)
-
-		//make sure that binary exists before we add it to the paths. it may
-		//not exist if there are no test files, so only add it if something
-		//is there.
-		if _, err := os.Stat(path); err == nil {
-			bui.Ps = append(bui.Ps, path)
-		}
+		bui.appendPath(pack)
 	}
 
+	return
+}
+
+func createGoinstallBuild(w Work) (bui build, err error) {
+	bui.Rev = "Latest"
+
+	p := w.ImportPath()
+
+	//make a new directory for the build
+	bui.base, bui.Err = ioutil.TempDir("", hash(p))
+	if bui.Err != nil {
+		return
+	}
+
+	bui.Err = getUpdate(GOPATH, p)
+	if bui.Err != nil {
+		return
+	}
+
+	bui.Err = testbuild(GOPATH, p, bui.base)
+	if bui.Err != nil {
+		return
+	}
+
+	bui.appendPath(p)
 	return
 }
