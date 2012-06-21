@@ -51,9 +51,9 @@ type Work struct {
 	GobWork Bytes        `json:"-"`
 	Builds  []*Build
 
-	RepoPath  string
-	Workspace bool
-	Status    WorkStatus
+	RepoPath string
+	WorkType builder.WorkType
+	Status   WorkStatus
 
 	Link       string `bson:",omitempty" json:",omitempty"`
 	Name       string `bson:",omitempty" json:",omitempty"`
@@ -139,7 +139,7 @@ func new_work(work builder.Work) (w *Work) {
 		Work:       work,
 		ImportPath: work.ImportPath(),
 		RepoPath:   work.RepoPath(),
-		Workspace:  work.IsWorkspace(),
+		WorkType:   work.WorkType(),
 
 		poke: make(chan *Build),
 	}

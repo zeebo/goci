@@ -17,16 +17,16 @@ type TestWork struct {
 	FVCS        builder.VCS
 	FRepoPath   string
 	FImportPath string
-	Workspace   bool
+	FWorkType   builder.WorkType
 	FLink       string
 }
 
-func (t *TestWork) Revisions() []string { return t.FRevisions }
-func (t *TestWork) VCS() builder.VCS    { return t.FVCS }
-func (t *TestWork) RepoPath() string    { return t.FRepoPath }
-func (t *TestWork) ImportPath() string  { return t.FImportPath }
-func (t *TestWork) IsWorkspace() bool   { return t.Workspace }
-func (t *TestWork) Link() string        { return t.FLink }
+func (t *TestWork) Revisions() []string        { return t.FRevisions }
+func (t *TestWork) VCS() builder.VCS           { return t.FVCS }
+func (t *TestWork) RepoPath() string           { return t.FRepoPath }
+func (t *TestWork) ImportPath() string         { return t.FImportPath }
+func (t *TestWork) WorkType() builder.WorkType { return t.FWorkType }
+func (t *TestWork) Link() string               { return t.FLink }
 
 var test_work = &TestWork{
 	FRevisions: []string{
@@ -38,7 +38,7 @@ var test_work = &TestWork{
 	FVCS:        builder.Git,
 	FRepoPath:   "git://github.com/zeebo/irc",
 	FImportPath: "github.com/zeebo/irc",
-	Workspace:   false,
+	FWorkType:   builder.WorkTypePackage,
 	FLink:       "http://github.com/zeebo/irc",
 }
 

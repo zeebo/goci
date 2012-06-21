@@ -15,7 +15,7 @@ func TestCreateBuildsNonWorkspace(t *testing.T) {
 		vcs:        Git,
 		repoPath:   "git://github.com/zeebo/irc",
 		importPath: "github.com/zeebo/irc",
-		workspace:  false,
+		workType:   WorkTypePackage,
 	}
 
 	reps, err := CreateBuilds(w)
@@ -38,7 +38,7 @@ func TestExternalThings(t *testing.T) {
 		vcs:        Git,
 		repoPath:   "git://github.com/ftrvxmtrx/omgfsm",
 		importPath: "github.com/ftrvxmtrx/omgfsm",
-		workspace:  false,
+		workType:   WorkTypePackage,
 	}
 
 	reps, err := CreateBuilds(w)
@@ -60,7 +60,7 @@ func TestEndsWithGo(t *testing.T) {
 		vcs:        Git,
 		repoPath:   "git://github.com/dustin/aprs.go",
 		importPath: "github.com/dustin/aprs.go",
-		workspace:  false,
+		workType:   WorkTypePackage,
 	}
 
 	reps, err := CreateBuilds(w)
@@ -82,7 +82,7 @@ func TestStrangeLayout(t *testing.T) {
 		vcs:        HG,
 		repoPath:   "https://code.google.com/p/go-charset",
 		importPath: "code.google.com/p/go-charset",
-		workspace:  false,
+		workType:   WorkTypePackage,
 	}
 
 	reps, err := CreateBuilds(w)
@@ -105,7 +105,7 @@ func TestCreateBuildsWorkspace(t *testing.T) {
 		vcs:        Git,
 		repoPath:   "git://github.com/goods/starter",
 		importPath: "",
-		workspace:  true,
+		workType:   WorkTypeWorkspace,
 	}
 
 	reps, err := CreateBuilds(w)
@@ -127,7 +127,7 @@ func TestCreateBuildsWorkspaceGoci(t *testing.T) {
 		vcs:        Git,
 		repoPath:   "git://github.com/zeebo/goci",
 		importPath: "",
-		workspace:  true,
+		workType:   WorkTypeWorkspace,
 	}
 
 	reps, err := CreateBuilds(w)

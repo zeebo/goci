@@ -10,7 +10,10 @@ import (
 	fp "path/filepath"
 )
 
-var ErrTooMany = errors.New("too many revisions in that work item")
+var (
+	ErrTooMany         = errors.New("too many revisions in that work item")
+	ErrUnknownWorkType = errors.New("unknown work type")
+)
 
 func init() {
 	gob.Register(build{})
@@ -23,13 +26,21 @@ var exeSuffix = func() string {
 	return ""
 }()
 
+type WorkType int
+
+const (
+	WorkTypePackage WorkType = iota
+	WorkTypeWorkspace
+	WorkTypeGoinstall
+)
+
 //Work represents an item of work to be completed by the builder
 type Work interface {
 	Revisions() (rev []string)
 	VCS() (v VCS)
 	RepoPath() (path string)
 	ImportPath() (path string)
-	IsWorkspace() (ok bool)
+	WorkType() (t WorkType)
 }
 
 type Build interface {
@@ -105,11 +116,15 @@ func newEnviron(w Work) (e environ, err error) {
 		return
 	}
 
-	if w.IsWorkspace() {
-		e.srcDir = e.gopath
-	} else {
+	switch w.WorkType() {
+	case WorkTypePackage:
 		e.srcDir = fp.Join(e.gopath, "src", w.ImportPath())
+	case WorkTypeWorkspace:
+		e.srcDir = e.gopath
+	default:
+		err = ErrUnknownWorkType
 	}
+
 	return
 }
 

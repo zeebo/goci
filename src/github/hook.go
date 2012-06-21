@@ -80,8 +80,11 @@ func (h *HookMessage) VCS() builder.VCS {
 	return builder.Git
 }
 
-func (h *HookMessage) IsWorkspace() bool {
-	return h.Workspace
+func (h *HookMessage) WorkType() builder.WorkType {
+	if h.Workspace {
+		return builder.WorkTypeWorkspace
+	}
+	return builder.WorkTypePackage
 }
 
 func (h *HookMessage) Revisions() (revs []string) {
