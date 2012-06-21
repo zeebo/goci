@@ -1,3 +1,5 @@
+// +build !goci
+
 package builder
 
 import "testing"
@@ -92,7 +94,6 @@ func TestStrangeLayout(t *testing.T) {
 		t.Logf("%q", r)
 		t.Log("cleanup:", r.Cleanup())
 	}
-
 }
 
 func TestCreateBuildsWorkspace(t *testing.T) {
