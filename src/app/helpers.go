@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"io/ioutil"
 )
 
 //pervasive type. convenient to have a short name for it.
@@ -61,4 +62,13 @@ func need_env(key string) (val string) {
 		panic("key not found: " + key)
 	}
 	return
+}
+
+func mustReadFile(filename string) []byte {
+	if ret, err := ioutil.ReadFile(filename); err != nil {
+		log.Println(err)
+		panic(err)
+	} else {
+		return ret
+	}
 }

@@ -1,14 +1,42 @@
 package worker
 
-import "log"
+import (
+	"log"
+	"sync"
+)
 
 type ider interface {
 	WholeID() string
 }
 
+type project_status struct {
+	lock       sync.Mutex
+	status_map map[string]WorkStatus
+}
+
 var (
-	save_item = make(chan *Work)
+	save_item    = make(chan *Work)
+	status_cache = new(project_status)
 )
+
+const (
+	cache_len = 50
+)
+
+func GetProjectStatus(project string) (WorkStatus, bool) {
+	lock.Lock()
+	defer lock.Unlock()
+	return status_cache.status_map[project]
+}
+
+func SetProjectStatus(project string, status WorkStatus) {
+	lock.Lock()
+	defer lock.Unlock()
+	if len(project_status.status_map) > cache_len { //flush cache
+		status_cache.status_map = make(map[string]WorkStatus)
+	}
+	status_cache.status_map[project] = status
+}
 
 func run_saver() {
 	for w := range save_item {
@@ -23,6 +51,8 @@ func run_saver() {
 		if err := db.C(worklog).Insert(w); err != nil {
 			log.Printf("%s error saving: %s", w.WholeID(), err)
 		}
+
+		SetProjectStatus(w.ImportPath, w.Status)
 	}
 }
 

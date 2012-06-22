@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"worker"
-	"io/ioutil"
 )
 
 //our basic handle index that demonstrates how to get data from the context
@@ -192,28 +191,16 @@ func handle_project_status_image(w http.ResponseWriter, req *http.Request, ctx *
 		return
 	}
 
-	ws, err := worker.WorkWithImportPathInRange(ctx.Context, path, 0, 0)
-	if err != nil {
-		internal_error(w, req, ctx, err)
-		return
+	status, ok := worker.GetProjectStatus(path)
+	if !ok {
+		ws, err := worker.WorkWithImportPathInRange(ctx.Context, path, 0, 0)
+		if err != nil {
+			internal_error(w, req, ctx, err)
+			return
+		}
+		status = ws[0].Status
+		go worker.SetProjectStatus(project, status)
 	}
 
-	var imgName string
-	switch ws[0].Status {
-	case worker.WorkStatusPassed:
-		imgName := "passed"
-	case worker.WorkStatusFailed:
-		imgName := "failed"
-	case worker.WorkStatusWary:
-		imgName := "bewary"
-	}
-
-	w.Header().Set("Content-Type", "image/png")
-
-	img, err := ioutil.ReadFile("/assets/img/" + imgName + ".png")
-	if err != nil {
-		internal_error(w, req, ctx, err)
-		return
-	}
-	w.Write(img)
+	w.Write(status_images[status])
 }

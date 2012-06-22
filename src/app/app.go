@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"thegoods.biz/tmplmgr"
 	"worker"
+	"io/ioutil"
 )
 
 const (
@@ -28,6 +29,12 @@ var (
 	base_template    = tmplmgr.Parse(tmpl_root("base.tmpl"))
 	recent_template  = tmplmgr.Parse(tmpl_root("recent.tmpl"))
 	current_template = tmplmgr.Parse(tmpl_root("current.tmpl"))
+
+	status_images = [...]([]byte){
+		worker.WorkStatusPassed: mustReadFile("/assets/img/passed.png"),
+		worker.WorkStatusFailed: mustReadFile("/assets/img/failed.png"),
+		worker.WorkStatusWary:   mustReadFile("/assets/img/bewary.png"),
+	}
 
 	store     = sessions.NewCookieStore([]byte(store_key))
 	base_meta = &Meta{
