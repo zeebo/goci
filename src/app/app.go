@@ -130,6 +130,7 @@ func main() {
 
 	//project views, must bypass pat on the first one
 	router.Handle("/project/{import:.*}", handlerFunc(handle_project_detail)).Name("project_detail")
+	router.Handle("/project/image/{import:.*}", handlerFunc(handle_project_status_image)).Name("project_status_image")
 	handleGet("/project", handlerFunc(handle_project_list), "project_list")
 
 	//this needs to go last due to how the gorilla/mux package matches (first rather than most)
