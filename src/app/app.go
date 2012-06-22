@@ -86,13 +86,14 @@ func main() {
 
 	//build our config
 	config := worker.Config{
-		Debug:  env("DEBUG", "") != "",
-		App:    need_env("APPNAME"),
-		Api:    need_env("APIKEY"),
-		Name:   db_name,
-		URL:    db_path,
-		GOROOT: need_env("GOROOT"),
-		Host:   need_env("HOST"),
+		ReadOnly: env("READONLY", "") != "",
+		Debug:    env("DEBUG", "") != "",
+		App:      need_env("APPNAME"),
+		Api:      need_env("APIKEY"),
+		Name:     db_name,
+		URL:      db_path,
+		GOROOT:   need_env("GOROOT"),
+		Host:     need_env("HOST"),
 	}
 
 	//run the worker setup

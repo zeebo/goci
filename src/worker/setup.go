@@ -97,6 +97,21 @@ func Setup(c Config) error {
 		return err
 	}
 
+	if !config.ReadOnly {
+		err = run_setup()
+		if err != nil {
+			return err
+		}
+	}
+
+	//no error so we're good!
+	change_state <- StateIdle
+
+	go run_work_queue()
+	return nil
+}
+
+func run_setup() (err error) {
 	log.Println("running setup...")
 	setup.PrintVars()
 
@@ -125,14 +140,9 @@ func Setup(c Config) error {
 
 	//pull an error out if it occured
 	select {
-	case err := <-errors:
-		return err
+	case err = <-errors:
 	default:
 	}
 
-	//no error so we're good!
-	change_state <- StateIdle
-
-	go run_work_queue()
-	return nil
+	return
 }

@@ -11,6 +11,7 @@ import (
 )
 
 type Config struct {
+	ReadOnly  bool
 	Debug     bool
 	App, Api  string //heroku app/api
 	Name, URL string //database name/url
