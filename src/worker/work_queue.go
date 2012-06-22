@@ -87,7 +87,7 @@ func run_mgo_queue_dispatcher() {
 	for _ = range ticker.C {
 		//grab some work from the queue
 		err := db.C(workqueue).Find(d{"processing": false}).One(&mw)
-		if err == mgo.NotFound {
+		if err == mgo.ErrNotFound {
 			continue
 		}
 		if err != nil {

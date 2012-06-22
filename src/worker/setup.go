@@ -92,8 +92,8 @@ func Setup(c Config) error {
 	}
 
 	//set all processing things to false to clean up any old ones (doesn't scale)
-	err = db.C(workqueue).UpdateAll(d{"processing": true}, d{"$set": d{"processing": false}})
-	if err != nil && err != mgo.NotFound {
+	_, err = db.C(workqueue).UpdateAll(d{"processing": true}, d{"$set": d{"processing": false}})
+	if err != nil && err != mgo.ErrNotFound {
 		return err
 	}
 

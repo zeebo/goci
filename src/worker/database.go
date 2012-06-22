@@ -9,7 +9,7 @@ import (
 func GetRecentWork(ctx *Context, limit int) (ws []*Work, err error) {
 	err = ctx.db.C(worklog).
 		Find(nil).
-		Sort(d{"$natural": -1}).
+		Sort("-$natural").
 		Limit(limit).
 		All(&ws)
 	return
@@ -43,7 +43,7 @@ func WorkInRange(ctx *Context, low, hi int) (ws []*Work, err error) {
 		Find(nil).
 		Skip(low).
 		Limit(count).
-		Sort(d{"when": -1}).
+		Sort("-when").
 		All(&ws)
 	return
 }
@@ -72,7 +72,7 @@ func WorkWithImportPathInRange(ctx *Context, path string, low, hi int) (ws []*Wo
 	err = q.
 		Skip(low).
 		Limit(count).
-		Sort(d{"when": -1}).
+		Sort("-when").
 		All(&ws)
 	return
 }
@@ -83,7 +83,7 @@ type WorkStatusResult struct {
 	Status     WorkStatus
 }
 
-var work_status_job = mgo.MapReduce{
+var work_status_job = &mgo.MapReduce{
 	Map: `function() { emit(this.importpath, {
 			when: this.when,
 			status: this.status
@@ -154,7 +154,7 @@ func GetProjectStatus(ctx *Context, path string) (st WorkStatus, err error) {
 	}
 	q := workWithImportPathSel(ctx, path)
 	err = q.
-		Sort(d{"when": -1}).
+		Sort("-when").
 		Select(d{"status": 1}).
 		One(&res)
 
