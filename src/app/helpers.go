@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"io/ioutil"
 )
 
 //pervasive type. convenient to have a short name for it.
@@ -64,11 +64,10 @@ func need_env(key string) (val string) {
 	return
 }
 
-func mustReadFile(filename string) []byte {
-	if ret, err := ioutil.ReadFile(filename); err != nil {
-		log.Println(err)
+func must_read_file(filename string) (ret []byte) {
+	ret, err := ioutil.ReadFile(filename)
+	if err != nil {
 		panic(err)
-	} else {
-		return ret
 	}
+	return
 }

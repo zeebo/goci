@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"thegoods.biz/tmplmgr"
 	"worker"
-	"io/ioutil"
 )
 
 const (
@@ -30,12 +29,6 @@ var (
 	recent_template  = tmplmgr.Parse(tmpl_root("recent.tmpl"))
 	current_template = tmplmgr.Parse(tmpl_root("current.tmpl"))
 
-	status_images = [...]([]byte){
-		worker.WorkStatusPassed: mustReadFile("/assets/img/passed.png"),
-		worker.WorkStatusFailed: mustReadFile("/assets/img/failed.png"),
-		worker.WorkStatusWary:   mustReadFile("/assets/img/bewary.png"),
-	}
-
 	store     = sessions.NewCookieStore([]byte(store_key))
 	base_meta = &Meta{
 		CSS: list{
@@ -52,7 +45,8 @@ var (
 		},
 		BaseTitle: "GoCI",
 	}
-	router = pat.New()
+	router        = pat.New()
+	status_images [3][]byte
 )
 
 func main() {
@@ -70,6 +64,13 @@ func main() {
 	recent_template.Blocks(tmpl_root("blocks", "recent.block"))
 	recent_template.Call("reverse", reverse)
 	current_template.Blocks(tmpl_root("blocks", "current.block"))
+
+	//load our status images into a cache
+	status_images = [...][]byte{
+		worker.WorkStatusPassed: must_read_file(asset_root("img", "passed.png")),
+		worker.WorkStatusFailed: must_read_file(asset_root("img", "failed.png")),
+		worker.WorkStatusWary:   must_read_file(asset_root("img", "bewary.png")),
+	}
 
 	//get our mongo credentials
 	var db_name, db_path = appname, "localhost"
@@ -135,9 +136,10 @@ func main() {
 	handleGet("/how", cache(handlerFunc(handle_how)), "how")
 	handleGet("/all", handlerFunc(handle_all), "all")
 
-	//project views, must bypass pat on the first one
-	router.Handle("/project/{import:.*}", handlerFunc(handle_project_detail)).Name("project_detail")
+	//project views, must bypass pat on the first two. image has to go first as
+	//it is a more sensitive match
 	router.Handle("/project/image/{import:.*}", handlerFunc(handle_project_status_image)).Name("project_status_image")
+	router.Handle("/project/{import:.*}", handlerFunc(handle_project_detail)).Name("project_detail")
 	handleGet("/project", handlerFunc(handle_project_list), "project_list")
 
 	//this needs to go last due to how the gorilla/mux package matches (first rather than most)

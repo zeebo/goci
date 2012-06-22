@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"runtime"
 	fp "path/filepath"
+	"runtime"
 )
 
 var (

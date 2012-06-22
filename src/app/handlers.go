@@ -184,23 +184,17 @@ func handle_project_detail(w http.ResponseWriter, req *http.Request, ctx *Contex
 	base_execute(w, ctx, tmpl_root("blocks", "all.block"), tmpl_root("blocks", "recent.block"))
 }
 
-func handle_project_status_image(w http.ResponseWriter, req *http.Request, ctx *Contest) {
+func handle_project_status_image(w http.ResponseWriter, req *http.Request, ctx *Context) {
 	path := req.FormValue(":import")
 	if path == "" {
 		perform_status(w, ctx, http.StatusNotFound)
 		return
 	}
 
-	status, ok := worker.GetProjectStatus(path)
-	if !ok {
-		ws, err := worker.WorkWithImportPathInRange(ctx.Context, path, 0, 0)
-		if err != nil {
-			internal_error(w, req, ctx, err)
-			return
-		}
-		status = ws[0].Status
-		go worker.SetProjectStatus(project, status)
+	status, err := worker.GetProjectStatus(ctx.Context, path)
+	if err != nil {
+		internal_error(w, req, ctx, err)
+		return
 	}
-
 	w.Write(status_images[status])
 }

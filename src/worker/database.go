@@ -2,6 +2,7 @@ package worker
 
 import (
 	"launchpad.net/mgo"
+	"sync"
 	"time"
 )
 
@@ -126,4 +127,47 @@ func WorkStatusList(ctx *Context) (ws []WorkStatusResult, err error) {
 	}
 
 	return
+}
+
+//a locked map for the cache of the status values
+var status_cache = struct {
+	sync.Mutex
+	items map[string]WorkStatus
+}{
+	items: map[string]WorkStatus{},
+}
+
+func GetProjectStatus(ctx *Context, path string) (st WorkStatus, err error) {
+	status_cache.Lock()
+	defer status_cache.Unlock()
+
+	//fast path, if it exists, just return
+	var ok bool
+	st, ok = status_cache.items[path]
+	if ok {
+		return
+	}
+
+	//cache miss: grab it from the database
+	var res struct {
+		Status WorkStatus
+	}
+	q := workWithImportPathSel(ctx, path)
+	err = q.
+		Sort(d{"when": -1}).
+		Select(d{"status": 1}).
+		One(&res)
+
+	//throw it in the cache if it was loaded properly
+	if err == nil {
+		st = res.Status
+		status_cache.items[path] = st
+	}
+	return
+}
+
+func update_project_status(path string, status WorkStatus) {
+	status_cache.Lock()
+	defer status_cache.Unlock()
+	status_cache.items[path] = status
 }
