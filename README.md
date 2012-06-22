@@ -8,3 +8,7 @@ the layout like a gopath or projects that are packages in the main directory
 ## How to use
 
 http://goci.me/how
+
+## Build status
+
+Currently ![](http://goci.me/project/image/github.com/zeebo/goci)
