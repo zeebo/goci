@@ -42,9 +42,38 @@
 				<td>http://goci.me{% reverse "google_hook" "vcs" "hg" %}</td>
 			</tr>
 
+			<tr>
+				<td>Arbitrary "go get"</td>
+				<td>Send a GET request to http://goci.me{% reverse "go_hook" "import" "<import path>" %}</td>
+			</tr>
+
 		</table>
 	</div>
 </div>
+</section>
+
+<section id="images">
+	<div class="span12">
+		<h2>Images</h2>
+		<div class="well">
+			<p>
+			If you would like to include an image of the current build status of
+			your project on your website or source control page, you just have to
+			point an image at
+			</p>
+
+			<pre>http://goci.me{% reverse "project_status_image" "import" "<import path>" %}</pre>
+
+			<p>
+			Please be kind enough to link back to somewhere on goci.me. Here's a
+			nice little template to help:
+			</p>
+
+			<pre>&lt;a href="http://goci.me{% reverse "project_detail" "import" "<import path>" %}"&gt;
+	&lt;img src="http://goci.me{% reverse "project_status_image" "import" "<import path>" %}" /&gt;
+&lt;/a&gt;</pre>
+		</div>
+	</div>
 </section>
 
 </section>
