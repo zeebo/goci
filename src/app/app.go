@@ -106,6 +106,7 @@ func main() {
 
 	//these handlers don't need contexts or anything special as they aren't seen by humans
 	handleGet("/bins/{id}", http.HandlerFunc(handle_test_request), "test_request")
+	handleGet("/bins/{id}/src", http.HandlerFunc(handle_test_request_src), "test_request_src")
 	handlePost("/bins/{id}/err", http.HandlerFunc(handle_test_error), "test_error") //more specific one has to be listed first
 	handlePost("/bins/{id}", http.HandlerFunc(handle_test_response), "test_response")
 

@@ -14,6 +14,14 @@ func handle_test_request(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func handle_test_request_src(w http.ResponseWriter, req *http.Request) {
+	id := req.FormValue(":id")
+	err := worker.ServeSource(w, id)
+	if err != nil {
+		log.Printf("serve src %s: %s", id, err)
+	}
+}
+
 func handle_test_response(w http.ResponseWriter, req *http.Request) {
 	id := req.URL.Query().Get(":id")
 	err := worker.Response(req.Body, id)

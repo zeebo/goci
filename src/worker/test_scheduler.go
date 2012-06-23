@@ -94,6 +94,27 @@ func Serve(w io.Writer, id string) (err error) {
 	return
 }
 
+func ServeSource(w io.Writer, id string) (err error) {
+	active_tests_lock.RLock()
+	defer active_tests_lock.RUnlock()
+
+	test, ex := active_tests[id]
+	if !ex {
+		err = testNotFound
+		return
+	}
+	if test.Tarball == "" {
+		return
+	}
+	f, err := os.Open(test.Tarball)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	_, err = io.Copy(w, f)
+	return
+}
+
 func Response(r io.Reader, id string) (err error) {
 	active_tests_lock.RLock()
 	defer active_tests_lock.RUnlock()
