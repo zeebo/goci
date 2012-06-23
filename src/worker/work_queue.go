@@ -160,8 +160,8 @@ func run_build_item(build builder.Build, w *Work) {
 		return
 	}
 
-	for _, path := range paths {
-		t := new_test(path, b, w)
+	for _, bundle := range paths {
+		t := new_test(bundle.Path, bundle.Tarball, b, w)
 		schedule_test <- t
 	}
 }

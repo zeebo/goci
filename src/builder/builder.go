@@ -45,13 +45,13 @@ type Work interface {
 
 type Build interface {
 	Error() error
-	Paths() []string
+	Paths() []Bundle
 	Revision() string
 	Cleanup() error
 }
 
 type build struct {
-	Ps   []string
+	Ps   []Bundle
 	base string
 	Err  error
 	Rev  string
@@ -65,7 +65,7 @@ func (b build) Error() error {
 	return b.Err
 }
 
-func (b build) Paths() []string {
+func (b build) Paths() []Bundle {
 	return b.Ps
 }
 
@@ -86,7 +86,7 @@ func (bui *build) appendPath(pack string) {
 	//not exist if there are no test files, so only add it if something
 	//is there.
 	if _, err := os.Stat(path); err == nil {
-		bui.Ps = append(bui.Ps, path)
+		bui.Ps = append(bui.Ps, Bundle{Path: path})
 	}
 }
 

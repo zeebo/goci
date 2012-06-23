@@ -100,6 +100,7 @@ type Test struct {
 	WorkID  string `json:"-"`
 	BuildID string `json:"-"`
 	Path    string `json:"-"`
+	Tarball string `json:"-"`
 
 	Output   string `json:",omitempty"`
 	Passed   bool
@@ -109,10 +110,11 @@ type Test struct {
 	done chan *Test //ref to the build channel
 }
 
-func new_test(path string, build *Build, work *Work) (t *Test) {
+func new_test(path, tarball string, build *Build, work *Work) (t *Test) {
 	t = &Test{
 		ID:      new_id(),
 		Path:    path,
+		Tarball: tarball,
 		BuildID: build.ID,
 		WorkID:  work.ID,
 
