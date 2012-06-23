@@ -193,7 +193,8 @@ func handle_project_status_image(w http.ResponseWriter, req *http.Request, ctx *
 
 	status, err := worker.GetProjectStatus(ctx.Context, path)
 	if err != nil {
-		internal_error(w, req, ctx, err)
+		//if there was an error, be wary!
+		w.Write(status_images[worker.WorkStatusWary])
 		return
 	}
 	w.Write(status_images[status])
