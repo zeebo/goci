@@ -90,7 +90,7 @@ func (b build) Cleanup() (err error) {
 	return
 }
 
-func (bui *build) appendPath(pack string) {
+func (bui *build) appendPath(pack, tarball string) {
 	//what the go tool does from inspecting the source
 	_, elem := path.Split(pack)
 	name := elem + ".test" + exeSuffix
@@ -101,6 +101,7 @@ func (bui *build) appendPath(pack string) {
 	//is there.
 	if _, err := os.Stat(path); err == nil {
 		bui.Ps = append(bui.Ps, path)
+		bui.Ts = append(bui.Ts, tarball)
 	}
 }
 
@@ -180,11 +181,11 @@ func CreateBuilds(w Work) (items []Build, err error) {
 	}
 
 	//grab the build items
-	items, err = createBuilds(w, e)
+	items, err = createNormalBuilds(w, e)
 	return
 }
 
-func createBuilds(w Work, e environ) (res []Build, err error) {
+func createNormalBuilds(w Work, e environ) (res []Build, err error) {
 	//clone the repo to a temporary location for checkout/copying
 	err = e.vcs.Clone(w.RepoPath(), e.tmpRepo)
 	if err != nil {
@@ -193,7 +194,7 @@ func createBuilds(w Work, e environ) (res []Build, err error) {
 
 	for _, rev := range w.Revisions() {
 		//create the build binaries for this revision
-		bui := createBuild(rev, e)
+		bui := createNormalBuild(rev, e)
 
 		//if we didn't create any binaries, don't keep the dump directory around
 		if len(bui.Ps) == 0 {
@@ -211,7 +212,7 @@ func createBuilds(w Work, e environ) (res []Build, err error) {
 	return
 }
 
-func createBuild(rev string, e environ) (bui build) {
+func createNormalBuild(rev string, e environ) (bui build) {
 	var packs, testpacks []string
 	bui.Rev = rev
 
@@ -249,14 +250,22 @@ func createBuild(rev string, e environ) (bui build) {
 		return
 	}
 
-	//build the binaries and move them to a temporary directory
+	//build the binaries
 	for _, pack := range packs {
+		//create the build binary
 		bui.Err = testbuild(e.gopath, pack, bui.base)
 		if bui.Err != nil {
 			return
 		}
 
-		bui.appendPath(pack)
+		//create a tarball
+		tarb := fp.Join(bui.base, "src.tar.gz")
+		bui.Err = tarball(e.srcDir, tarb)
+		if bui.Err != nil {
+			return
+		}
+
+		bui.appendPath(pack, tarb)
 	}
 
 	return
@@ -285,16 +294,25 @@ func createGoinstallBuild(w Work) (bui build, err error) {
 		return
 	}
 
+	//get the code and update it
 	bui.Err = get(GOPATH, true, testpacks...)
 	if bui.Err != nil {
 		return
 	}
 
+	//create the build binary
 	bui.Err = testbuild(GOPATH, pack, bui.base)
 	if bui.Err != nil {
 		return
 	}
 
-	bui.appendPath(pack)
+	//create a tarball
+	tarb, src_dir := fp.Join(bui.base, "src.tar.gz"), fp.Join(GOPATH, "src", pack)
+	bui.Err = tarball(src_dir, tarb)
+	if bui.Err != nil {
+		return
+	}
+
+	bui.appendPath(pack, tarb)
 	return
 }

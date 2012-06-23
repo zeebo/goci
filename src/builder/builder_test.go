@@ -2,11 +2,47 @@
 
 package builder
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
+
+func TestOldBuildEmptyTarballs(t *testing.T) {
+	b := build{
+		Ps: []string{"a", "b", "c"},
+		Ts: nil,
+	}
+	out := []Bundle{
+		{Path: "a"},
+		{Path: "b"},
+		{Path: "c"},
+	}
+
+	if in := b.Paths(); !reflect.DeepEqual(in, out) {
+		t.Errorf("Expected %+v. Got %+v", out, in)
+	}
+}
 
 func TestGoGetPackage(t *testing.T) {
 	w := &testWork{
 		importPath: "github.com/zeebo/irc",
+		workType:   WorkTypeGoinstall,
+	}
+
+	reps, err := CreateBuilds(w)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, r := range reps {
+		t.Logf("%q", r)
+		t.Log("cleanup:", r.Cleanup())
+	}
+}
+
+func TestTarballCreated(t *testing.T) {
+	w := &testWork{
+		importPath: "github.com/dustin/go-aprs",
 		workType:   WorkTypeGoinstall,
 	}
 

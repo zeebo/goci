@@ -10,7 +10,7 @@ type Bundle struct {
 	Tarball string
 }
 
-// tar -cvzf /path_name_of_tarball/bakup.2009.4.28.tgz -C /path_name_of_dir .
+// tar -cvzf /path_name_of_tarball/tb.tar.gz -C /path_name_of_dir .
 func tarball(dir, out string) (err error) {
 	cmd := exec.Command("tar", "-cvzf", out, "-C", dir, ".")
 	err = cmd.Run()
