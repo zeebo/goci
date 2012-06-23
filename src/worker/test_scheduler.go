@@ -50,17 +50,22 @@ func unschedule(id string) {
 
 func run_test_buffer() {
 	var buffer []string
+	lnum_tests := num_tests
 	for {
+		//flip on the select statement for sending in a test to be run if we
+		//have a test to run.
 		if len(buffer) > 0 {
-			select {
-			case id := <-buffer_test:
-				buffer = append(buffer, id)
-			case num_tests <- true:
-				schedule_run <- buffer[0]
-				buffer = buffer[1:]
-			}
+			lnum_tests = num_tests
 		} else {
-			buffer = append(buffer, <-buffer_test)
+			lnum_tests = nil
+		}
+
+		select {
+		case id := <-buffer_test:
+			buffer = append(buffer, id)
+		case lnum_tests <- true:
+			schedule_run <- buffer[0]
+			buffer = buffer[1:]
 		}
 	}
 }
