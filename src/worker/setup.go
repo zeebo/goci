@@ -5,7 +5,6 @@ import (
 	"heroku"
 	"io/ioutil"
 	"labix.org/v2/mgo"
-	"labix.org/v2/mgo/bson"
 	"log"
 	"setup"
 	"sync"
@@ -35,12 +34,25 @@ const (
 //helper type
 type d map[string]interface{}
 
-func create_capped_collection(name string) error {
-	err := db.Run(bson.D{{"create", name}, {"size", capsize}, {"capped", true}}, nil)
-	if e, ok := err.(*mgo.QueryError); err != nil && (!ok || e.Message != "collection already exists") {
-		return err
+func create_capped_collection(name string) (err error) {
+	info := &mgo.CollectionInfo{
+		ForceIdIndex: true,
+		Capped:       true,
+		MaxBytes:     capsize,
 	}
-	return nil
+	err = db.C(name).Create(info)
+
+	//fast path: no error
+	if err == nil {
+		return
+	}
+
+	//we have an error, but is it an acceptable one? if so, nil it
+	if e, ok := err.(*mgo.QueryError); ok && e.Message == "collection already exists" {
+		err = nil
+	}
+
+	return
 }
 
 var goroutine_spawn sync.Once
