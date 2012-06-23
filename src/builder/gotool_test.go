@@ -14,6 +14,7 @@ func TestUniqueStrings(t *testing.T) {
 		{[]string{}, []string{}},
 		{nil, nil},
 		{[]string{"b", "c", "b", "d"}, []string{"b", "c", "d"}},
+		{[]string{"", ""}, []string{""}},
 	}
 
 	for i, v := range data {
