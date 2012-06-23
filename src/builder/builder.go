@@ -51,7 +51,8 @@ type Build interface {
 }
 
 type build struct {
-	Ps   []Bundle
+	Ps   []string
+	Ts   []string
 	base string
 	Err  error
 	Rev  string
@@ -65,8 +66,21 @@ func (b build) Error() error {
 	return b.Err
 }
 
-func (b build) Paths() []Bundle {
-	return b.Ps
+func (b build) Paths() (bu []Bundle) {
+	var tarb string
+	for i, v := range b.Ps {
+		if i < len(b.Ts) {
+			tarb = b.Ts[i]
+		} else {
+			tarb = "" //no tarball for this path
+		}
+
+		bu = append(bu, Bundle{
+			Path:    v,
+			Tarball: tarb,
+		})
+	}
+	return
 }
 
 func (b build) Cleanup() (err error) {
@@ -86,7 +100,7 @@ func (bui *build) appendPath(pack string) {
 	//not exist if there are no test files, so only add it if something
 	//is there.
 	if _, err := os.Stat(path); err == nil {
-		bui.Ps = append(bui.Ps, Bundle{Path: path})
+		bui.Ps = append(bui.Ps, path)
 	}
 }
 
