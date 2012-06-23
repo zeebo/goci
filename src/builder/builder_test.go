@@ -86,28 +86,6 @@ func TestExternalThings(t *testing.T) {
 	}
 }
 
-func TestEndsWithGo(t *testing.T) {
-	w := &testWork{
-		revisions: []string{
-			"f53321b13ccf26ce15b24f8fb6dc07d8af981716",
-		},
-		vcs:        Git,
-		repoPath:   "git://github.com/dustin/aprs.go",
-		importPath: "github.com/dustin/aprs.go",
-		workType:   WorkTypePackage,
-	}
-
-	reps, err := CreateBuilds(w)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for _, r := range reps {
-		t.Logf("%q", r)
-		t.Log("cleanup:", r.Cleanup())
-	}
-}
-
 func TestStrangeLayout(t *testing.T) {
 	w := &testWork{
 		revisions: []string{

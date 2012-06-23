@@ -118,6 +118,7 @@ func listPackage(gopath string, pack string) (packs, testpacks []string, err err
 			packs = append(packs, tr)
 		}
 	}
+	packs = unique(packs)
 
 	//list all the imports for the test files
 	cmd = gopathCmd(gopath, "list", "-f", listTemplate, pack)
@@ -144,6 +145,7 @@ func listPackage(gopath string, pack string) (packs, testpacks []string, err err
 			testpacks = append(testpacks, tr)
 		}
 	}
+	testpacks = unique(testpacks)
 
 	return
 }
