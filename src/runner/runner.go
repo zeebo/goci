@@ -45,65 +45,106 @@ func timeout(cmd *exec.Cmd, dur time.Duration) (ok bool) {
 	return
 }
 
-func main() {
-	if len(os.Args) != 2 {
-		log.Print("usage: runner <url to binary>")
-		return
-	}
-	bin_url, post, error_url := os.Args[1], os.Args[1], path.Join(os.Args[1], "err")
-	var err error
+type env struct {
+	bin_url, src_url, post_url, err_url string
+}
 
-	//define a little helper that closes on the error value and error url
-	post_error := func(msg string) {
-		error_message := fmt.Sprintf("%s: %s", msg, err.Error())
-		log.Println(error_message)
-		http.Post(error_url, "text/plain", strings.NewReader(error_message))
+func newEnv(base string) env {
+	return env{
+		bin_url:  base,
+		src_url:  path.Join(base, "src"),
+		post_url: base,
+		err_url:  path.Join(base, "err"),
 	}
+}
 
-	bin, err := ioutil.TempFile("", "test")
+func (e env) post_error(err error, msg string) {
+	error_message := fmt.Sprintf("%s: %s", msg, err.Error())
+	log.Println(error_message)
+	http.Post(e.err_url, "text/plain", strings.NewReader(error_message))
+}
+
+func (e env) download(in, fn string) (name string, n int64) {
+	bin, err := ioutil.TempFile("", fn)
 	if err != nil {
-		post_error("error creating temp file")
+		e.post_error(err, "error creating temp file")
 		return
 	}
-
-	defer os.Remove(bin.Name())
+	name = bin.Name()
 
 	//set the file as executable
-	err = os.Chmod(bin.Name(), 0777)
+	err = os.Chmod(name, 0777)
 	if err != nil {
-		post_error("error changing permissions on binary")
+		e.post_error(err, "error changing permissions on binary")
 		return
 	}
 
-	resp, err := http.Get(bin_url)
+	resp, err := http.Get(in)
 	if err != nil {
-		post_error("error downloading binary")
+		e.post_error(err, "error downloading binary")
 		return
 	}
 	defer resp.Body.Close()
 
-	_, err = io.Copy(bin, resp.Body)
+	n, err = io.Copy(bin, resp.Body)
 	if err != nil {
-		post_error("error copying response body into binary")
+		e.post_error(err, "error copying response body into binary")
 		return
 	}
 
 	err = bin.Sync()
 	if err != nil {
-		post_error("error flusing binary to disk")
+		e.post_error(err, "error flusing binary to disk")
 		return
 	}
 
 	err = bin.Close()
 	if err != nil {
-		post_error("error closing the binary")
+		e.post_error(err, "error closing the binary")
 		return
 	}
 
+	return
+}
+
+func main() {
+	if len(os.Args) != 2 {
+		log.Print("usage: runner <url to binary>")
+		return
+	}
+	e := newEnv(os.Args[1])
+	dir, err := os.Getwd()
+	if err != nil {
+		e.post_error(err, "unable to get current working directory")
+		return
+	}
+
+	bin_name, n := e.download(e.bin_url, "test")
+	if n == 0 {
+		e.post_error(nil, "no downloaded data")
+		return
+	}
+	defer os.Remove(bin_name)
+
+	tarball, n := e.download(e.src_url, "src.tar.gz")
+	if n != 0 {
+		//we need to make a tmpdir with the src to run the test in
+		dir, err = ioutil.TempDir("", "testdir")
+		if err != nil {
+			e.post_error(err, "unable to create temp dir for the src")
+			return
+		}
+		defer os.RemoveAll(dir)
+
+		//TODO: extract the tarball to the source directory
+	}
+	defer os.Remove(tarball)
+
 	var buf bytes.Buffer
-	cmd := exec.Command(bin.Name(), "-test.v")
+	cmd := exec.Command(bin_name, "-test.v")
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
+	cmd.Dir = dir
 	cmd.Env = []string{
 		//copy in some basic env vars if we have them
 		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
@@ -115,9 +156,8 @@ func main() {
 	finished := timeout(cmd, time.Minute)
 
 	if finished {
-		http.Post(post, "text/plain", &buf)
+		http.Post(e.post_url, "text/plain", &buf)
 	} else {
-		err = timeout_error
-		post_error("error running command")
+		e.post_error(timeout_error, "error running command")
 	}
 }
