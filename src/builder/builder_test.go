@@ -23,7 +23,7 @@ func TestGoGetPackage(t *testing.T) {
 
 func TestGoGetPackageTestDeps(t *testing.T) {
 	w := &testWork{
-		importPath: "launchpad.net/mgo",
+		importPath: "labix.org/v2/mgo",
 		workType:   WorkTypeGoinstall,
 	}
 

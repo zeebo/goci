@@ -1,6 +1,6 @@
 package worker
 
-import "launchpad.net/mgo"
+import "labix.org/v2/mgo"
 
 type Context struct {
 	db *mgo.Database

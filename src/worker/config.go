@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"heroku"
-	"launchpad.net/mgo"
+	"labix.org/v2/mgo"
 	"log"
 	"net/url"
 	"path"

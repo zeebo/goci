@@ -1,8 +1,8 @@
 package worker
 
 import (
-	"launchpad.net/mgo"
 	"sync"
+	"labix.org/v2/mgo"
 	"time"
 )
 
