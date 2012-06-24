@@ -76,5 +76,22 @@
 	</div>
 </section>
 
+<section id="buildtags">
+	<div class="span12">
+		<h2>Build Tags</h2>
+		<div class="well">
+			<p>All of the code compiled by GoCI is passed a build tag of "goci".
+			This allows you to optionally include/exclude portions of your binary
+			or portions of your tests to be run on GoCI. For example if you have
+			some tests that require a C library that is not installed, you can
+			disable it with a build directive of</p>
+
+			<pre>// +build !goci</pre>
+
+			<p>If you would like more information about build tags and what they
+			can do for you, visit the <a href="http://golang.org/pkg/go/build">
+			go/build</a> documentation.</p>
+		</div>
+	</div>
 </section>
 {% end %}
