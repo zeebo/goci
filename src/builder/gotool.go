@@ -86,6 +86,7 @@ func get(gopath string, update bool, packs ...string) (err error) {
 }
 
 const listTemplate = `{{ range .TestImports }}{{ . }}
+{{ end }}{{ range .XTestImports }}{{ . }}
 {{ end }}`
 
 func list(gopath string) (packs, testpacks []string, err error) {
@@ -146,7 +147,6 @@ func listPackage(gopath string, pack string) (packs, testpacks []string, err err
 		}
 	}
 	testpacks = unique(testpacks)
-
 	return
 }
 

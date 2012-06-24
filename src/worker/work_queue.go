@@ -128,7 +128,7 @@ func run_work_queue() {
 }
 
 func run_work_item(work mongoWorkValue) {
-	log.Println("got work item:", work.Work.RepoPath())
+	log.Println("got work item:", work.Work.RepoPath(), work.Work.ImportPath())
 	w, done := new_work(work.Work), make(chan bool)
 
 	defer finish_work(w, work.ID)

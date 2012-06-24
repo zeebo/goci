@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	fp "path/filepath"
 	"runtime"
+	fp "path/filepath"
 )
 
 var (
@@ -294,10 +294,12 @@ func createGoinstallBuild(w Work) (bui build, err error) {
 		return
 	}
 
-	//get the code and update it
-	bui.Err = get(GOPATH, true, testpacks...)
-	if bui.Err != nil {
-		return
+	if len(testpacks) > 0 {
+		//get the code and update it
+		bui.Err = get(GOPATH, true, testpacks...)
+		if bui.Err != nil {
+			return
+		}
 	}
 
 	//create the build binary
