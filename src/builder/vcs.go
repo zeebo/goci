@@ -11,10 +11,12 @@ import (
 type VCS interface {
 	Checkout(dir, rev string) (err error)
 	Clone(repo, dir string) (err error)
+	Current(dir string) (rev string, err error)
 }
 
 func init() {
 	gob.Register(&vcs{})
+	gob.Register(&vcsError{})
 }
 
 type vcs struct {
@@ -22,6 +24,7 @@ type vcs struct {
 
 	FClone    string
 	FCheckout string
+	FCurrent  string
 }
 
 var (
@@ -35,6 +38,7 @@ var (
 
 		FClone:    "clone {repo} {dir}",
 		FCheckout: "checkout {rev}",
+		FCurrent:  "rev-parse HEAD",
 	}
 
 	vcsHg = &vcs{
@@ -42,19 +46,20 @@ var (
 
 		FClone:    "clone -U {repo} {dir}",
 		FCheckout: "update -r {rev}",
+		FCurrent:  "parents --template {node}",
 	}
 )
 
 type vcsError struct {
-	msg    string
-	vcs    *vcs
-	err    error
-	args   []string
-	output string
+	Msg    string
+	Vcs    *vcs
+	Err    error
+	Args   []string
+	Output string
 }
 
 func (v *vcsError) Error() string {
-	return fmt.Sprintf("%s: %s\nvcs: %s\nargs: %s\noutput: %s", v.msg, v.err.Error(), v.vcs.Name, v.args, v.output)
+	return fmt.Sprintf("%s: %s\nvcs: %s\nargs: %s\noutput: %s", v.Msg, v.Err.Error(), v.Vcs.Name, v.Args, v.Output)
 }
 
 func expand(s string, vals map[string]string) string {
@@ -84,14 +89,13 @@ func (v *vcs) Checkout(dir, rev string) (err error) {
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
 
-	err = cmd.Run()
-	if err != nil {
+	if e := cmd.Run(); e != nil {
 		err = &vcsError{
-			msg:    "Failed to checkout",
-			vcs:    v,
-			err:    err,
-			args:   cmd.Args,
-			output: buf.String(),
+			Msg:    "Failed to checkout",
+			Vcs:    v,
+			Err:    e,
+			Args:   cmd.Args,
+			Output: buf.String(),
 		}
 	}
 	return
@@ -103,15 +107,37 @@ func (v *vcs) Clone(repo, dir string) (err error) {
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
 
-	err = cmd.Run()
-	if err != nil {
+	if e := cmd.Run(); e != nil {
 		err = &vcsError{
-			msg:    "Failed to clone",
-			vcs:    v,
-			err:    err,
-			args:   cmd.Args,
-			output: buf.String(),
+			Msg:    "Failed to clone",
+			Vcs:    v,
+			Err:    e,
+			Args:   cmd.Args,
+			Output: buf.String(),
 		}
 	}
+	return
+}
+
+func (v *vcs) Current(dir string) (rev string, err error) {
+	cmd := v.expandCmd(v.FCurrent)
+	var buf bytes.Buffer
+	cmd.Dir = dir
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+
+	if e := cmd.Run(); e != nil {
+		err = &vcsError{
+			Msg:    "Failed to get current revision",
+			Vcs:    v,
+			Err:    e,
+			Args:   cmd.Args,
+			Output: buf.String(),
+		}
+		return
+	}
+
+	//do parsing into rev
+	rev = strings.TrimSpace(buf.String())
 	return
 }

@@ -288,6 +288,15 @@ func createGoinstallBuild(w Work) (bui build, err error) {
 		return
 	}
 
+	//check if we can get a revision
+	src_dir := fp.Join(GOPATH, "src", pack)
+	for _, v := range []VCS{Git, HG} {
+		if r, err := v.Current(src_dir); err == nil {
+			bui.Rev = r
+			break
+		}
+	}
+
 	//find all the deps for the tests and build those
 	var testpacks []string
 	_, testpacks, bui.Err = listPackage(GOPATH, pack)
@@ -310,7 +319,7 @@ func createGoinstallBuild(w Work) (bui build, err error) {
 	}
 
 	//create a tarball
-	tarb, src_dir := fp.Join(bui.base, "src.tar.gz"), fp.Join(GOPATH, "src", pack)
+	tarb := fp.Join(bui.base, "src.tar.gz")
 	bui.Err = tarball(src_dir, tarb)
 	if bui.Err != nil {
 		return
