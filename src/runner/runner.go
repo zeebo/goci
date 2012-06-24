@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"strings"
 	"time"
 )
@@ -52,14 +51,14 @@ type env struct {
 func newEnv(base string) env {
 	return env{
 		bin_url:  base,
-		src_url:  path.Join(base, "src"),
+		src_url:  base + "/src",
 		post_url: base,
-		err_url:  path.Join(base, "err"),
+		err_url:  base + "/err",
 	}
 }
 
 func (e env) post_error(err error, msg string) {
-	error_message := fmt.Sprintf("%s: %s", msg, err.Error())
+	error_message := fmt.Sprintf("%s: %v", msg, err)
 	log.Println(error_message)
 	http.Post(e.err_url, "text/plain", strings.NewReader(error_message))
 }
@@ -75,32 +74,32 @@ func (e env) download(in, fn string) (name string, n int64) {
 	//set the file as executable
 	err = os.Chmod(name, 0777)
 	if err != nil {
-		e.post_error(err, "error changing permissions on binary")
+		e.post_error(err, "error changing permissions on "+fn)
 		return
 	}
 
 	resp, err := http.Get(in)
 	if err != nil {
-		e.post_error(err, "error downloading binary")
+		e.post_error(err, "error downloading "+fn)
 		return
 	}
 	defer resp.Body.Close()
 
 	n, err = io.Copy(bin, resp.Body)
 	if err != nil {
-		e.post_error(err, "error copying response body into binary")
+		e.post_error(err, "error copying response body into "+fn)
 		return
 	}
 
 	err = bin.Sync()
 	if err != nil {
-		e.post_error(err, "error flusing binary to disk")
+		e.post_error(err, "error flushing to disk the "+fn)
 		return
 	}
 
 	err = bin.Close()
 	if err != nil {
-		e.post_error(err, "error closing the binary")
+		e.post_error(err, "error closing the "+fn)
 		return
 	}
 
@@ -120,13 +119,14 @@ func main() {
 	}
 
 	bin_name, n := e.download(e.bin_url, "test")
+	defer os.Remove(bin_name)
 	if n == 0 {
 		e.post_error(nil, "no downloaded data")
 		return
 	}
-	defer os.Remove(bin_name)
 
-	tarball, n := e.download(e.src_url, "src.tar.gz")
+	tarball, n := e.download(e.src_url, "src")
+	defer os.Remove(tarball)
 	if n != 0 {
 		//we need to make a tmpdir with the src to run the test in
 		dir, err = ioutil.TempDir("", "testdir")
@@ -136,9 +136,13 @@ func main() {
 		}
 		defer os.RemoveAll(dir)
 
-		//TODO: extract the tarball to the source directory
+		//extract the tarball to the source directory
+		cmd := exec.Command("tar", "zxf", tarball, "-C", dir)
+		if err := cmd.Run(); err != nil {
+			e.post_error(err, "unable to untar source")
+			return
+		}
 	}
-	defer os.Remove(tarball)
 
 	var buf bytes.Buffer
 	cmd := exec.Command(bin_name, "-test.v")
