@@ -1,5 +1,6 @@
 src/*
 !src/app/
+src/app/foo.go
 !src/builder/
 !src/setup/
 !src/github/

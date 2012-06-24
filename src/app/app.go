@@ -127,9 +127,6 @@ func main() {
 	handlePost("/hooks/google/{vcs}", http.HandlerFunc(handle_google_hook_package), "google_hook")
 	router.Handle("/hooks/go/{import:.*}", http.HandlerFunc(handle_go_get)).Name("go_hook")
 
-	//debug handler
-	handleRequest("/foo", handlerFunc(handle_simple_work), "foo")
-
 	handleGet("/build/{id}", handlerFunc(handle_build_info), "build_info")
 	handleGet("/current/html", handlerFunc(handle_work_html), "current_html")
 	handleGet("/current", handlerFunc(handle_work_json), "current")
@@ -151,7 +148,6 @@ func main() {
 	//build the nav and subnav
 	base_meta.Nav = navList{
 		&navBase{"Recent", reverse("index"), nil},
-		// &navBase{"Projects", reverse("index"), nil},
 		&navBase{"All", reverse("all"), nil},
 		&navBase{"List", reverse("project_list"), nil},
 		&navBase{"How", reverse("how"), nil},

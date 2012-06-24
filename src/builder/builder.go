@@ -259,8 +259,9 @@ func createNormalBuild(rev string, e environ) (bui build) {
 		}
 
 		//create a tarball
-		tarb := fp.Join(bui.base, "src.tar.gz")
-		bui.Err = tarball(e.srcDir, tarb)
+		pack_src := fp.Join(e.gopath, "src", pack)
+		tarb := fp.Join(bui.base, hash(pack))
+		bui.Err = tarball(pack_src, tarb)
 		if bui.Err != nil {
 			return
 		}

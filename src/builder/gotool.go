@@ -100,8 +100,7 @@ func listPackage(gopath string, pack string) (packs, testpacks []string, err err
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
 	cmd.Dir = gopath
-	err = cmd.Run()
-	if err != nil {
+	if e := cmd.Run(); e != nil {
 		err = &cmdError{
 			Msg:    "Error listing the packages",
 			Err:    err.Error(),
@@ -127,8 +126,7 @@ func listPackage(gopath string, pack string) (packs, testpacks []string, err err
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
 	cmd.Dir = gopath
-	err = cmd.Run()
-	if err != nil {
+	if e := cmd.Run(); e != nil {
 		err = &cmdError{
 			Msg:    "Error listing the packages",
 			Err:    err.Error(),
@@ -160,24 +158,57 @@ func search(packs []string, p string) bool {
 }
 
 func copy(src, dst string) (err error) {
-	err = os.RemoveAll(dst)
-	if err != nil {
+	if e := os.RemoveAll(dst); e != nil {
+		err = &cmdError{
+			Msg:  "Error removing all",
+			Err:  e.Error(),
+			Args: []string{dst},
+		}
+
 		return
 	}
 
-	err = os.MkdirAll(dst, 0777)
-	if err != nil {
+	if e := os.MkdirAll(dst, 0777); e != nil {
+		err = &cmdError{
+			Msg:  "Error making all directories",
+			Err:  e.Error(),
+			Args: []string{dst},
+		}
 		return
 	}
 
 	cmd := exec.Command("cp", "-a", src, dst)
-	err = cmd.Run()
-	if err != nil {
+	if e := cmd.Run(); e != nil {
 		err = &cmdError{
-			Msg:    "Error copying files",
-			Err:    err.Error(),
+			Msg:  "Error copying files",
+			Err:  e.Error(),
+			Args: cmd.Args,
+		}
+		return
+	}
+
+	return
+}
+
+// tar -cvzf /path_name_of_tarball/tb.tar.gz -C /path_name_of_dir .
+func tarball(dir, out string) (err error) {
+	cmd := exec.Command("tar", "-cvzf", out, "-C", dir, ".")
+	var buf bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &buf, &buf
+	if e := cmd.Run(); e != nil {
+		err = &cmdError{
+			Msg:    "error building tarball of source",
+			Err:    e.Error(),
 			Args:   cmd.Args,
-			Output: "",
+			Output: buf.String(),
+		}
+		return
+	}
+	//make sure the tarball exists
+	if _, e := os.Stat(out); e != nil {
+		err = &cmdError{
+			Msg: "couldn't find tarball after making it",
+			Err: e.Error(),
 		}
 	}
 	return
