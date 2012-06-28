@@ -1,24 +1,4 @@
-window.setInterval(function() {
-	$("#sidebar").load("/current/html");
-	$("#status").load("/status");
-}, 10000);
-
-$(function() {
-	var toggle = function() {
-		$('a.toggles i').toggleClass('icon-chevron-left icon-chevron-right');
-		$('#sidebar').animate({
-			width: 'toggle'
-		}, 0);
-		$('#content').toggleClass('span12 span9 no-sidebar');
-	};
-	$('a.toggles').click(toggle);
-	toggle();
-
-	$("#sidebar").load("/current/html");
-});
-
-// Convert dates to user's timezone on load.
-$(function() {
+var convert = function() {
 	var m = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(/ /);
 	$('.date').each(function() {
 		var dateText = $(this).text() + ' UTC'
@@ -43,4 +23,26 @@ $(function() {
 			hours+':'+minutes+':'+seconds+' '+ meridiem
 		)
 	})
-})
+};
+
+window.setInterval(function() {
+	$("#sidebar").load("/current/html");
+	$("#status").load("/status");
+	convert();
+}, 10000);
+
+$(function() {
+	var toggle = function() {
+		$('a.toggles i').toggleClass('icon-chevron-left icon-chevron-right');
+		$('#sidebar').animate({
+			width: 'toggle'
+		}, 0);
+		$('#content').toggleClass('span12 span9 no-sidebar');
+	};
+	$('a.toggles').click(toggle);
+	toggle();
+	convert();
+
+	$("#sidebar").load("/current/html");
+});
+
