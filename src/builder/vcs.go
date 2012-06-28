@@ -45,7 +45,7 @@ var (
 		FClone:    "clone {repo} {dir}",
 		FCheckout: "checkout {rev}",
 		FCurrent:  "rev-parse HEAD",
-		FDate:     "log -1 --format=\"%cD\" {rev}",
+		FDate:     "log -1 --format=%cD {rev}",
 
 		parse: func(in string) (t time.Time, err error) {
 			t, err = time.Parse(time.RFC1123Z, in)
