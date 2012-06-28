@@ -19,6 +19,7 @@ type VCS interface {
 func init() {
 	gob.Register(&vcs{})
 	gob.Register(&vcsError{})
+	gob.Register(&time.ParseError{})
 }
 
 type vcs struct {
@@ -44,7 +45,7 @@ var (
 		FClone:    "clone {repo} {dir}",
 		FCheckout: "checkout {rev}",
 		FCurrent:  "rev-parse HEAD",
-		FDate:     "log -1 --format=\"%ct\" {rev}",
+		FDate:     "log -1 --format=\"%cD\" {rev}",
 
 		parse: func(in string) (t time.Time, err error) {
 			t, err = time.Parse(time.RFC1123Z, in)
