@@ -24,7 +24,7 @@
 					<td>{% $w.DisplayName %}</td>
 					{% end %}
 					<td><span class="fixed">{% $b.Revision %}</span></td>
-					<td>{% with $w.When.Local %}{% .Format "Jan 2, 2006 3:04:05 PM" %}{% end %}</td>
+					<td><span class="date">{% with $w.When.Local %}{% .Format "Jan 2, 2006 3:04:05 PM" %}{% end %}</span></td>
 					<td><a href="{% reverse "build_info" "id" $b.ID %}">{% if $b.Passed %}<span class="label label-success">Passed</span>{% else %}<span class="label label-important">Failed</span>{% end %}</a></td>
 				</tr>
 	{% else %}
@@ -35,7 +35,7 @@
 					<td>{% $w.DisplayName %}</td>
 					{% end %}
 					<td><span class="fixed">No builds{% if $w.Error %} - Error building code{% end %}</span></td>
-					<td>{% with $w.When.Local %}{% .Format "Jan 2, 2006 3:04:05 PM" %}{% end %}</td>
+					<td><span class="date">{% with $w.When.Local %}{% .Format "Jan 2, 2006 3:04:05 PM" %}{% end %}</span></td>
 					<td>{% if $w.Error %}<span class="label label-important">Failed</span>{% else %}<span class="label label-success">Passed</span>{% end %}</td>
 				</tr>
 	{% end%}

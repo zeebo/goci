@@ -87,6 +87,7 @@ type Build struct {
 	Tests    []*Test
 
 	Revision string
+	Date     time.Time
 	Passed   bool
 
 	poke chan *Test
@@ -129,6 +130,7 @@ func new_build(build builder.Build, work *Work) (b *Build) {
 		ID:       new_id(),
 		Build:    build,
 		WorkID:   work.ID,
+		Date:     build.Date(),
 		Revision: build.Revision(),
 		Passed:   true,
 
@@ -214,19 +216,25 @@ func (w *Work) WholeID() string {
 }
 
 func (w *Work) update_status() {
-	var passed, failed = true, true
-	for _, b := range w.Builds {
-		passed = passed && b.Passed
-		failed = failed && !b.Passed
-	}
-	switch {
-	case passed && !failed:
-		w.Status = WorkStatusPassed
-	case failed && !passed:
-		w.Status = WorkStatusFailed
-	default:
+	if len(w.Builds) == 0 {
 		w.Status = WorkStatusWary
+		return
 	}
+
+	//go by the most recent build
+	bt, bs := w.Builds[0].Date, w.Builds[0].Passed
+	for _, b := range w.Builds[1:] {
+		if b.Date.After(bt) {
+			bt, bs = b.Date, b.Passed
+		}
+	}
+
+	if bs {
+		w.Status = WorkStatusPassed
+	} else {
+		w.Status = WorkStatusFailed
+	}
+	return
 }
 
 func (w *Work) wait_for(num int, done chan bool) {
