@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 type VCS interface {
 	Checkout(dir, rev string) (err error)
 	Clone(repo, dir string) (err error)
 	Current(dir string) (rev string, err error)
+	Date(dir, rev string) (t time.Time, err error)
 }
 
 func init() {
@@ -25,6 +27,9 @@ type vcs struct {
 	FClone    string
 	FCheckout string
 	FCurrent  string
+	FDate     string
+
+	parse func(string) (time.Time, error)
 }
 
 var (
@@ -39,6 +44,12 @@ var (
 		FClone:    "clone {repo} {dir}",
 		FCheckout: "checkout {rev}",
 		FCurrent:  "rev-parse HEAD",
+		FDate:     "log -1 --format=\"%ct\" {rev}",
+
+		parse: func(in string) (t time.Time, err error) {
+			t, err = time.Parse(time.RFC1123Z, in)
+			return
+		},
 	}
 
 	vcsHg = &vcs{
@@ -47,6 +58,12 @@ var (
 		FClone:    "clone -U {repo} {dir}",
 		FCheckout: "update -r {rev}",
 		FCurrent:  "parents --template {node}",
+		FDate:     "parents --template {date|rfc822date} -r {rev}",
+
+		parse: func(in string) (t time.Time, err error) {
+			t, err = time.Parse(time.RFC822Z, in)
+			return
+		},
 	}
 )
 
@@ -139,5 +156,37 @@ func (v *vcs) Current(dir string) (rev string, err error) {
 
 	//do parsing into rev
 	rev = strings.TrimSpace(buf.String())
+	return
+}
+
+func (v *vcs) Date(dir, rev string) (t time.Time, err error) {
+	cmd := v.expandCmd(v.FDate, "rev", rev)
+	var buf bytes.Buffer
+	cmd.Dir = dir
+	cmd.Stdout = &buf
+	cmd.Stdin = &buf
+
+	if e := cmd.Run(); e != nil {
+		err = &vcsError{
+			Msg:    "Failed to get the date for revision",
+			Vcs:    v,
+			Err:    e,
+			Args:   cmd.Args,
+			Output: buf.String(),
+		}
+		return
+	}
+
+	//parse the time
+	t, e := v.parse(buf.String())
+	if e != nil {
+		err = &vcsError{
+			Msg:    "Failed to parse date for revision",
+			Vcs:    v,
+			Err:    e,
+			Args:   cmd.Args,
+			Output: buf.String(),
+		}
+	}
 	return
 }

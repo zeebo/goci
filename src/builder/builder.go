@@ -7,6 +7,8 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"sort"
+	"time"
 	fp "path/filepath"
 )
 
@@ -47,6 +49,7 @@ type Build interface {
 	Error() error
 	Paths() []Bundle
 	Revision() string
+	Date() time.Time
 	Cleanup() error
 }
 
@@ -55,7 +58,9 @@ type build struct {
 	Ts   []string
 	base string
 	Err  error
+
 	Rev  string
+	RevT time.Time
 }
 
 func (b build) Revision() string {
@@ -83,12 +88,23 @@ func (b build) Paths() (bu []Bundle) {
 	return
 }
 
+func (b build) Date() time.Time {
+	return b.RevT
+}
+
 func (b build) Cleanup() (err error) {
 	if b.base != "" {
 		err = os.RemoveAll(b.base)
 	}
 	return
 }
+
+//make it sortable based on the revision time
+type sortBuild []Build
+
+func (b sortBuild) Len() int           { return len(b) }
+func (b sortBuild) Less(i, j int) bool { return b[i].Date().Before(b[j].Date()) }
+func (b sortBuild) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
 
 func (bui *build) appendPath(pack, tarball string) {
 	//what the go tool does from inspecting the source
@@ -106,6 +122,7 @@ func (bui *build) appendPath(pack, tarball string) {
 }
 
 var _ Build = build{}
+var _ sort.Interface = sortBuild{}
 
 type environ struct {
 	gopath  string
@@ -182,6 +199,9 @@ func CreateBuilds(w Work) (items []Build, err error) {
 
 	//grab the build items
 	items, err = createNormalBuilds(w, e)
+
+	//sort them based on date (earliest first)
+	sort.Sort(sortBuild(items))
 	return
 }
 
@@ -224,6 +244,12 @@ func createNormalBuild(rev string, e environ) (bui build) {
 
 	//checkout the revision we need
 	bui.Err = e.vcs.Checkout(e.tmpRepo, rev)
+	if bui.Err != nil {
+		return
+	}
+
+	//get the date on that revision
+	bui.RevT, bui.Err = e.vcs.Date(e.tmpRepo, rev)
 	if bui.Err != nil {
 		return
 	}
@@ -294,6 +320,16 @@ func createGoinstallBuild(w Work) (bui build, err error) {
 		if r, err := v.Current(src_dir); err == nil {
 			bui.Rev = r
 			break
+		}
+	}
+
+	//check if we can get a date, only if we have a revision
+	if bui.Rev != "Latest" {
+		for _, v := range []VCS{Git, HG} {
+			if t, err := v.Date(src_dir, bui.Rev); err == nil {
+				bui.RevT = t
+				break
+			}
 		}
 	}
 
