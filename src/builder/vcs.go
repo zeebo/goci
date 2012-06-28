@@ -179,7 +179,7 @@ func (v *vcs) Date(dir, rev string) (t time.Time, err error) {
 	}
 
 	//parse the time
-	t, e := v.parse(buf.String())
+	t, e := v.parse(strings.TrimSpace(buf.String()))
 	if e != nil {
 		err = &vcsError{
 			Msg:    "Failed to parse date for revision",
