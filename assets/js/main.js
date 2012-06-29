@@ -27,7 +27,7 @@ var convert = function() {
 
 window.setInterval(function() {
 	$("#sidebar").load("/current/html");
-	$("#status").load("/status", convert);
+	$("#status").load("/status");
 }, 10000);
 
 $(function() {
