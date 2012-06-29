@@ -26,9 +26,8 @@ var convert = function() {
 };
 
 window.setInterval(function() {
-	$("#sidebar").load("/current/html");
+	$("#sidebar").load("/current/html", convert);
 	$("#status").load("/status");
-	convert();
 }, 10000);
 
 $(function() {
