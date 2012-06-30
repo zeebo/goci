@@ -7,11 +7,17 @@ type Context struct {
 }
 
 func NewContext() *Context {
+	var d *mgo.Database
+	if db != nil {
+		d = db.Session.Clone().DB(config.Name)
+	}
 	return &Context{
-		db: db.Session.Clone().DB(config.Name),
+		db: d,
 	}
 }
 
 func (c *Context) Close() {
-	c.db.Session.Close()
+	if c.db != nil {
+		c.db.Session.Close()
+	}
 }

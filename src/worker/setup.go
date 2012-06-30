@@ -55,7 +55,10 @@ func create_capped_collection(name string) (err error) {
 	return
 }
 
-var goroutine_spawn sync.Once
+var (
+	goroutine_spawn sync.Once
+	mongo_spawn     sync.Once
+)
 
 //run the setup to run the work
 func Setup(c Config) error {
@@ -64,8 +67,6 @@ func Setup(c Config) error {
 		go run_test_scheduler()
 		go run_run_scheduler()
 		go run_saver()
-		go run_mgo_work_queue()
-		go run_mgo_queue_dispatcher()
 		go state_manager()
 	})
 
@@ -90,6 +91,11 @@ func Setup(c Config) error {
 
 	//build cached database value
 	db = config.BuildMongoDatabase()
+
+	mongo_spawn.Do(func() {
+		go run_mgo_work_queue()
+		go run_mgo_queue_dispatcher()
+	})
 
 	//make sure that mongo is set up properly
 	collections := []string{

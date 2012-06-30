@@ -7,6 +7,9 @@ import (
 )
 
 func GetRecentWork(ctx *Context, limit int) (ws []*Work, err error) {
+	if ctx.db == nil {
+		return
+	}
 	err = ctx.db.C(worklog).
 		Find(nil).
 		Sort("-$natural").
@@ -16,6 +19,9 @@ func GetRecentWork(ctx *Context, limit int) (ws []*Work, err error) {
 }
 
 func GetWorkFromBuild(ctx *Context, id string) (wk *Work, err error) {
+	if ctx.db == nil {
+		return
+	}
 	err = ctx.db.C(worklog).
 		Find(d{"builds._id": id}).
 		One(&wk)
@@ -23,6 +29,9 @@ func GetWorkFromBuild(ctx *Context, id string) (wk *Work, err error) {
 }
 
 func CurrentWork(ctx *Context) (w []*mongoWork, err error) {
+	if ctx.db == nil {
+		return
+	}
 	err = ctx.db.C(workqueue).
 		Find(nil).
 		Limit(queue_size).
@@ -31,6 +40,9 @@ func CurrentWork(ctx *Context) (w []*mongoWork, err error) {
 }
 
 func CountWork(ctx *Context) (n int, err error) {
+	if ctx.db == nil {
+		return
+	}
 	n, err = ctx.db.C(worklog).
 		Find(nil).
 		Count()
@@ -38,6 +50,9 @@ func CountWork(ctx *Context) (n int, err error) {
 }
 
 func WorkInRange(ctx *Context, low, hi int) (ws []*Work, err error) {
+	if ctx.db == nil {
+		return
+	}
 	count := hi - low + 1
 	err = ctx.db.C(worklog).
 		Find(nil).
@@ -49,24 +64,36 @@ func WorkInRange(ctx *Context, low, hi int) (ws []*Work, err error) {
 }
 
 func workWithImportPathSel(ctx *Context, path string) (q *mgo.Query) {
+	if ctx.db == nil {
+		return
+	}
 	q = ctx.db.C(worklog).
 		Find(d{"importpath": path})
 	return
 }
 
 func CountWorkFor(ctx *Context, path string) (n int, err error) {
+	if ctx.db == nil {
+		return
+	}
 	q := workWithImportPathSel(ctx, path)
 	n, err = q.Count()
 	return
 }
 
 func WorkWithImportPath(ctx *Context, path string) (ws []*Work, err error) {
+	if ctx.db == nil {
+		return
+	}
 	q := workWithImportPathSel(ctx, path)
 	err = q.All(&ws)
 	return
 }
 
 func WorkWithImportPathInRange(ctx *Context, path string, low, hi int) (ws []*Work, err error) {
+	if ctx.db == nil {
+		return
+	}
 	q := workWithImportPathSel(ctx, path)
 	count := hi - low + 1
 	err = q.
@@ -101,6 +128,9 @@ var work_status_job = &mgo.MapReduce{
 }
 
 func WorkStatusList(ctx *Context) (ws []WorkStatusResult, err error) {
+	if ctx.db == nil {
+		return
+	}
 	var res []struct {
 		ImportPath string `bson:"_id"`
 		Value      struct {
@@ -138,6 +168,9 @@ var status_cache = struct {
 }
 
 func GetProjectStatus(ctx *Context, path string) (st WorkStatus, err error) {
+	if ctx.db == nil {
+		return
+	}
 	status_cache.Lock()
 	defer status_cache.Unlock()
 
