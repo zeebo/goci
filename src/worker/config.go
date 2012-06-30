@@ -35,7 +35,7 @@ func (c Config) BuildHerokuClient() *heroku.Client {
 func (c Config) BuildMongoDatabase() *mgo.Database {
 	sess, err := mgo.Dial(c.URL)
 	if err != nil {
-		panic(err)
+		return nil
 	}
 	return sess.DB(c.Name)
 }

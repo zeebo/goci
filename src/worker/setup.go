@@ -90,7 +90,9 @@ func Setup(c Config) error {
 	hclient = config.BuildHerokuClient()
 
 	//build cached database value
-	db = config.BuildMongoDatabase()
+	for db == nil {
+		db = config.BuildMongoDatabase()
+	}
 
 	mongo_spawn.Do(func() {
 		go run_mgo_work_queue()
