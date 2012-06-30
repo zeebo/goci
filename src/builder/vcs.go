@@ -30,7 +30,7 @@ type vcs struct {
 	FCurrent  string
 	FDate     string
 
-	parse func(string) (time.Time, error)
+	Zone string
 }
 
 var (
@@ -47,10 +47,7 @@ var (
 		FCurrent:  "rev-parse HEAD",
 		FDate:     "log -1 --format=%cD {rev}",
 
-		parse: func(in string) (t time.Time, err error) {
-			t, err = time.Parse(time.RFC1123Z, in)
-			return
-		},
+		Zone: time.RFC1123Z,
 	}
 
 	vcsHg = &vcs{
@@ -61,10 +58,7 @@ var (
 		FCurrent:  "parents --template {node}",
 		FDate:     "parents --template {date|rfc822date} -r {rev}",
 
-		parse: func(in string) (t time.Time, err error) {
-			t, err = time.Parse(time.RFC822Z, in)
-			return
-		},
+		Zone: time.RFC822Z,
 	}
 )
 
@@ -179,7 +173,7 @@ func (v *vcs) Date(dir, rev string) (t time.Time, err error) {
 	}
 
 	//parse the time
-	t, e := v.parse(strings.TrimSpace(buf.String()))
+	t, e := time.Parse(v.Zone, strings.TrimSpace(buf.String()))
 	if e != nil {
 		err = &vcsError{
 			Msg:    "Failed to parse date for revision",
