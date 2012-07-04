@@ -1,4 +1,4 @@
-application: goci
+application: gocime
 version: 1-dev
 runtime: go
 api_version: go1

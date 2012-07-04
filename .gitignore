@@ -15,5 +15,6 @@ bin/
 pkg/
 venv/
 go/
+code.google.com/
 .env
 *.py[oc]

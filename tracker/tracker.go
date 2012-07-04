@@ -4,18 +4,20 @@ package tracker
 import (
 	"appengine"
 	"appengine/datastore"
-	"code.google.com/p/gorilla/rpc"
 	"errors"
 	"fmt"
 	"httputil"
 	"net/http"
+	"rpc"
+	"rpc/client"
 	"time"
+	gorpc "code.google.com/p/gorilla/rpc"
 	rpcjson "code.google.com/p/gorilla/rpc/json"
 )
 
 func init() {
 	//create the rpc server
-	s := rpc.NewServer()
+	s := gorpc.NewServer()
 	s.RegisterCodec(rpcjson.NewCodec(), "application/json")
 
 	//add the announcer
@@ -33,25 +35,23 @@ const (
 
 //clean is a cron job that looks for old or stale services in the datastore and culls them
 func clean(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *httputil.Error) {
-	if err := datastore.RunInTransaction(ctx, clean_transaction, nil); err != nil {
-		e = httputil.Errorf(err, "couldn't process clean job")
-	}
-	return
-}
-
-//clean_transaction is the function that clean calls and runs inside a datastore transaction
-func clean_transaction(ctx appengine.Context) (err error) {
 	//grab all the keys of the things that need to be cleaned
 	q := datastore.NewQuery("Service").
-		Filter("LastAnnounce < ", time.Now().Sub(ttl)).
+		Filter("LastAnnounce < ", time.Now().Add(-1*ttl)). //LastAnnounce 
 		KeysOnly()
-
 	keys, err := q.GetAll(ctx, nil)
 	if err != nil {
+		e = httputil.Errorf(err, "unable to get keys for cleaning")
 		return
 	}
 
-	err = datastore.DeleteMulti(ctx, keys)
+	//delete them all
+	if err = datastore.DeleteMulti(ctx, keys); err != nil {
+		e = httputil.Errorf(err, "couldn't delete old keys")
+		return
+	}
+
+	ctx.Infof("Deleted %d expired services", len(keys))
 	return
 }
 
@@ -65,16 +65,18 @@ type AnnounceArgs struct {
 	URL          string //the url of the service to make rpc calls
 }
 
+//verify makes sure that the arguments are all specified correctly and returns
+//an error that can be encoded over an rpc request.
 func (args *AnnounceArgs) verify() (err error) {
 	switch {
 	case args.GOARCH == "":
-		err = errors.New("GOARCH unspecified")
+		err = rpc.Errorf("GOARCH unspecified")
 	case args.GOOS == "":
-		err = errors.New("GOOS unspecified")
+		err = rpc.Errorf("GOOS unspecified")
 	case args.Type != "Builder" && args.Type != "Runner":
-		err = fmt.Errorf("unknown Type: %s", args.Type)
+		err = rpc.Errorf("unknown Type: %s", args.Type)
 	case args.URL == "":
-		err = errors.New("URL unspecified")
+		err = rpc.Errorf("URL unspecified")
 	}
 	return
 }
@@ -93,6 +95,13 @@ type AnnounceReply struct {
 
 //Announce adds the given service into the tracker pool
 func (Announce) Announce(req *http.Request, args *AnnounceArgs, rep *AnnounceReply) (err error) {
+	defer func() {
+		//if we don't have an rpc.Error, encode it as one
+		if _, ok := err.(rpc.Error); err != nil && !ok {
+			err = rpc.Errorf("%s", err)
+		}
+	}()
+
 	if err = args.verify(); err != nil {
 		rep.RetryIn = retry
 		return
@@ -145,7 +154,7 @@ func Query(ctx appengine.Context, GOOS, GOARCH, Type string) (URL string, err er
 		//set up the base query
 		q := datastore.NewQuery("Service").
 			Filter("Type = ", Type).
-			Filter("LastAnnounce > ", time.Now().Sub(ttl)).
+			Filter("LastAnnounce > ", time.Now().Add(-1*ttl)).
 			Filter("Outstanding = ", false).
 			Limit(1)
 
