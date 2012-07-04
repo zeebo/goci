@@ -1,0 +1,4 @@
+cron:
+- description: minute cleanup
+  url: /tracker/clean
+  schedule: every 1 minutes

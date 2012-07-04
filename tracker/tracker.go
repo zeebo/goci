@@ -5,26 +5,24 @@ import (
 	"appengine"
 	"appengine/datastore"
 	"errors"
-	"fmt"
 	"httputil"
 	"net/http"
 	"rpc"
-	"rpc/client"
 	"time"
 	gorpc "code.google.com/p/gorilla/rpc"
-	rpcjson "code.google.com/p/gorilla/rpc/json"
+	gojson "code.google.com/p/gorilla/rpc/json"
 )
 
 func init() {
 	//create the rpc server
 	s := gorpc.NewServer()
-	s.RegisterCodec(rpcjson.NewCodec(), "application/json")
+	s.RegisterCodec(gojson.NewCodec(), "application/json")
 
 	//add the announcer
 	s.RegisterService(Announce{}, "")
 
 	//add the announce service to the paths
-	http.Handle("/tracker/announce", s)
+	http.Handle("/tracker", s)
 	http.Handle("/tracker/clean", httputil.Handler(clean))
 }
 
@@ -42,6 +40,11 @@ func clean(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *
 	keys, err := q.GetAll(ctx, nil)
 	if err != nil {
 		e = httputil.Errorf(err, "unable to get keys for cleaning")
+		return
+	}
+
+	//only delete and log if something is expired
+	if len(keys) == 0 {
 		return
 	}
 
@@ -106,12 +109,20 @@ func (Announce) Announce(req *http.Request, args *AnnounceArgs, rep *AnnounceRep
 		rep.RetryIn = retry
 		return
 	}
+
 	ctx := appengine.NewContext(req)
+	ctx.Infof("Got announce request from %s", req.RemoteAddr)
 
 	//TODO(zeebo): make a connection to the provided URL
 	//and call the Type.Ping method to make sure it exists
+	// cl := client.NewClient(args.URL, urlfetch.Client(ctx), client.JsonCodec)
+	// err = cl.Call(fmt.Sprintf("%s.Ping", args.Type), nil, nil)
+	// if err != nil {
+	// 	rep.RetryIn = retry
+	// 	return
+	// }
 
-	//create the service
+	//create the service entity
 	s := &Service{
 		GOOS:         args.GOOS,
 		GOARCH:       args.GOARCH,
@@ -121,8 +132,11 @@ func (Announce) Announce(req *http.Request, args *AnnounceArgs, rep *AnnounceRep
 		Outstanding:  false,
 	}
 
-	//save the new service in the datastore
-	if _, err = datastore.Put(ctx, nil, s); err != nil {
+	//TODO(zeebo): check if we have the URL already and grab that key to update
+	key := datastore.NewIncompleteKey(ctx, "Service", nil)
+
+	//save the service in the datastore
+	if _, err = datastore.Put(ctx, key, s); err != nil {
 		rep.RetryIn = retry
 		return
 	}
@@ -132,7 +146,7 @@ func (Announce) Announce(req *http.Request, args *AnnounceArgs, rep *AnnounceRep
 	return
 }
 
-//Service represents a service in the tracker.
+//Service is an entity that represents a service in the tracker.
 type Service struct {
 	GOOS, GOARCH string
 	Type         string
@@ -150,41 +164,59 @@ var ErrNoneAvailable = errors.New("no services available")
 //service. If GOOS or GOARCH are the empty string, they are not considered in
 //the query.
 func Query(ctx appengine.Context, GOOS, GOARCH, Type string) (URL string, err error) {
+	//set up the base query
+	q := datastore.NewQuery("Service").
+		Filter("Type = ", Type).
+		Filter("LastAnnounce > ", time.Now().Add(-1*ttl)).
+		Filter("Outstanding = ", false).
+		Limit(1).
+		KeysOnly()
+
+	//filter on GOOS and GOARCH if they are set
+	if GOOS != "" {
+		q = q.Filter("GOOS = ", GOOS)
+	}
+	if GOARCH != "" {
+		q = q.Filter("GOARCH = ", GOARCH)
+	}
+
+	//set up some variables for control flow
+	var (
+		key   *datastore.Key
+		again = errors.New("again")
+	)
+
+try_again:
+	//grab the key and value out of the query
+	key, err = q.Run(ctx).Next(nil)
+	if err == datastore.Done {
+		err = ErrNoneAvailable
+		return
+	}
+	if err != nil {
+		return
+	}
+
+	//at this point we grabbed a candidate service
+	//now we try in a transaction to recheck that outstanding is false, and if
+	//so set it to true.
 	tx := func(c appengine.Context) (err error) {
-		//set up the base query
-		q := datastore.NewQuery("Service").
-			Filter("Type = ", Type).
-			Filter("LastAnnounce > ", time.Now().Add(-1*ttl)).
-			Filter("Outstanding = ", false).
-			Limit(1)
-
-		//filter on GOOS and GOARCH if they are set
-		if GOOS != "" {
-			q = q.Filter("GOOS = ", GOOS)
-		}
-		if GOARCH != "" {
-			q = q.Filter("GOARCH = ", GOARCH)
-		}
-
-		//set up some variables
-		var (
-			s   = new(Service)
-			key *datastore.Key
-		)
-
-		//grab the key and value out of the query
-		key, err = q.Run(c).Next(s)
-		if err == datastore.Done {
-			err = ErrNoneAvailable
+		//make sure outstanding is still false
+		s := new(Service)
+		err = datastore.Get(c, key, s)
+		if err != nil {
 			return
 		}
-		if err != nil {
+
+		//if it is now outstanding, try to get a new service
+		if s.Outstanding {
+			err = again
 			return
 		}
 
 		//attempt to set outstanding to true
 		s.Outstanding = true
-		_, err = datastore.Put(ctx, key, s)
+		_, err = datastore.Put(c, key, s)
 		if err != nil {
 			return
 		}
@@ -192,7 +224,15 @@ func Query(ctx appengine.Context, GOOS, GOARCH, Type string) (URL string, err er
 		URL = s.URL
 		return
 	}
+
+	//run the transaction
 	err = datastore.RunInTransaction(ctx, tx, nil)
+
+	//if it tells us to try because someone else grabbed the key, try again
+	if err == again {
+		goto try_again
+	}
+
 	return
 }
 

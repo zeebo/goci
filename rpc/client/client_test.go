@@ -15,7 +15,7 @@ type tripper struct {
 }
 
 //RoundTrip implements the http.RoundTripper interface
-func (t tripper) RoundTrip(*http.Request) (*http.Response, error) {
+func (t tripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t.resp, t.err
 }
 
@@ -35,7 +35,7 @@ func TestRoundTrip(t *testing.T) {
 	}, nil)
 
 	//create a client that will give us the response
-	cl := NewClient("http://localhost/", h, JsonCodec)
+	cl := New("http://localhost/", h, JsonCodec)
 
 	//perform the call
 	var x int

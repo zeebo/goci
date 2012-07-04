@@ -22,10 +22,10 @@ type Client struct {
 	client *http.Client
 }
 
-//NewClient returns a new Client to handle requests to the service at the
+//New returns a new Client to handle requests to the service at the
 //location specified by path. The codec is used to encode and decode the requests
 //performed by the given client.
-func NewClient(path string, client *http.Client, codec Codec) *Client {
+func New(path string, client *http.Client, codec Codec) *Client {
 	return &Client{
 		path:   path,
 		codec:  codec,
@@ -48,6 +48,7 @@ func (c *Client) Call(method string, args interface{}, reply interface{}) (err e
 		return
 	}
 	req.Header.Set("Content-Type", c.codec.ContentType())
+	req.Header.Set("Connection", "close") //don't keep it alive
 
 	//invoke the method
 	resp, err := c.client.Do(req)
