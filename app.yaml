@@ -1,0 +1,10 @@
+application: goci
+version: 1-dev
+runtime: go
+api_version: go1
+
+handlers:
+- url: /assets
+  static_dir: assets
+- url: /.*
+  script: _go_app

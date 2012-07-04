@@ -1,3 +1,0 @@
-{% define "content" %}
-	<pre>{% printf "%# v" .Item %}</pre>
-{% end %}

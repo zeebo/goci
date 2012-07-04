@@ -1,7 +1,0 @@
-{% define "content" %}
-<div class="hero-unit">
-	<h1>404!</h1>
-	<p>The resource you have requested is not found</p>
-	<p>Please don't panic but OH JESUS ALERT EVERYONE RIGHT NOW GO GO GO</p>
-</div>
-{% end %}
