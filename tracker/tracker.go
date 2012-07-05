@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"rpc"
 	"time"
+
 	gorpc "code.google.com/p/gorilla/rpc"
 	gojson "code.google.com/p/gorilla/rpc/json"
 )
@@ -298,8 +299,7 @@ try_again:
 	tx := func(c appengine.Context) (err error) {
 		//make sure outstanding is still false
 		s := new(Service)
-		err = datastore.Get(c, key, s)
-		if err != nil {
+		if err = datastore.Get(c, key, s); err != nil {
 			return
 		}
 
@@ -311,8 +311,7 @@ try_again:
 
 		//attempt to set outstanding to true
 		s.Outstanding = true
-		_, err = datastore.Put(c, key, s)
-		if err != nil {
+		if _, err = datastore.Put(c, key, s); err != nil {
 			return
 		}
 		return
@@ -337,5 +336,42 @@ try_again:
 //requests and sets the that there is an outstanding request for that service.
 func LeaseAny(ctx appengine.Context, Type string) (key *datastore.Key, err error) {
 	key, err = Lease(ctx, "", "", Type)
+	return
+}
+
+//Unlease signals to the tracker that the service behind the key is done being
+//used and ready to be leased again by another process.
+func Unlease(ctx appengine.Context, key *datastore.Key) (err error) {
+	//make sure we're unleasing a service
+	if key.Kind() != "Service" {
+		err = errors.New("key is not a Service")
+		return
+	}
+
+	//create our transaction
+	tx := func(c appengine.Context) (err error) {
+		//grab the current state of the 
+		s := new(Service)
+		if err = datastore.Get(c, key, s); err != nil {
+			return
+		}
+
+		//make sure it has an Outstanding request.
+		//if it doesn't just return
+		if !s.Outstanding {
+			return
+		}
+
+		//set the Outstanding flag to false and store it
+		s.Outstanding = false
+		if _, err = datastore.Put(c, key, s); err != nil {
+			return
+		}
+
+		return
+	}
+
+	//run the update
+	err = datastore.RunInTransaction(ctx, tx, nil)
 	return
 }
