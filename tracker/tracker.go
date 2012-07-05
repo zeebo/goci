@@ -27,7 +27,7 @@ func init() {
 }
 
 const (
-	ttl   = 1 * time.Minute
+	ttl   = 6 * time.Minute
 	retry = 10 * time.Second
 )
 

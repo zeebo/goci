@@ -35,5 +35,10 @@ indexes:
 - kind: Service
   properties:
   - name: Outstanding
+  - name: LastAnnounce
+
+- kind: Service
+  properties:
+  - name: Outstanding
   - name: Type
   - name: LastAnnounce
