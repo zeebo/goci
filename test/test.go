@@ -7,7 +7,6 @@ import (
 	"httputil"
 	"net/http"
 	"runtime"
-	"time"
 	"tracker"
 )
 
@@ -15,6 +14,7 @@ func init() {
 	http.Handle("/_test/add", httputil.Handler(add))
 	http.Handle("/_test/lease/builder", httputil.Handler(lease_builder))
 	http.Handle("/_test/lease/runner", httputil.Handler(lease_runner))
+	http.Handle("/_test/lease/queries", httputil.Handler(lease_tons))
 }
 
 func add(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *httputil.Error) {
@@ -35,26 +35,11 @@ func add(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *ht
 	//log the reply
 	ctx.Infof("%+v", reply)
 	fmt.Fprintf(w, "%+v\n", reply)
-
-	//wait 10 seconds
-	time.Sleep(10 * time.Second)
-	kargs := &tracker.KeepAliveArgs{
-		Key: reply.Key,
-	}
-	var kreply tracker.KeepAliveReply
-
-	if err := tracker.DefaultTracker.KeepAlive(req, kargs, &kreply); err != nil {
-		e = httputil.Errorf(err, "error calling keep alive")
-		return
-	}
-	ctx.Infof("%+v", reply)
-	fmt.Fprintf(w, "%+v\n", reply)
-
 	return
 }
 
 func lease(w http.ResponseWriter, req *http.Request, ctx appengine.Context, ltype string) (e *httputil.Error) {
-	key, err := tracker.Lease(ctx, "", runtime.GOARCH, ltype)
+	key, err := tracker.Lease(ctx, "", "", ltype)
 	if err == tracker.ErrNoneAvailable {
 		fmt.Fprintln(w, "no service of that type available")
 		return
@@ -78,4 +63,13 @@ func lease_builder(w http.ResponseWriter, req *http.Request, ctx appengine.Conte
 
 func lease_runner(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *httputil.Error) {
 	return lease(w, req, ctx, "Runner")
+}
+
+func lease_tons(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *httputil.Error) {
+	tracker.Lease(ctx, "", "", "a")
+	tracker.Lease(ctx, "f", "", "a")
+	tracker.Lease(ctx, "", "f", "a")
+	tracker.Lease(ctx, "f", "f", "a")
+	fmt.Fprintln(w, "ran 4 queries. all lease indicies should be built")
+	return
 }

@@ -18,10 +18,10 @@ func init() {
 	s := gorpc.NewServer()
 	s.RegisterCodec(gojson.NewCodec(), "application/json")
 
-	//add the announcer
+	//add the tracker
 	s.RegisterService(DefaultTracker, "")
 
-	//add the announce service to the paths
+	//add the tracker service to the paths
 	http.Handle("/tracker", s)
 	http.Handle("/tracker/clean", httputil.Handler(clean))
 }
@@ -158,7 +158,7 @@ func (Tracker) Announce(req *http.Request, args *AnnounceArgs, rep *AnnounceRepl
 	return
 }
 
-//KeepAliveArgs is the argument type of the Announce function
+//KeepAliveArgs is the argument type of the KeepAlive function
 type KeepAliveArgs struct {
 	Key *datastore.Key
 }
@@ -205,6 +205,42 @@ func (Tracker) KeepAlive(req *http.Request, args *KeepAliveArgs, rep *KeepAliveR
 	//we're all updated
 	rep.TTL = ttl
 	ctx.Infof("updated at: %s", s.LastAnnounce)
+	return
+}
+
+//RemoveArgs is the argument type of the Remove function
+type RemoveArgs struct {
+	Key *datastore.Key
+}
+
+//RemoveReply is the reply type of the Remove function
+type RemoveReply struct {
+	//the mininum amount of time the service should wait until retrying the
+	//remove
+	RetryIn time.Duration
+}
+
+//Remove removes a service from the tracker without it having to time out
+func (Tracker) Remove(req *http.Request, args *RemoveArgs, rep *RemoveReply) (err error) {
+	defer func() {
+		//if we don't have an rpc.Error, encode it as one
+		if _, ok := err.(rpc.Error); err != nil && !ok {
+			err = rpc.Errorf("%s", err)
+		}
+	}()
+
+	ctx := appengine.NewContext(req)
+	ctx.Infof("Got a remove request from %s", req.RemoteAddr)
+
+	//ensure what we have is a service
+	if args.Key.Kind() != "Service" {
+		err = rpc.Errorf("key is not a service")
+		rep.RetryIn = retry
+		return
+	}
+
+	//delete it
+	err = datastore.Delete(ctx, args.Key)
 	return
 }
 
