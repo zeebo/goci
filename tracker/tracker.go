@@ -66,7 +66,7 @@ func clean(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *
 //Tracker is an rpc for announcing and managing the presence of services
 type Tracker struct{}
 
-//Set up a DefaultTracker so it can be called without an rpc
+//Set up a DefaultTracker so it can be called without an rpc layer
 var DefaultTracker = Tracker{}
 
 //AnnounceArgs is the argument type of the Announce function
@@ -185,6 +185,12 @@ func (Tracker) KeepAlive(req *http.Request, args *KeepAliveArgs, rep *KeepAliveR
 		}
 	}()
 
+	//check the kind of the key
+	if args.Key.Kind() != "Service" {
+		err = rpc.Errorf("key does not correspond to a Service")
+		return
+	}
+
 	//create a context
 	ctx := appengine.NewContext(req)
 	ctx.Infof("Got keep alive request from %s", req.RemoteAddr)
@@ -221,7 +227,7 @@ type RemoveReply struct {
 	RetryIn time.Duration
 }
 
-//Remove removes a service from the tracker without it having to time out
+//Remove removes a service from the tracker.
 func (Tracker) Remove(req *http.Request, args *RemoveArgs, rep *RemoveReply) (err error) {
 	defer func() {
 		//if we don't have an rpc.Error, encode it as one
@@ -252,6 +258,12 @@ type Service struct {
 	URL          string
 	Outstanding  bool
 	LastAnnounce time.Time
+}
+
+//Stale returns if the services LastAnnounce has happened far enough in the past
+//to mark it as eligable to be cleaned.
+func (s *Service) Stale() bool {
+	return time.Now().Sub(s.LastAnnounce) >= ttl
 }
 
 //ErrNoneAvailable is the error that Lease returns if there are no available
