@@ -19,7 +19,7 @@ func init() {
 	s.RegisterCodec(gojson.NewCodec(), "application/json")
 
 	//add the announcer
-	s.RegisterService(Announce{}, "")
+	s.RegisterService(DefaultTracker, "")
 
 	//add the announce service to the paths
 	http.Handle("/tracker", s)
@@ -33,9 +33,13 @@ const (
 
 //clean is a cron job that looks for old or stale services in the datastore and culls them
 func clean(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *httputil.Error) {
+	//TODO(zeebo): make this process smarter. gotta think about leasing builders
+	//out and assuming they die at any stage and how to recover.
+
 	//grab all the keys of the things that need to be cleaned
 	q := datastore.NewQuery("Service").
-		Filter("LastAnnounce < ", time.Now().Add(-1*ttl)). //LastAnnounce 
+		Filter("LastAnnounce < ", time.Now().Add(-1*ttl)).
+		Filter("Outstanding = ", false). //don't clean things marked as having something
 		KeysOnly()
 	keys, err := q.GetAll(ctx, nil)
 	if err != nil {
@@ -58,8 +62,11 @@ func clean(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *
 	return
 }
 
-//Announce is an rpc for announcing the presence of services to the tracker
-type Announce struct{}
+//Tracker is an rpc for announcing and managing the presence of services
+type Tracker struct{}
+
+//Set up a DefaultTracker so it can be called without an rpc
+var DefaultTracker = Tracker{}
 
 //AnnounceArgs is the argument type of the Announce function
 type AnnounceArgs struct {
@@ -91,13 +98,16 @@ type AnnounceReply struct {
 	RetryIn time.Duration
 
 	//the amount of time the service will stay active. services are encouraged
-	//to announce earlier than the TTL to stay active. 1/2 the TTL should be the
+	//to announce earlier than the TTL to stay active. 1/3 the TTL should be the
 	//minimum amount of time.
 	TTL time.Duration
+
+	//Key is the datastore key that corresponds to the service if successful
+	Key *datastore.Key
 }
 
 //Announce adds the given service into the tracker pool
-func (Announce) Announce(req *http.Request, args *AnnounceArgs, rep *AnnounceReply) (err error) {
+func (Tracker) Announce(req *http.Request, args *AnnounceArgs, rep *AnnounceReply) (err error) {
 	defer func() {
 		//if we don't have an rpc.Error, encode it as one
 		if _, ok := err.(rpc.Error); err != nil && !ok {
@@ -136,13 +146,65 @@ func (Announce) Announce(req *http.Request, args *AnnounceArgs, rep *AnnounceRep
 	key := datastore.NewIncompleteKey(ctx, "Service", nil)
 
 	//save the service in the datastore
-	if _, err = datastore.Put(ctx, key, s); err != nil {
+	if key, err = datastore.Put(ctx, key, s); err != nil {
 		rep.RetryIn = retry
 		return
 	}
 
 	//send the time to live for the service
 	rep.TTL = ttl
+	rep.Key = key
+	ctx.Infof("stored at: %s", s.LastAnnounce)
+	return
+}
+
+//KeepAliveArgs is the argument type of the Announce function
+type KeepAliveArgs struct {
+	Key *datastore.Key
+}
+
+//KeepAliveReply is the reply type of the KeepAlive function
+type KeepAliveReply struct {
+	//the mininum amount of time the service should wait until retrying the
+	//keep alive
+	RetryIn time.Duration
+
+	//the amount of time the service will stay active. services are encouraged
+	//to send a keep alive earlier than the TTL to stay active. 1/3 the TTL
+	//should be the minimum amount of time.
+	TTL time.Duration
+}
+
+//KeepAlive updates the service so that it stays alive
+func (Tracker) KeepAlive(req *http.Request, args *KeepAliveArgs, rep *KeepAliveReply) (err error) {
+	defer func() {
+		//if we don't have an rpc.Error, encode it as one
+		if _, ok := err.(rpc.Error); err != nil && !ok {
+			err = rpc.Errorf("%s", err)
+		}
+	}()
+
+	//create a context
+	ctx := appengine.NewContext(req)
+	ctx.Infof("Got keep alive request from %s", req.RemoteAddr)
+
+	//load up the service
+	s := new(Service)
+	if err = datastore.Get(ctx, args.Key, s); err != nil {
+		rep.RetryIn = retry
+		return
+	}
+
+	//update the LastAnnounce field and save it
+	s.LastAnnounce = time.Now()
+	if _, err = datastore.Put(ctx, args.Key, s); err != nil {
+		rep.RetryIn = retry
+		return
+	}
+
+	//we're all updated
+	rep.TTL = ttl
+	ctx.Infof("updated at: %s", s.LastAnnounce)
 	return
 }
 
@@ -155,15 +217,15 @@ type Service struct {
 	LastAnnounce time.Time
 }
 
-//ErrNoneAvailable is the error that Query returns if there are no available
+//ErrNoneAvailable is the error that Lease returns if there are no available
 //services matching the criteri
 var ErrNoneAvailable = errors.New("no services available")
 
-//Query returns a URL to a service of the given GOOS, GOARCH and type with no
+//Lease returns a key to a service of the given GOOS, GOARCH and Type with no
 //outstanding requests and sets that there is an outstanding request for that
 //service. If GOOS or GOARCH are the empty string, they are not considered in
 //the query.
-func Query(ctx appengine.Context, GOOS, GOARCH, Type string) (URL string, err error) {
+func Lease(ctx appengine.Context, GOOS, GOARCH, Type string) (key *datastore.Key, err error) {
 	//set up the base query
 	q := datastore.NewQuery("Service").
 		Filter("Type = ", Type).
@@ -180,13 +242,10 @@ func Query(ctx appengine.Context, GOOS, GOARCH, Type string) (URL string, err er
 		q = q.Filter("GOARCH = ", GOARCH)
 	}
 
-	//set up some variables for control flow
-	var (
-		key   *datastore.Key
-		again = errors.New("again")
-	)
-
 try_again:
+	//set up a sentinel error value for looping
+	var again bool
+
 	//grab the key and value out of the query
 	key, err = q.Run(ctx).Next(nil)
 	if err == datastore.Done {
@@ -210,7 +269,7 @@ try_again:
 
 		//if it is now outstanding, try to get a new service
 		if s.Outstanding {
-			err = again
+			again = true
 			return
 		}
 
@@ -220,25 +279,27 @@ try_again:
 		if err != nil {
 			return
 		}
-
-		URL = s.URL
 		return
 	}
 
 	//run the transaction
 	err = datastore.RunInTransaction(ctx, tx, nil)
+	if err != nil {
+		key = nil
+		return
+	}
 
 	//if it tells us to try because someone else grabbed the key, try again
-	if err == again {
+	if again {
 		goto try_again
 	}
 
 	return
 }
 
-//QueryAny returns a URL to a service of the given type with the no outstanding
+//LeaseAny returns a key to a service of the given type with the no outstanding
 //requests and sets the that there is an outstanding request for that service.
-func QueryAny(ctx appengine.Context, Type string) (URL string, err error) {
-	URL, err = Query(ctx, "", "", Type)
+func LeaseAny(ctx appengine.Context, Type string) (key *datastore.Key, err error) {
+	key, err = Lease(ctx, "", "", Type)
 	return
 }
