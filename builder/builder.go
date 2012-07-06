@@ -67,6 +67,8 @@ func New(GOOS, GOARCH, GOPATH, GOROOT string) (b Builder) {
 		env: []string{
 			fmt.Sprintf("GOPATH=%s", GOPATH),
 			fmt.Sprintf("GOROOT=%s", GOROOT),
+			fmt.Sprintf("GOOS=%s", GOOS),
+			fmt.Sprintf("GOARCH=%s", GOARCH),
 			fmt.Sprintf("PATH=%s", must_env("PATH")),
 		},
 	}
