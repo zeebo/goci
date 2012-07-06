@@ -5,14 +5,6 @@ import (
 	"testing"
 )
 
-type action func()
-
-func mock(e environ, a action) {
-	defer func(e environ) { world = e }(world)
-	world = e
-	a()
-}
-
 type existsWorld struct {
 	t *testing.T
 }
@@ -68,30 +60,32 @@ func (r runner) Run() (error, bool) {
 }
 
 func TestMocked(t *testing.T) {
-	mock(existsWorld{t}, func() {
-		works := []*Work{
-			{
-				Revision:   "e9dd26552f10d390b5f9f59c6a9cfdc30ed1431c",
-				ImportPath: "github.com/zeebo/irc",
-			},
-			{
-				Revision:    "cc5e03949586c5b697c9a3080cc3bf7501a14d96",
-				ImportPath:  "github.com/dustin/githubhooks",
-				Subpackages: true,
-			},
-			{
-				ImportPath: "github.com/zeebo/irc",
-			},
+	//mock out the world
+	defer func(e environ) { world = e }(world)
+	world = existsWorld{t}
+
+	works := []*Work{
+		{
+			Revision:   "e9dd26552f10d390b5f9f59c6a9cfdc30ed1431c",
+			ImportPath: "github.com/zeebo/irc",
+		},
+		{
+			Revision:    "cc5e03949586c5b697c9a3080cc3bf7501a14d96",
+			ImportPath:  "github.com/dustin/githubhooks",
+			Subpackages: true,
+		},
+		{
+			ImportPath: "github.com/zeebo/irc",
+		},
+	}
+
+	for _, w := range works {
+		_, _, err := New("", "", "", "").Build(w)
+		if err != nil {
+			t.Error(err)
+		} else {
+			t.Log("========")
+			t.Logf("%s passed", w.ImportPath)
 		}
-		for _, w := range works {
-			_, _, err := New("", "", "", "").Build(w)
-			if err != nil {
-				t.Error(err)
-			} else {
-				t.Log("========")
-				t.Logf("%s passed", w.ImportPath)
-				t.Log("========")
-			}
-		}
-	})
+	}
 }
