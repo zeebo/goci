@@ -270,18 +270,13 @@ func (s *Service) Stale() bool {
 //services matching the criteri
 var ErrNoneAvailable = errors.New("no services available")
 
-//Lease returns a key to a service of the given GOOS, GOARCH and Type with no
-//outstanding requests and sets that there is an outstanding request for that
-//service. If GOOS or GOARCH are the empty string, they are not considered in
-//the query.
-func Lease(ctx appengine.Context, GOOS, GOARCH, Type string) (key *datastore.Key, err error) {
+func baseQuery(GOOS, GOARCH, Type string) (q *datastore.Query) {
 	//set up the base query
-	q := datastore.NewQuery("Service").
+	q = datastore.NewQuery("Service").
 		Filter("Type = ", Type).
 		Filter("LastAnnounce > ", time.Now().Add(-1*ttl)).
 		Filter("Outstanding = ", false).
-		Limit(1).
-		KeysOnly()
+		Limit(1)
 
 	//filter on GOOS and GOARCH if they are set
 	if GOOS != "" {
@@ -290,6 +285,15 @@ func Lease(ctx appengine.Context, GOOS, GOARCH, Type string) (key *datastore.Key
 	if GOARCH != "" {
 		q = q.Filter("GOARCH = ", GOARCH)
 	}
+	return
+}
+
+//Lease returns a key to a service of the given GOOS, GOARCH and Type with no
+//outstanding requests and sets that there is an outstanding request for that
+//service. If GOOS or GOARCH are the empty string, they are not considered in
+//the query.
+func Lease(ctx appengine.Context, GOOS, GOARCH, Type string) (key *datastore.Key, err error) {
+	q := baseQuery(GOOS, GOARCH, Type).KeysOnly()
 
 try_again:
 	//set up a sentinel error value for looping
@@ -385,5 +389,97 @@ func Unlease(ctx appengine.Context, key *datastore.Key) (err error) {
 
 	//run the update
 	err = datastore.RunInTransaction(ctx, tx, nil)
+	return
+}
+
+//LeasePair attempts to lease a builder and a runner for the given GOOS and GOARCH
+//pair. If either are empty, they are not considered in the constraint, but the
+//runner and builder will still share the same parameters.
+func LeasePair(ctx appengine.Context, GOOS, GOARCH string) (builder, runner *datastore.Key, err error) {
+	var attempts int
+	buildq := baseQuery(GOOS, GOARCH, "Builder")
+
+try_again:
+	var again bool
+
+	//if we try too many times, just bail
+	if attempts > 10 {
+		err = ErrNoneAvailable
+		builder, runner = nil, nil
+		return
+	}
+	attemps++
+
+	//try to get a builder 
+	bs := new(Service)
+	builder, err = buildq.Run(ctx).Next(builder)
+	if err == datastore.Done { //if none match the query, inform them
+		err = ErrNoneAvailable
+		return
+	}
+	if err != nil { //actual error
+		return
+	}
+
+	//TODO(zeebo): flag builders that have no runners associated with them as
+	//excluded from the set of candidates.
+
+	//set up a query for the runner
+	runq := baseQuery(bs.GOOS, bs.GOARCH, "Runner").KeysOnly()
+	runner, err = runq.Run(ctx).Next(nil)
+	if err == datastore.Done {
+		err = ErrNoneAvailable
+		return
+	}
+	if err != nil {
+		return
+	}
+
+	//now we have a pair so lets make sure we get them both
+	tx := func(c appengine.Context) (err error) {
+		//load the services we need and make sure they arent outstanding
+		bs, rs := new(Service), new(Service)
+		if err = datastore.Get(c, builder, bs); err != nil {
+			return
+		}
+		if bs.Outstanding {
+			again = true
+			return
+		}
+
+		if err = datastore.Get(c, runner, rs); err != nil {
+			return
+		}
+		if rs.Outstanding {
+			again = true
+			return
+		}
+
+		//we have them both so lets claim them
+		bs.Outstanding, rs.Outstanding = true, true
+		_, err = datastore.PutMulti(c,
+			[]*Key{builder, runner},
+			[]*Service{bs, rs},
+		)
+		if err != nil {
+			return
+		}
+
+		//we put them!
+		return
+	}
+
+	//execute the transaction
+	err = datastore.RunInTransaction(ctx, tx, nil)
+	if err != nil {
+		builder, runner = nil, nil
+		return
+	}
+
+	//if we had contention and someone else got the key, try again
+	if again {
+		goto try_again
+	}
+
 	return
 }
