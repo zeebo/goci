@@ -9,10 +9,23 @@ import (
 
 var world environ = defaultEnviron{}
 
+type command struct {
+	w    io.Writer
+	dir  string
+	env  []string
+	path string
+	args []string
+}
+
 type environ interface {
 	Exists(string) bool
 	LookPath(string) (string, error)
 	TempDir(string) (string, error)
+	Make(command) proc
+}
+
+type proc interface {
+	Run() (error, bool)
 }
 
 type defaultEnviron struct{}
@@ -30,18 +43,7 @@ func (defaultEnviron) TempDir(prefix string) (string, error) {
 	return ioutil.TempDir("", prefix)
 }
 
-type command struct {
-	w    io.Writer
-	dir  string
-	env  []string
-	path string
-	args []string
-}
-
-type maker func(command) proc
-
-//makeCommand makes a proc and is a variable so it can be stubbed out by the tests
-var makeCommand maker = func(c command) (p proc) {
+func (defaultEnviron) Make(c command) (p proc) {
 	cmd := &exec.Cmd{
 		Path: c.path,
 		Args: c.args,
@@ -54,10 +56,6 @@ var makeCommand maker = func(c command) (p proc) {
 		cmd.Stdout, cmd.Stderr = c.w, c.w
 	}
 	return procCmd{cmd}
-}
-
-type proc interface {
-	Run() (error, bool)
 }
 
 type procCmd struct {

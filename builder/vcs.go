@@ -112,7 +112,7 @@ func (v *vcsInfo) expandCmd(dir string, w io.Writer, cmd string, keyval ...strin
 		path = v.Name
 	}
 	args = append([]string{v.Name}, expandSplit(cmd, vals)...)
-	p = makeCommand(command{
+	p = world.Make(command{
 		w:    w,
 		dir:  dir,
 		env:  os.Environ(),

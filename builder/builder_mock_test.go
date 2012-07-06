@@ -7,67 +7,68 @@ import (
 
 type action func()
 
-func mock(e environ, m maker, a action) {
-	defer func(e environ, m maker) {
-		world, makeCommand = e, m
-	}(world, makeCommand)
-	world, makeCommand = e, m
+func mock(e environ, a action) {
+	defer func(e environ) { world = e }(world)
+	world = e
 	a()
 }
 
-type existsWorld struct{}
+type existsWorld struct {
+	t *testing.T
+}
 
 func (existsWorld) Exists(string) bool                    { return true }
 func (existsWorld) LookPath(i string) (string, error)     { return i, nil }
 func (existsWorld) TempDir(prefix string) (string, error) { return "/tmp/" + prefix, nil }
 
-type loggingProc struct {
-	a action
+func (e existsWorld) Make(c command) (p proc) {
+	return runner{e.t, c}
 }
 
-func (l loggingProc) Run() (error, bool) {
-	l.a()
+type runner struct {
+	t *testing.T
+	c command
+}
+
+func (r runner) Run() (error, bool) {
+	t, c := r.t, r.c
+
+	t.Log(c.args)
+
+	//hack for expected output on getting timestamp
+	if c.args[1] == "parents" && c.args[3] == "{date|rfc822date}" {
+		c.w.Write([]byte(vcsHg.Format))
+	}
+
+	if c.args[1] == "log" {
+		c.w.Write([]byte(vcsGit.Format))
+	}
+
+	//hack for expected output on finding revision
+	if c.args[1] == "rev-parse" {
+		c.w.Write([]byte("revision"))
+	}
+	if c.args[1] == "parents" && c.args[3] != "{date|rfc822date}" {
+		c.w.Write([]byte("revision"))
+	}
+
+	//just print out the package it is listing. if it ends with a
+	//... just print it out with a crazy suffix
+	if c.args[1] == "list" {
+		pack := c.args[len(c.args)-1]
+		if strings.HasSuffix(pack, "...") {
+			pack = pack[:len(pack)-3]
+			c.w.Write([]byte(pack))
+			c.w.Write([]byte("foo\n"))
+		}
+		c.w.Write([]byte(pack))
+	}
+
 	return nil, true
 }
 
 func TestMocked(t *testing.T) {
-	m := func(c command) (p proc) {
-		a := func() {
-			t.Log(c.args)
-
-			//hack for expected output on getting timestamp
-			if c.args[1] == "parents" && c.args[3] == "{date|rfc822date}" {
-				c.w.Write([]byte(vcsHg.Format))
-			}
-
-			if c.args[1] == "log" {
-				c.w.Write([]byte(vcsGit.Format))
-			}
-
-			//hack for expected output on finding revision
-			if c.args[1] == "rev-parse" {
-				c.w.Write([]byte("revision"))
-			}
-			if c.args[1] == "parents" && c.args[3] != "{date|rfc822date}" {
-				c.w.Write([]byte("revision"))
-			}
-
-			//just print out the package it is listing. if it ends with a
-			//... just print it out with a crazy suffix
-			if c.args[1] == "list" {
-				pack := c.args[len(c.args)-1]
-				if strings.HasSuffix(pack, "...") {
-					pack = pack[:len(pack)-3]
-					c.w.Write([]byte(pack))
-					c.w.Write([]byte("foo\n"))
-				}
-				c.w.Write([]byte(pack))
-			}
-		}
-		return loggingProc{a}
-	}
-
-	mock(existsWorld{}, m, func() {
+	mock(existsWorld{t}, func() {
 		works := []*Work{
 			{
 				Revision:   "e9dd26552f10d390b5f9f59c6a9cfdc30ed1431c",

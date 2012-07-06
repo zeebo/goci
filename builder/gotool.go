@@ -41,7 +41,7 @@ func tarball(dir, out string) (err error) {
 	}
 	targ := []string{"tar", "-cvzf", out, "-C", dir, "."}
 	var buf bytes.Buffer
-	cmd := makeCommand(command{
+	cmd := world.Make(command{
 		w:    &buf,
 		path: tarp,
 		args: targ,
@@ -67,7 +67,7 @@ func (b Builder) goCmd(buf io.Writer, dir string, args ...string) (p proc) {
 		path: fp.Join(b.goroot, "bin", "go"),
 		args: args,
 	}
-	return makeCommand(cmd)
+	return world.Make(cmd)
 }
 
 //goRun is a convenience wrapper that builds and executes a command, returning
