@@ -79,11 +79,6 @@ type AnnounceReply struct {
 	//the announce
 	RetryIn time.Duration
 
-	//the amount of time the service will stay active. services are encouraged
-	//to announce earlier than the TTL to stay active. 1/3 the TTL should be the
-	//minimum amount of time.
-	TTL time.Duration
-
 	//Key is the datastore key that corresponds to the service if successful
 	Key *datastore.Key
 }
@@ -150,8 +145,7 @@ func (Tracker) Announce(req *http.Request, args *AnnounceArgs, rep *AnnounceRepl
 		return
 	}
 
-	//send the time to live for the service
-	rep.TTL = ttl
+	//set the key for the service
 	rep.Key = key
 	return
 }
@@ -317,17 +311,18 @@ func getBuilder(ctx appengine.Context, GOOS, GOARCH string) (key *datastore.Key,
 }
 
 //LeasePair returns a pair of Builder and Runners that can be used to run tests.
-func LeasePair(ctx appengine.Context, GOOS, GOARCH string) (builder, runner *datastore.Key, b *Builder, r *Runner, err error) {
+//It doesn't let you specify the type of runner you want.
+func LeasePair(ctx appengine.Context) (builder, runner *datastore.Key, b *Builder, r *Runner, err error) {
 	ctx.Infof("%+v", lastSeeds)
 	//grab a runner
-	runner, r, err = getRunner(ctx, GOOS, GOARCH)
+	runner, r, err = getRunner(ctx, "", "")
 	if err != nil {
 		ctx.Infof("couldn't lease runner")
 		return
 	}
 
 	//update the key we're using
-	lastSeeds.set(GOOS, GOARCH, "Runner", r.Seed)
+	lastSeeds.set("", "", "Runner", r.Seed)
 
 	//grab a builder than can make a build for this runner
 	builder, b, err = getBuilder(ctx, r.GOOS, r.GOARCH)
