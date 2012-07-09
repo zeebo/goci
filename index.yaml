@@ -10,35 +10,24 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
-- kind: Service
+- kind: Builder
   properties:
   - name: GOARCH
   - name: GOOS
-  - name: Outstanding
-  - name: Type
-  - name: LastAnnounce
+  - name: Seed
 
-- kind: Service
+- kind: Runner
   properties:
   - name: GOARCH
-  - name: Outstanding
-  - name: Type
-  - name: LastAnnounce
+  - name: GOOS
+  - name: Seed
 
-- kind: Service
+- kind: Runner
+  properties:
+  - name: GOARCH
+  - name: Seed
+
+- kind: Runner
   properties:
   - name: GOOS
-  - name: Outstanding
-  - name: Type
-  - name: LastAnnounce
-
-- kind: Service
-  properties:
-  - name: Outstanding
-  - name: LastAnnounce
-
-- kind: Service
-  properties:
-  - name: Outstanding
-  - name: Type
-  - name: LastAnnounce
+  - name: Seed

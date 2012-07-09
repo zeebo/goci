@@ -5,14 +5,19 @@ import (
 	"appengine"
 	"appengine/datastore"
 	"errors"
-	"httputil"
+	"math/rand"
 	"net/http"
 	"rpc"
+	"strings"
+	"sync"
 	"time"
-
-	gorpc "code.google.com/p/gorilla/rpc"
 	gojson "code.google.com/p/gorilla/rpc/json"
+	gorpc "code.google.com/p/gorilla/rpc"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func init() {
 	//create the rpc server
@@ -24,44 +29,12 @@ func init() {
 
 	//add the tracker service to the paths
 	http.Handle("/tracker", s)
-	http.Handle("/tracker/clean", httputil.Handler(clean))
 }
 
 const (
 	ttl   = 6 * time.Minute
 	retry = 10 * time.Second
 )
-
-//clean is a cron job that looks for old or stale services in the datastore and culls them
-func clean(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *httputil.Error) {
-	//TODO(zeebo): make this process smarter. gotta think about leasing builders
-	//out and assuming they die at any stage and how to recover.
-
-	//grab all the keys of the things that need to be cleaned
-	q := datastore.NewQuery("Service").
-		Filter("LastAnnounce < ", time.Now().Add(-1*ttl)).
-		Filter("Outstanding = ", false). //don't clean things marked as having something
-		KeysOnly()
-	keys, err := q.GetAll(ctx, nil)
-	if err != nil {
-		e = httputil.Errorf(err, "unable to get keys for cleaning")
-		return
-	}
-
-	//only delete and log if something is expired
-	if len(keys) == 0 {
-		return
-	}
-
-	//delete them all
-	if err = datastore.DeleteMulti(ctx, keys); err != nil {
-		e = httputil.Errorf(err, "couldn't delete old keys")
-		return
-	}
-
-	ctx.Infof("Deleted %d expired services", len(keys))
-	return
-}
 
 //Tracker is an rpc for announcing and managing the presence of services
 type Tracker struct{}
@@ -84,12 +57,20 @@ func (args *AnnounceArgs) verify() (err error) {
 		err = rpc.Errorf("GOARCH unspecified")
 	case args.GOOS == "":
 		err = rpc.Errorf("GOOS unspecified")
-	case args.Type != "Builder" && args.Type != "Runner":
+	case !isEntity(args.Type):
 		err = rpc.Errorf("unknown Type: %s", args.Type)
 	case args.URL == "":
 		err = rpc.Errorf("URL unspecified")
 	}
 	return
+}
+
+func isEntity(kind string) bool {
+	switch kind {
+	case "Builder", "Runner":
+		return true
+	}
+	return false
 }
 
 //AnnounceReply is the reply type of the Announce function
@@ -133,21 +114,38 @@ func (Tracker) Announce(req *http.Request, args *AnnounceArgs, rep *AnnounceRepl
 	// 	return
 	// }
 
-	//create the service entity
-	s := &Service{
-		GOOS:         args.GOOS,
-		GOARCH:       args.GOARCH,
-		Type:         args.Type,
-		URL:          args.URL,
-		LastAnnounce: time.Now(),
-		Outstanding:  false,
+	//create the entity
+	var e interface{}
+
+	//make sure we have a nonzero seed
+	var seed int64
+	for seed == 0 {
+		seed = rand.Int63()
+	}
+	switch args.Type {
+	case "Builder":
+		e = &Builder{
+			GOOS:   args.GOOS,
+			GOARCH: args.GOARCH,
+			URL:    args.URL,
+			Seed:   seed,
+		}
+	case "Runner":
+		e = &Runner{
+			GOOS:   args.GOOS,
+			GOARCH: args.GOARCH,
+			URL:    args.URL,
+			Seed:   seed,
+		}
+	default:
+		panic("unreachable")
 	}
 
 	//TODO(zeebo): check if we have the URL already and grab that key to update
-	key := datastore.NewIncompleteKey(ctx, "Service", nil)
+	key := datastore.NewIncompleteKey(ctx, args.Type, nil)
 
 	//save the service in the datastore
-	if key, err = datastore.Put(ctx, key, s); err != nil {
+	if key, err = datastore.Put(ctx, key, e); err != nil {
 		rep.RetryIn = retry
 		return
 	}
@@ -155,63 +153,6 @@ func (Tracker) Announce(req *http.Request, args *AnnounceArgs, rep *AnnounceRepl
 	//send the time to live for the service
 	rep.TTL = ttl
 	rep.Key = key
-	ctx.Infof("stored at: %s", s.LastAnnounce)
-	return
-}
-
-//KeepAliveArgs is the argument type of the KeepAlive function
-type KeepAliveArgs struct {
-	Key *datastore.Key
-}
-
-//KeepAliveReply is the reply type of the KeepAlive function
-type KeepAliveReply struct {
-	//the mininum amount of time the service should wait until retrying the
-	//keep alive
-	RetryIn time.Duration
-
-	//the amount of time the service will stay active. services are encouraged
-	//to send a keep alive earlier than the TTL to stay active. 1/3 the TTL
-	//should be the minimum amount of time.
-	TTL time.Duration
-}
-
-//KeepAlive updates the service so that it stays alive
-func (Tracker) KeepAlive(req *http.Request, args *KeepAliveArgs, rep *KeepAliveReply) (err error) {
-	defer func() {
-		//if we don't have an rpc.Error, encode it as one
-		if _, ok := err.(rpc.Error); err != nil && !ok {
-			err = rpc.Errorf("%s", err)
-		}
-	}()
-
-	//check the kind of the key
-	if args.Key.Kind() != "Service" {
-		err = rpc.Errorf("key does not correspond to a Service")
-		return
-	}
-
-	//create a context
-	ctx := appengine.NewContext(req)
-	ctx.Infof("Got keep alive request from %s", req.RemoteAddr)
-
-	//load up the service
-	s := new(Service)
-	if err = datastore.Get(ctx, args.Key, s); err != nil {
-		rep.RetryIn = retry
-		return
-	}
-
-	//update the LastAnnounce field and save it
-	s.LastAnnounce = time.Now()
-	if _, err = datastore.Put(ctx, args.Key, s); err != nil {
-		rep.RetryIn = retry
-		return
-	}
-
-	//we're all updated
-	rep.TTL = ttl
-	ctx.Infof("updated at: %s", s.LastAnnounce)
 	return
 }
 
@@ -240,8 +181,8 @@ func (Tracker) Remove(req *http.Request, args *RemoveArgs, rep *RemoveReply) (er
 	ctx.Infof("Got a remove request from %s", req.RemoteAddr)
 
 	//ensure what we have is a service
-	if args.Key.Kind() != "Service" {
-		err = rpc.Errorf("key is not a service")
+	if !isEntity(args.Key.Kind()) {
+		err = rpc.Errorf("key is not a builder or runner")
 		rep.RetryIn = retry
 		return
 	}
@@ -251,32 +192,36 @@ func (Tracker) Remove(req *http.Request, args *RemoveArgs, rep *RemoveReply) (er
 	return
 }
 
-//Service is an entity that represents a service in the tracker.
-type Service struct {
+//Builder is an entity that represents a builder in the tracker.
+type Builder struct {
 	GOOS, GOARCH string
-	Type         string
 	URL          string
-	Outstanding  bool
-	LastAnnounce time.Time
+
+	//Seed is used to distribute work among builders
+	Seed int64
 }
 
-//Stale returns if the services LastAnnounce has happened far enough in the past
-//to mark it as eligable to be cleaned.
-func (s *Service) Stale() bool {
-	return time.Now().Sub(s.LastAnnounce) >= ttl
+//Runner is an entity that represents a runner in the tracker.
+type Runner struct {
+	GOOS, GOARCH string
+	URL          string
+
+	//Seed is used to distribute work among builders
+	Seed int64
 }
 
 //ErrNoneAvailable is the error that Lease returns if there are no available
 //services matching the criteri
 var ErrNoneAvailable = errors.New("no services available")
 
-func baseQuery(GOOS, GOARCH, Type string) (q *datastore.Query) {
+func baseQuery(GOOS, GOARCH, Type string, Seed int64) (q *datastore.Query) {
+	//check for programmer errors
+	if !isEntity(Type) {
+		panic("type not an entity: " + Type)
+	}
+
 	//set up the base query
-	q = datastore.NewQuery("Service").
-		Filter("Type = ", Type).
-		Filter("LastAnnounce > ", time.Now().Add(-1*ttl)).
-		Filter("Outstanding = ", false).
-		Limit(1)
+	q = datastore.NewQuery(Type).Limit(1).Order("Seed")
 
 	//filter on GOOS and GOARCH if they are set
 	if GOOS != "" {
@@ -285,201 +230,114 @@ func baseQuery(GOOS, GOARCH, Type string) (q *datastore.Query) {
 	if GOARCH != "" {
 		q = q.Filter("GOARCH = ", GOARCH)
 	}
+
+	//if we have a Seed value make sure we get one greater than it
+	if Seed > 0 {
+		q = q.Filter("Seed > ", Seed)
+	}
 	return
 }
 
-//Lease returns a key to a service of the given GOOS, GOARCH and Type with no
-//outstanding requests and sets that there is an outstanding request for that
-//service. If GOOS or GOARCH are the empty string, they are not considered in
-//the query.
-func Lease(ctx appengine.Context, GOOS, GOARCH, Type string) (key *datastore.Key, err error) {
-	q := baseQuery(GOOS, GOARCH, Type).KeysOnly()
+//seeds is a locked map of strings to seed values.
+type seeds struct {
+	c map[string]int64
+	sync.Mutex
+}
 
-try_again:
-	//set up a sentinel error value for looping
-	var again bool
+//lastSeeds is a mapping of entity types to the last seed value seen of that
+//type so that we attempt to distribute load across the services.
+var lastSeeds = seeds{c: map[string]int64{}}
 
-	//grab the key and value out of the query
-	key, err = q.Run(ctx).Next(nil)
+//key returns the key used in the map for the set of constrains.
+func (s *seeds) key(GOOS, GOARCH, Type string) string {
+	return strings.Join([]string{GOOS, GOARCH, Type}, ",")
+}
+
+//get looks up the cached seed value for the given set of constraints.
+func (s *seeds) get(GOOS, GOARCH, Type string) (r int64) {
+	s.Lock()
+	defer s.Unlock()
+
+	r = s.c[s.key(GOOS, GOARCH, Type)]
+	return
+}
+
+//set sets the cached seed value for the given set of constraints.
+func (s *seeds) set(GOOS, GOARCH, Type string, v int64) {
+	s.Lock()
+	defer s.Unlock()
+
+	s.c[s.key(GOOS, GOARCH, Type)] = v
+	return
+}
+
+//getService is a helper function that abstracts the logic of grabbing a service
+//with a key greater than the one given, and looping back to zero if one wasn't
+//found.
+func getService(ctx appengine.Context, GOOS, GOARCH, Type string, s interface{}) (key *datastore.Key, err error) {
+	//grab the most recent run key
+	seed := lastSeeds.get(GOOS, GOARCH, Type)
+	defer ctx.Infof("Done [%v]", err)
+again:
+	ctx.Infof("Finding a %v/%v/%v [%d]", Type, GOOS, GOARCH, seed)
+	//run the query
+	query := baseQuery(GOOS, GOARCH, Type, seed)
+	key, err = query.Run(ctx).Next(s)
+
+	//if we didn't find a match
 	if err == datastore.Done {
+
+		//try again if we're limiting on the seed
+		if seed > 0 {
+			seed = 0
+			goto again
+		}
+
+		//there just arent any
 		err = ErrNoneAvailable
-		return
-	}
-	if err != nil {
-		return
-	}
-
-	//at this point we grabbed a candidate service
-	//now we try in a transaction to recheck that outstanding is false, and if
-	//so set it to true.
-	tx := func(c appengine.Context) (err error) {
-		//make sure outstanding is still false
-		s := new(Service)
-		if err = datastore.Get(c, key, s); err != nil {
-			return
-		}
-
-		//if it is now outstanding, try to get a new service
-		if s.Outstanding {
-			again = true
-			return
-		}
-
-		//attempt to set outstanding to true
-		s.Outstanding = true
-		if _, err = datastore.Put(c, key, s); err != nil {
-			return
-		}
-		return
-	}
-
-	//run the transaction
-	err = datastore.RunInTransaction(ctx, tx, nil)
-	if err != nil {
-		key = nil
-		return
-	}
-
-	//if it tells us to try because someone else grabbed the key, try again
-	if again {
-		goto try_again
 	}
 
 	return
 }
 
-//LeaseAny returns a key to a service of the given type with the no outstanding
-//requests and sets the that there is an outstanding request for that service.
-func LeaseAny(ctx appengine.Context, Type string) (key *datastore.Key, err error) {
-	key, err = Lease(ctx, "", "", Type)
+//getRunner grabs a runner from the set of runners matching the given criteria
+//in a fashion that attempts to distribute the workload.
+func getRunner(ctx appengine.Context, GOOS, GOARCH string) (key *datastore.Key, r *Runner, err error) {
+	r = new(Runner)
+	key, err = getService(ctx, GOOS, GOARCH, "Runner", r)
 	return
 }
 
-//Unlease signals to the tracker that the service behind the key is done being
-//used and ready to be leased again by another process.
-func Unlease(ctx appengine.Context, key *datastore.Key) (err error) {
-	//make sure we're unleasing a service
-	if key.Kind() != "Service" {
-		err = errors.New("key is not a Service")
-		return
-	}
-
-	//create our transaction
-	tx := func(c appengine.Context) (err error) {
-		//grab the current state of the 
-		s := new(Service)
-		if err = datastore.Get(c, key, s); err != nil {
-			return
-		}
-
-		//make sure it has an Outstanding request.
-		//if it doesn't just return
-		if !s.Outstanding {
-			return
-		}
-
-		//set the Outstanding flag to false and store it
-		s.Outstanding = false
-		if _, err = datastore.Put(c, key, s); err != nil {
-			return
-		}
-
-		return
-	}
-
-	//run the update
-	err = datastore.RunInTransaction(ctx, tx, nil)
+//getBuilder grabs a builder from the set of runners matching the given criteria
+//in a fashion that attempts to distribute the workload.
+func getBuilder(ctx appengine.Context, GOOS, GOARCH string) (key *datastore.Key, b *Builder, err error) {
+	b = new(Builder)
+	key, err = getService(ctx, GOOS, GOARCH, "Builder", b)
 	return
 }
 
-//LeasePair attempts to lease a builder and a runner for the given GOOS and GOARCH
-//pair. If either are empty, they are not considered in the constraint, but the
-//runner and builder will still share the same parameters.
-func LeasePair(ctx appengine.Context, GOOS, GOARCH string) (builder, runner *datastore.Key, err error) {
-	var attempts int
-	buildq := baseQuery(GOOS, GOARCH, "Builder")
-
-try_again:
-	var again bool
-
-	//if we try too many times, just bail
-	if attempts > 10 {
-		err = ErrNoneAvailable
-		builder, runner = nil, nil
-		return
-	}
-	attemps++
-
-	//try to get a builder 
-	bs := new(Service)
-	builder, err = buildq.Run(ctx).Next(builder)
-	if err == datastore.Done { //if none match the query, inform them
-		err = ErrNoneAvailable
-		return
-	}
-	if err != nil { //actual error
-		return
-	}
-
-	//TODO(zeebo): flag builders that have no runners associated with them as
-	//excluded from the set of candidates.
-
-	//set up a query for the runner
-	runq := baseQuery(bs.GOOS, bs.GOARCH, "Runner").KeysOnly()
-	runner, err = runq.Run(ctx).Next(nil)
-	if err == datastore.Done {
-		err = ErrNoneAvailable
-		return
-	}
+//LeasePair returns a pair of Builder and Runners that can be used to run tests.
+func LeasePair(ctx appengine.Context, GOOS, GOARCH string) (builder, runner *datastore.Key, b *Builder, r *Runner, err error) {
+	ctx.Infof("%+v", lastSeeds)
+	//grab a runner
+	runner, r, err = getRunner(ctx, GOOS, GOARCH)
 	if err != nil {
+		ctx.Infof("couldn't lease runner")
 		return
 	}
 
-	//now we have a pair so lets make sure we get them both
-	tx := func(c appengine.Context) (err error) {
-		//load the services we need and make sure they arent outstanding
-		bs, rs := new(Service), new(Service)
-		if err = datastore.Get(c, builder, bs); err != nil {
-			return
-		}
-		if bs.Outstanding {
-			again = true
-			return
-		}
+	//update the key we're using
+	lastSeeds.set(GOOS, GOARCH, "Runner", r.Seed)
 
-		if err = datastore.Get(c, runner, rs); err != nil {
-			return
-		}
-		if rs.Outstanding {
-			again = true
-			return
-		}
-
-		//we have them both so lets claim them
-		bs.Outstanding, rs.Outstanding = true, true
-		_, err = datastore.PutMulti(c,
-			[]*Key{builder, runner},
-			[]*Service{bs, rs},
-		)
-		if err != nil {
-			return
-		}
-
-		//we put them!
-		return
-	}
-
-	//execute the transaction
-	err = datastore.RunInTransaction(ctx, tx, nil)
+	//grab a builder than can make a build for this runner
+	builder, b, err = getBuilder(ctx, r.GOOS, r.GOARCH)
 	if err != nil {
-		builder, runner = nil, nil
+		ctx.Infof("couldn't lease builder")
 		return
 	}
 
-	//if we had contention and someone else got the key, try again
-	if again {
-		goto try_again
-	}
+	//update the key we're using
+	lastSeeds.set(r.GOOS, r.GOARCH, "Builder", b.Seed)
 
 	return
 }
