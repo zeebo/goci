@@ -1,9 +1,9 @@
 package builder
 
 import (
-	"github.com/zeebo/goci/environ"
 	"errors"
 	"fmt"
+	"github.com/zeebo/goci/environ"
 	"os"
 	"runtime"
 	"time"
@@ -23,10 +23,10 @@ type Builder struct {
 	goos, goarch string
 	goroot       string
 	gopath       string
-	created      bool
 
 	//generated
-	env []string
+	base_env []string
+	env      []string
 }
 
 //New returns a Builder that can be used for building Work objects.
@@ -38,9 +38,7 @@ type Builder struct {
 //If a directory has been created for the GOPATH, the Cleanup method will remove
 //it.
 //Commands run by the Builder use the PATH variable from the environment.
-func New(GOOS, GOARCH, GOPATH, GOROOT string) (b Builder) {
-	var created bool //true if we created a GOPATH
-
+func New(GOOS, GOARCH, GOROOT string) (b Builder) {
 	//fill in default values
 	if GOOS == "" {
 		GOOS = runtime.GOOS
@@ -48,27 +46,16 @@ func New(GOOS, GOARCH, GOPATH, GOROOT string) (b Builder) {
 	if GOARCH == "" {
 		GOARCH = runtime.GOARCH
 	}
-	if GOPATH == "" {
-		d, err := world.TempDir("gopath")
-		if err != nil {
-			panic(err)
-		}
-		GOPATH = d
-		created = true
-	}
 	if GOROOT == "" {
 		GOROOT = must_env("GOROOT")
 	}
 
 	//create the builder
 	b = Builder{
-		goos:    GOOS,
-		goarch:  GOARCH,
-		gopath:  GOPATH,
-		created: created,
-		goroot:  GOROOT,
-		env: []string{
-			fmt.Sprintf("GOPATH=%s", GOPATH),
+		goos:   GOOS,
+		goarch: GOARCH,
+		goroot: GOROOT,
+		base_env: []string{
 			fmt.Sprintf("GOROOT=%s", GOROOT),
 			fmt.Sprintf("GOOS=%s", GOOS),
 			fmt.Sprintf("GOARCH=%s", GOARCH),
@@ -82,9 +69,7 @@ func New(GOOS, GOARCH, GOPATH, GOROOT string) (b Builder) {
 //be called after all work items the Builder will ever create have been created,
 //like during the exit of a program.
 func (b Builder) Cleanup() {
-	if b.created {
-		os.RemoveAll(b.gopath)
-	}
+	os.RemoveAll(b.gopath)
 }
 
 //exeSuffix is a value that is appended to the end of a binary depending on what
@@ -135,8 +120,19 @@ func (b Builder) gp() string {
 }
 
 func (b Builder) Build(w *Work) (builds []Build, revDate time.Time, err error) {
+	//create a GOPATH for this work item
+	b.gopath, err = world.TempDir("gopath")
+	if err != nil {
+		panic(err)
+	}
+	defer os.RemoveAll(b.gopath)
+
+	//set up the env to include the new gopath
+	b.env = append(b.env, b.base_env...)
+	b.env = append(b.env, fmt.Sprintf("GOPATH=%s", b.gopath))
+
 	//get the import path (just download the package)
-	if err = b.goGet(true, false, w.ImportPath); err != nil {
+	if err = b.goGet(true, w.ImportPath); err != nil {
 		return
 	}
 
@@ -188,13 +184,13 @@ func (b Builder) Build(w *Work) (builds []Build, revDate time.Time, err error) {
 	}
 
 	//make a uniqued copy of all the paths we're going to download and install
-	var all_paths []string
-	all_paths = append(all_paths, paths...)
-	all_paths = append(all_paths, testpaths...)
-	all_paths = unique(all_paths)
+	deppaths := make([]string, 0, len(paths)+len(testpaths))
+	deppaths = append(deppaths, paths...)
+	deppaths = append(deppaths, testpaths...)
+	deppaths = unique(deppaths)
 
-	//download and install all the deps this revision imports
-	if err = b.goGet(false, false, all_paths...); err != nil {
+	//download, update and install all the deps this revision imports
+	if err = b.goGet(false, deppaths...); err != nil {
 		return
 	}
 

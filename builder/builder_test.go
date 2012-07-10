@@ -9,7 +9,7 @@ func TestSingleImport(t *testing.T) {
 		Revision:   "e9dd26552f10d390b5f9f59c6a9cfdc30ed1431c",
 		ImportPath: "github.com/zeebo/irc",
 	}
-	b := New("", "", "", "")
+	b := New("", "", "")
 	bs, _, err := b.Build(&w)
 	if err != nil {
 		t.Fatal(err)
@@ -26,7 +26,7 @@ func TestSubpackageImport(t *testing.T) {
 		ImportPath:  "github.com/dustin/githubhooks",
 		Subpackages: true,
 	}
-	b := New("", "", "", "")
+	b := New("", "", "")
 	bs, _, err := b.Build(&w)
 	if err != nil {
 		t.Fatal(err)

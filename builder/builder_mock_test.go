@@ -93,7 +93,7 @@ func TestMocked(t *testing.T) {
 	for _, w := range works {
 		for _, vcs := range []string{"git", "hg", "bzr"} {
 			w.VCSHint = vcs
-			_, _, err := New("", "", "", "").Build(w)
+			_, _, err := New("", "", "").Build(w)
 			if err != nil {
 				t.Error(err)
 			} else {

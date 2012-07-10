@@ -83,14 +83,11 @@ func (b Builder) goRun(dir string, msg string, args ...string) (s string, err er
 }
 
 //goGet runs a go get on the given import paths
-func (b Builder) goGet(download, update bool, path ...string) (err error) {
+func (b Builder) goGet(download bool, path ...string) (err error) {
 	//build the arguments
 	args := []string{"go", "get", "-v"}
 	if download {
 		args = append(args, "-d")
-	}
-	if update {
-		args = append(args, "-u")
 	}
 	args = append(args, "-tags", "goci")
 	args = append(args, path...)
