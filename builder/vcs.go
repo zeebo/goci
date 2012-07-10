@@ -21,9 +21,10 @@ type vcs interface {
 var vcsMap = map[string]vcs{
 	"git": vcsGit,
 	"hg":  vcsHg,
-	// "bzr": nil,
+	"bzr": vcsBzr,
 }
 
+//findVcs looks for the metadata folder inside of a given path
 func findVcs(path string) (v vcs) {
 	for name, vcs := range vcsMap {
 		p := fp.Join(path, "."+name)
@@ -44,31 +45,47 @@ type vcsInfo struct {
 	FDate     string
 
 	Format string
+	Filter func(string) (bool, string)
 }
 
-var (
-	vcsGit = &vcsInfo{
-		Name: "git",
+var vcsGit = &vcsInfo{
+	Name: "git",
 
-		FClone:    "clone {repo} {dir}",
-		FCheckout: "checkout {rev}",
-		FCurrent:  "rev-parse HEAD",
-		FDate:     "log -1 --format=%cD {rev}",
+	FClone:    "clone {repo} {dir}",
+	FCheckout: "checkout {rev}",
+	FCurrent:  "rev-parse HEAD",
+	FDate:     "log -1 --format=%cD {rev}",
 
-		Format: "Mon, 2 Jan 2006 15:04:05 -0700",
-	}
+	Format: "Mon, 2 Jan 2006 15:04:05 -0700",
+}
 
-	vcsHg = &vcsInfo{
-		Name: "hg",
+var vcsHg = &vcsInfo{
+	Name: "hg",
 
-		FClone:    "clone -U {repo} {dir}",
-		FCheckout: "update -r {rev}",
-		FCurrent:  "parents --template {node}",
-		FDate:     "parents --template {date|rfc822date} -r {rev}",
+	FClone:    "clone -U {repo} {dir}",
+	FCheckout: "update -r {rev}",
+	FCurrent:  "parents --template {node}",
+	FDate:     "parents --template {date|rfc822date} -r {rev}",
 
-		Format: time.RFC822Z,
-	}
-)
+	Format: time.RFC822Z,
+}
+
+var vcsBzr = &vcsInfo{
+	Name: "bzr",
+
+	FClone:    "branch {repo} {dir}",
+	FCheckout: "update -r {rev}",
+	FCurrent:  "revision-info --tree",
+	FDate:     "log -r {rev}",
+
+	Format: "Mon 2006-01-02 15:04:05 -0700",
+	Filter: func(in string) (ok bool, out string) {
+		if ok = strings.HasPrefix(in, "timestamp: "); ok {
+			out = in[11:]
+		}
+		return
+	},
+}
 
 type vcsError struct {
 	Msg    string
@@ -79,7 +96,7 @@ type vcsError struct {
 }
 
 func (v *vcsError) Error() string {
-	return fmt.Sprintf("%s: %s\nvcs: %s\nargs: %s\noutput: %s", v.Msg, v.Err.Error(), v.Vcs.Name, v.Args, v.Output)
+	return fmt.Sprintf("%s: %v\nvcs: %s\nargs: %s\noutput: %s", v.Msg, v.Err, v.Vcs.Name, v.Args, v.Output)
 }
 
 func vcsErrorf(err error, v *vcsInfo, args []string, out string, msg string) error {
@@ -151,6 +168,12 @@ func (v *vcsInfo) Current(dir string) (rev string, err error) {
 
 	//do parsing into rev
 	rev = strings.TrimSpace(buf.String())
+
+	//only get the first word
+	if strings.Contains(rev, " ") {
+		rev = rev[:strings.Index(rev, " ")]
+	}
+
 	return
 }
 
@@ -162,10 +185,35 @@ func (v *vcsInfo) Date(dir, rev string) (t time.Time, err error) {
 		return
 	}
 
-	//parse the time
-	t, e := time.Parse(v.Format, strings.TrimSpace(buf.String()))
+	//turn the response into a number of lines
+	response := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	if len(response) == 0 {
+		err = vcsErrorf(nil, v, args, buf.String(), "empty response")
+		return
+	}
+
+	//set up our loop
+	var i int
+	line := response[i]
+	ok := v.Filter == nil //don't bother looping if we have no filter
+
+	//loop over the lines until one filters positive
+	for i := 0; i < len(response) && !ok; i++ {
+		ok, line = v.Filter(response[i])
+	}
+
+	//check if a line was sucessfully filtered
+	if !ok {
+		err = vcsErrorf(nil, v, args, buf.String(), "filter did not match")
+		return
+	}
+
+	//parse the filtered line
+	t, e := time.Parse(v.Format, line)
 	if e != nil {
 		err = vcsErrorf(e, v, args, buf.String(), "failed to parse date")
+		return
 	}
+
 	return
 }

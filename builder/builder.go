@@ -105,6 +105,11 @@ type Work struct {
 	Revision    string
 	ImportPath  string
 	Subpackages bool
+
+	//VCSHint is an optional parameter that specifies the version control system
+	//used by the package. If set to the empty string, we will search for the 
+	//system by looking for the metadata directory.
+	VCSHint string
 }
 
 //Build is a type that represents a built test and tarballed source ready to be
@@ -138,8 +143,17 @@ func (b Builder) Build(w *Work) (builds []Build, revDate time.Time, err error) {
 	//we can find the downloaded package in the first entry of the gopath
 	packDir := fp.Join(b.gp(), "src", w.ImportPath)
 
-	//figure out the vcs it uses
-	v := findVcs(packDir)
+	//set up the vcs
+	var v vcs
+
+	//check the hint for the vcs and fallback on searching the directories
+	if vc, ok := vcsMap[w.VCSHint]; ok {
+		v = vc
+	} else {
+		v = findVcs(packDir)
+	}
+
+	//if we don't have a vcs then we can't continue
 	if v == nil {
 		err = fmt.Errorf("unable to determine vcs for %s", w.ImportPath)
 		return
@@ -173,13 +187,14 @@ func (b Builder) Build(w *Work) (builds []Build, revDate time.Time, err error) {
 		return
 	}
 
-	//get all the deps this revision imports
-	if err = b.goGet(false, false, paths...); err != nil {
-		return
-	}
+	//make a uniqued copy of all the paths we're going to download and install
+	var all_paths []string
+	all_paths = append(all_paths, paths...)
+	all_paths = append(all_paths, testpaths...)
+	all_paths = unique(all_paths)
 
-	//get all the test packages needed to build the test binaries
-	if err = b.goGet(false, false, testpaths...); err != nil {
+	//download and install all the deps this revision imports
+	if err = b.goGet(false, false, all_paths...); err != nil {
 		return
 	}
 
