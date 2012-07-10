@@ -7,30 +7,28 @@ import (
 	"os/exec"
 )
 
-func New() interface{} {
-	return defaultEnviron{}
-}
+func New() (e Env) { return }
 
-type defaultEnviron struct{}
+type Env struct{}
 
-func (defaultEnviron) Exists(name string) bool {
+func (Env) Exists(name string) bool {
 	_, err := os.Stat(name)
 	return err == nil
 }
 
-func (defaultEnviron) LookPath(name string) (string, error) {
+func (Env) LookPath(name string) (string, error) {
 	return exec.LookPath(name)
 }
 
-func (defaultEnviron) TempDir(prefix string) (string, error) {
+func (Env) TempDir(prefix string) (string, error) {
 	return ioutil.TempDir("", prefix)
 }
 
-func (defaultEnviron) Stat(path string) (os.FileInfo, error) {
+func (Env) Stat(path string) (os.FileInfo, error) {
 	return os.Lstat(path)
 }
 
-func (defaultEnviron) Readdir(path string) (s []os.FileInfo, err error) {
+func (Env) Readdir(path string) (s []os.FileInfo, err error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return
@@ -39,15 +37,15 @@ func (defaultEnviron) Readdir(path string) (s []os.FileInfo, err error) {
 	return f.Readdir(-1)
 }
 
-func (defaultEnviron) Create(path string) (io.WriteCloser, error) {
+func (Env) Create(path string) (io.WriteCloser, error) {
 	return os.Create(path)
 }
 
-func (defaultEnviron) Open(path string) (io.ReadCloser, error) {
+func (Env) Open(path string) (io.ReadCloser, error) {
 	return os.Open(path)
 }
 
-func (defaultEnviron) Make(c Command) (p Proc) {
+func (Env) Make(c Command) (p Proc) {
 	cmd := &exec.Cmd{
 		Path: c.Path,
 		Args: c.Args,

@@ -22,7 +22,7 @@ var (
 	ErrTooMany         = errors.New("too many revisions in that work item")
 	ErrUnknownWorkType = errors.New("unknown work type")
 
-	world = environ.New().(localWorld)
+	world localWorld = environ.New()
 )
 
 //Builder is a type that builds go packages at specified revisions.
