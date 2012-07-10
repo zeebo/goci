@@ -39,3 +39,19 @@ func TestSubpackageImport(t *testing.T) {
 		bu.Clean()
 	}
 }
+
+func TestBazaarImport(t *testing.T) {
+	w := Work{
+		Revision:   "140",
+		ImportPath: "labix.org/v2/mgo",
+	}
+	b := New("", "", "")
+	bs, _, err := b.Build(&w)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%+v", bs)
+	for _, bu := range bs {
+		bu.Clean()
+	}
+}

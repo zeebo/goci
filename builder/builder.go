@@ -115,10 +115,6 @@ func (b Build) Clean() {
 	os.RemoveAll(p.Base(b.SourcePath))
 }
 
-func (b Builder) gp() string {
-	return fp.SplitList(b.gopath)[0]
-}
-
 func (b Builder) Build(w *Work) (builds []Build, revDate time.Time, err error) {
 	//create a GOPATH for this work item
 	b.gopath, err = world.TempDir("gopath")
@@ -137,7 +133,7 @@ func (b Builder) Build(w *Work) (builds []Build, revDate time.Time, err error) {
 	}
 
 	//we can find the downloaded package in the first entry of the gopath
-	packDir := fp.Join(b.gp(), "src", w.ImportPath)
+	packDir := fp.Join(b.gopath, "src", w.ImportPath)
 
 	//set up the vcs
 	var v vcs
@@ -231,7 +227,7 @@ func (b Builder) build(path string) (bu Build) {
 	}
 
 	//we can find the downloaded package in the first entry of the gopath
-	packDir := fp.Join(b.gp(), "src", path)
+	packDir := fp.Join(b.gopath, "src", path)
 
 	bu.SourcePath = fp.Join(tardir, "src.tar.gz")
 	if err = tarball(packDir, bu.SourcePath); err != nil {
