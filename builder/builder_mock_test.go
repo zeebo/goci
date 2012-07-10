@@ -1,6 +1,7 @@
 package builder
 
 import (
+	"github.com/zeebo/goci/environ"
 	"strings"
 	"testing"
 )
@@ -13,47 +14,47 @@ func (existsWorld) Exists(string) bool                    { return true }
 func (existsWorld) LookPath(i string) (string, error)     { return i, nil }
 func (existsWorld) TempDir(prefix string) (string, error) { return "/tmp/" + prefix, nil }
 
-func (e existsWorld) Make(c command) (p proc) {
+func (e existsWorld) Make(c environ.Command) (p environ.Proc) {
 	return runner{e.t, c}
 }
 
 type runner struct {
 	t *testing.T
-	c command
+	c environ.Command
 }
 
 func (r runner) Run() (error, bool) {
 	t, c := r.t, r.c
 
-	t.Log(c.args)
+	t.Log(c.Args)
 
 	//hack for expected output on getting timestamp
-	if c.args[1] == "parents" && c.args[3] == "{date|rfc822date}" {
-		c.w.Write([]byte(vcsHg.Format))
+	if c.Args[1] == "parents" && c.Args[3] == "{date|rfc822date}" {
+		c.W.Write([]byte(vcsHg.Format))
 	}
 
-	if c.args[1] == "log" {
-		c.w.Write([]byte(vcsGit.Format))
+	if c.Args[1] == "log" {
+		c.W.Write([]byte(vcsGit.Format))
 	}
 
 	//hack for expected output on finding revision
-	if c.args[1] == "rev-parse" {
-		c.w.Write([]byte("revision"))
+	if c.Args[1] == "rev-parse" {
+		c.W.Write([]byte("revision"))
 	}
-	if c.args[1] == "parents" && c.args[3] != "{date|rfc822date}" {
-		c.w.Write([]byte("revision"))
+	if c.Args[1] == "parents" && c.Args[3] != "{date|rfc822date}" {
+		c.W.Write([]byte("revision"))
 	}
 
 	//just print out the package it is listing. if it ends with a
 	//... just print it out with a crazy suffix
-	if c.args[1] == "list" {
-		pack := c.args[len(c.args)-1]
+	if c.Args[1] == "list" {
+		pack := c.Args[len(c.Args)-1]
 		if strings.HasSuffix(pack, "...") {
 			pack = pack[:len(pack)-3]
-			c.w.Write([]byte(pack))
-			c.w.Write([]byte("foo\n"))
+			c.W.Write([]byte(pack))
+			c.W.Write([]byte("foo\n"))
 		}
-		c.w.Write([]byte(pack))
+		c.W.Write([]byte(pack))
 	}
 
 	return nil, true
@@ -61,7 +62,7 @@ func (r runner) Run() (error, bool) {
 
 func TestMocked(t *testing.T) {
 	//mock out the world
-	defer func(e environ) { world = e }(world)
+	defer func(e environ.Environ) { world = e }(world)
 	world = existsWorld{t}
 
 	works := []*Work{

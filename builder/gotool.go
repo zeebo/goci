@@ -2,6 +2,7 @@ package builder
 
 import (
 	"bytes"
+	"github.com/zeebo/goci/environ"
 	"fmt"
 	"io"
 	"strings"
@@ -41,10 +42,10 @@ func tarball(dir, out string) (err error) {
 	}
 	targ := []string{"tar", "-cvzf", out, "-C", dir, "."}
 	var buf bytes.Buffer
-	cmd := world.Make(command{
-		w:    &buf,
-		path: tarp,
-		args: targ,
+	cmd := world.Make(environ.Command{
+		W:    &buf,
+		Path: tarp,
+		Args: targ,
 	})
 	if e, _ := cmd.Run(); e != nil {
 		err = cmdErrorf(e, targ, buf.String(), "error building tarball")
@@ -59,13 +60,13 @@ func tarball(dir, out string) (err error) {
 
 //goCmd uses the builders goroot variable to get a path to the go command with
 //the correct environment
-func (b Builder) goCmd(buf io.Writer, dir string, args ...string) (p proc) {
-	cmd := command{
-		w:    buf,
-		dir:  dir,
-		env:  b.env,
-		path: fp.Join(b.goroot, "bin", "go"),
-		args: args,
+func (b Builder) goCmd(buf io.Writer, dir string, args ...string) (p environ.Proc) {
+	cmd := environ.Command{
+		W:    buf,
+		Dir:  dir,
+		Env:  b.env,
+		Path: fp.Join(b.goroot, "bin", "go"),
+		Args: args,
 	}
 	return world.Make(cmd)
 }

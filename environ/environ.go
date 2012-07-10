@@ -1,4 +1,4 @@
-package builder
+package environ
 
 import (
 	"io"
@@ -7,24 +7,26 @@ import (
 	"os/exec"
 )
 
-var world environ = defaultEnviron{}
-
-type command struct {
-	w    io.Writer
-	dir  string
-	env  []string
-	path string
-	args []string
+func New() Environ {
+	return defaultEnviron{}
 }
 
-type environ interface {
+type Command struct {
+	W    io.Writer
+	Dir  string
+	Env  []string
+	Path string
+	Args []string
+}
+
+type Environ interface {
 	Exists(string) bool
 	LookPath(string) (string, error)
 	TempDir(string) (string, error)
-	Make(command) proc
+	Make(Command) Proc
 }
 
-type proc interface {
+type Proc interface {
 	Run() (error, bool)
 }
 
@@ -43,26 +45,26 @@ func (defaultEnviron) TempDir(prefix string) (string, error) {
 	return ioutil.TempDir("", prefix)
 }
 
-func (defaultEnviron) Make(c command) (p proc) {
+func (defaultEnviron) Make(c Command) (p Proc) {
 	cmd := &exec.Cmd{
-		Path: c.path,
-		Args: c.args,
-		Env:  c.env,
+		Path: c.Path,
+		Args: c.Args,
+		Env:  c.Env,
 	}
-	if c.dir != "" {
-		cmd.Dir = c.dir
+	if c.Dir != "" {
+		cmd.Dir = c.Dir
 	}
-	if c.w != nil {
-		cmd.Stdout, cmd.Stderr = c.w, c.w
+	if c.W != nil {
+		cmd.Stdout, cmd.Stderr = c.W, c.W
 	}
-	return procCmd{cmd}
+	return ProcCmd{cmd}
 }
 
-type procCmd struct {
+type ProcCmd struct {
 	*exec.Cmd
 }
 
-func (p procCmd) Run() (err error, success bool) {
+func (p ProcCmd) Run() (err error, success bool) {
 	err = p.Cmd.Run()
 	success = p.ProcessState.Success()
 	return

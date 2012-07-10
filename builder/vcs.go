@@ -3,6 +3,7 @@ package builder
 import (
 	"bytes"
 	"fmt"
+	"github.com/zeebo/goci/environ"
 	"io"
 	"os"
 	"strings"
@@ -102,7 +103,7 @@ func expandSplit(s string, vals map[string]string) []string {
 	return strings.Split(expand(s, vals), " ")
 }
 
-func (v *vcsInfo) expandCmd(dir string, w io.Writer, cmd string, keyval ...string) (p proc, args []string) {
+func (v *vcsInfo) expandCmd(dir string, w io.Writer, cmd string, keyval ...string) (p environ.Proc, args []string) {
 	vals := map[string]string{}
 	for i := 0; i < len(keyval); i += 2 {
 		vals[keyval[i]] = keyval[i+1]
@@ -112,12 +113,12 @@ func (v *vcsInfo) expandCmd(dir string, w io.Writer, cmd string, keyval ...strin
 		path = v.Name
 	}
 	args = append([]string{v.Name}, expandSplit(cmd, vals)...)
-	p = world.Make(command{
-		w:    w,
-		dir:  dir,
-		env:  os.Environ(),
-		path: path,
-		args: args,
+	p = world.Make(environ.Command{
+		W:    w,
+		Dir:  dir,
+		Env:  os.Environ(),
+		Path: path,
+		Args: args,
 	})
 	return
 }
