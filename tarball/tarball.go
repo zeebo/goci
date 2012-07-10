@@ -51,7 +51,17 @@ func Compress(dir, out string) (err error) {
 		}
 
 		//fix the path for the filename
-		fname := "." + path[len(dir):]
+		//TODO(zeebo): make sure this isn't a giant stupid hack
+		var fname string
+		if dir == "." {
+			if path == "." {
+				fname = "."
+			} else {
+				fname = "./" + path
+			}
+		} else {
+			fname = "." + path[len(dir):]
+		}
 		log.Printf("a %s", fname)
 
 		//create the header for the file (strip the directory out)
