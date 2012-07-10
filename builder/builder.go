@@ -11,11 +11,18 @@ import (
 	p "path"
 )
 
+type localWorld interface {
+	Exists(string) bool
+	LookPath(string) (string, error)
+	TempDir(string) (string, error)
+	Make(environ.Command) environ.Proc
+}
+
 var (
 	ErrTooMany         = errors.New("too many revisions in that work item")
 	ErrUnknownWorkType = errors.New("unknown work type")
 
-	world = environ.New()
+	world = environ.New().(localWorld)
 )
 
 //Builder is a type that builds go packages at specified revisions.

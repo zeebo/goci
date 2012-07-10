@@ -71,7 +71,7 @@ func (r runner) Run() (error, bool) {
 
 func TestMocked(t *testing.T) {
 	//mock out the world
-	defer func(e environ.Environ) { world = e }(world)
+	defer func(e localWorld) { world = e }(world)
 	world = existsWorld{t}
 
 	works := []*Work{
