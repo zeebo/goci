@@ -24,7 +24,8 @@ import (
 var (
 	//Symlinks are unspported. Compress and Extract return this error if one is
 	//encountered.
-	ErrNoSymlinks = errors.New("symlinks are unsupported")
+	ErrNoSymlinks     = errors.New("symlinks are unsupported")
+	ErrInvalidExtract = errors.New("exctract attempted to go above directory")
 )
 
 //Compress takes the given directory and compresses it into a file written to
@@ -95,6 +96,63 @@ func Compress(dir, out string) (err error) {
 
 //Extract takes a compressed file and extracts it to the given directory.
 func Extract(in, dir string) (err error) {
+	f, err := world.Open(in)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	g, err := gzip.NewReader(f)
+	if err != nil {
+		return
+	}
+	defer g.Close()
+
+	t := tar.NewReader(g)
+
+	var of io.WriteCloser
+	for {
+		//grab the next file
+		hdr, er := t.Next()
+		if er == io.EOF {
+			break
+		}
+		if er != nil {
+			err = er
+			return
+		}
+
+		//make sure we don't go above our directory
+		path := fp.Clean(fp.Join(dir, hdr.Name))
+		if !strings.HasPrefix(path, dir) {
+			err = ErrInvalidExtract
+			return
+		}
+
+		//if it's a directory, try to make it
+		if hdr.Typeflag == tar.TypeDir {
+			err = os.MkdirAll(path, 0777)
+			if err != nil {
+				return
+			}
+
+			//continue on now
+			continue
+		}
+
+		//create the file and copy the data into it
+		of, err = world.Create(path)
+		if err != nil {
+			return
+		}
+		_, err = io.Copy(of, t)
+		of.Close()
+
+		if err != nil {
+			return
+		}
+	}
+
 	return
 }
 

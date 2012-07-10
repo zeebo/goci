@@ -74,11 +74,14 @@ func (testInfo) Sys() (s interface{})   { panic("unused") }
 type testWorld struct {
 	t *testing.T
 	r *rand.Rand
+
+	files map[string]io.ReadCloser
 }
 
 func newTestWorld(t *testing.T, seed int64) (w testWorld) {
 	w.t = t
 	w.r = rand.New(rand.NewSource(seed))
+	w.files = map[string]io.ReadCloser{}
 	return
 }
 
@@ -104,6 +107,10 @@ func (w testWorld) Create(name string) (io.WriteCloser, error) {
 
 func (w testWorld) Open(name string) (io.ReadCloser, error) {
 	w.t.Logf("world: Open(%s)", name)
+	if r, ok := w.files[name]; ok {
+		w.t.Logf("world: returned set file")
+		return r, nil
+	}
 	return testIO{w.t, name}, nil
 }
 
