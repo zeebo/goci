@@ -98,7 +98,7 @@ func TestMocked(t *testing.T) {
 				t.Error(err)
 			} else {
 				t.Log("========")
-				t.Logf("%s[%s] passed", vcs, w.ImportPath)
+				t.Logf("%s[%s] passed", w.ImportPath, vcs)
 			}
 		}
 	}
