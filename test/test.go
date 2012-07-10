@@ -14,6 +14,7 @@ import (
 func init() {
 	http.Handle("/_test/add/", http.StripPrefix("/_test/add/", httputil.Handler(add)))
 	http.Handle("/_test/lease", httputil.Handler(lease))
+	http.Handle("/_test/ping", httputil.Handler(ping))
 }
 
 func parse(path string, args ...*string) {
@@ -67,5 +68,14 @@ func lease(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *
 	}
 
 	fmt.Fprintf(w, "%+v\n%+v\n%v\n%v", b, r, bk, rk)
+	return
+}
+
+func ping(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *httputil.Error) {
+	if err := tracker.DefaultTracker.Ping(req, nil, nil); err != nil {
+		e = httputil.Errorf(err, "error sending ping")
+		return
+	}
+	fmt.Fprintf(w, "ping!")
 	return
 }

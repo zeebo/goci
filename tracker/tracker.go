@@ -7,6 +7,7 @@ import (
 	"errors"
 	"math/rand"
 	"net/http"
+	"pinger"
 	"rpc"
 	"strings"
 	"sync"
@@ -37,7 +38,9 @@ const (
 )
 
 //Tracker is an rpc for announcing and managing the presence of services
-type Tracker struct{}
+type Tracker struct {
+	pinger.Pinger //a Tracker repsonds to ping
+}
 
 //Set up a DefaultTracker so it can be called without an rpc layer
 var DefaultTracker = Tracker{}
