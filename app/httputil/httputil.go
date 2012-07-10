@@ -1,3 +1,5 @@
+// +build !goci
+
 //package httputil provides handler types for appengine requests
 package httputil
 

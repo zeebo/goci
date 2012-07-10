@@ -1,3 +1,5 @@
+// +build !goci
+
 package test
 
 import (
