@@ -16,8 +16,8 @@ import (
 	"compress/gzip"
 	"errors"
 	"io"
-	"log"
 	"os"
+	"strings"
 	fp "path/filepath"
 )
 
@@ -43,6 +43,7 @@ func Compress(dir, out string) (err error) {
 	defer t.Close()
 
 	dir = fp.Clean(dir)
+	ds := "." + string(fp.Separator)
 
 	err = walk(dir, func(path string, fi os.FileInfo, e error) (err error) {
 		if e != nil {
@@ -52,17 +53,13 @@ func Compress(dir, out string) (err error) {
 
 		//fix the path for the filename
 		//TODO(zeebo): make sure this isn't a giant stupid hack
-		var fname string
-		if dir == "." {
-			if path == "." {
-				fname = "."
-			} else {
-				fname = "./" + path
-			}
-		} else {
-			fname = "." + path[len(dir):]
+		fname, err := fp.Rel(dir, path)
+		if err != nil {
+			return
 		}
-		log.Printf("a %s", fname)
+		if fname != "." && !strings.HasPrefix(fname, ds) {
+			fname = ds + fname
+		}
 
 		//create the header for the file (strip the directory out)
 		hdr, err := headerFor(fname, fi)
