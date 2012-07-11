@@ -17,6 +17,10 @@ func compare(t *testing.T, expect, got []string) {
 	for _, ev := range expect {
 		t.Logf("\t%q", ev)
 	}
+	t.Log("Got")
+	for _, ev := range got {
+		t.Logf("\t%q", ev)
+	}
 }
 
 func TestCompress(t *testing.T) {
@@ -36,19 +40,15 @@ func TestCompress(t *testing.T) {
 		"world: Create(foo.tar.gz, 0666)",
 		"world: Stat(0tarball): 0tarball:0",
 		"0tarball: Mode(): dir:true",
-		"0tarball: Mode(): dir:true",
 		"foo.tar.gz: Write(10)",
 		"world: Readdir(0tarball): [15003edb:0 75f91b0b:983]",
 		"15003edb: Mode(): dir:true",
-		"15003edb: Mode(): dir:true",
 		"world: Readdir(0tarball/15003edb): [7fabe9ae:261]",
-		"7fabe9ae: Mode(): dir:false",
 		"7fabe9ae: Mode(): dir:false",
 		"7fabe9ae: Size(): 261",
 		"world: Open(0tarball/15003edb/7fabe9ae)",
 		"0tarball/15003edb/7fabe9ae: Read(261)",
 		"0tarball/15003edb/7fabe9ae: Close()",
-		"75f91b0b: Mode(): dir:false",
 		"75f91b0b: Mode(): dir:false",
 		"75f91b0b: Size(): 983",
 		"world: Open(0tarball/75f91b0b)",
@@ -82,7 +82,6 @@ func TestCompressNotDirectory(t *testing.T) {
 	expect := []string{
 		"world: Create(foo.tar.gz, 0666)",
 		"world: Stat(tarball): tarball:861",
-		"tarball: Mode(): dir:false",
 		"tarball: Mode(): dir:false",
 		"tarball: Size(): 861",
 		"foo.tar.gz: Write(10)",

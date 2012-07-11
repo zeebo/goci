@@ -173,13 +173,16 @@ func Extract(in io.Reader, dir string) (err error) {
 func headerFor(path string, fi os.FileInfo) (hdr *tar.Header, err error) {
 	hdr = new(tar.Header)
 
+	//get the mode of the file info
+	mode := fi.Mode()
+
 	//only set the header fields we care about
 	hdr.Name = path
-	hdr.Mode = int64(fi.Mode().Perm()) //lower order bits so safe
+	hdr.Mode = int64(mode.Perm()) //lower order bits so safe
 	hdr.ModTime = time.Now()
 
 	//figure out what kind of file we have
-	switch mode := fi.Mode(); {
+	switch {
 	case mode&os.ModeDir == os.ModeDir:
 		hdr.Typeflag = tar.TypeDir
 	case mode&os.ModeSymlink == os.ModeSymlink:

@@ -17,7 +17,7 @@ type logger struct {
 
 func (l *logger) Logf(format string, vals ...interface{}) {
 	s := fmt.Sprintf(format, vals...)
-	l.t.Logf("%q", s)
+	// l.t.Logf("%q", s)
 	l.events = append(l.events, s)
 }
 
