@@ -29,8 +29,19 @@ var (
 	ErrInvalidExtract = errors.New("exctract attempted to go above directory")
 )
 
-//Compress takes the given directory and compresses it into a file written to
-//out for later extraction.
+//CompressFile takes the given directory and file name and compresses the
+//directory into a tar ball.
+func CompressFile(dir, out string) (err error) {
+	f, err := world.Create(out)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	err = Compress(dir, f)
+	return
+}
+
+//Compress takes the given directory and compresses it to the io.Writer.
 func Compress(dir string, out io.Writer) (err error) {
 	g := gzip.NewWriter(out)
 	defer g.Close()
@@ -89,7 +100,18 @@ func Compress(dir string, out io.Writer) (err error) {
 	return
 }
 
-//Extract takes a compressed file and extracts it to the given directory.
+//ExtractFile takes a compressed file and extracts it to the given directory
+func ExtractFile(in, dir string) (err error) {
+	f, err := world.Open(in)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	err = Extract(f, dir)
+	return
+}
+
+//Extract takes a compressed io.Reader and extracts it to the given directory.
 func Extract(in io.Reader, dir string) (err error) {
 	g, err := gzip.NewReader(in)
 	if err != nil {

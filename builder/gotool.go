@@ -2,12 +2,13 @@ package builder
 
 import (
 	"bytes"
-	"github.com/zeebo/goci/environ"
 	"fmt"
+	"github.com/zeebo/goci/environ"
 	"io"
 	"strings"
 	fp "path/filepath"
 	p "path"
+	tb "github.com/zeebo/goci/tarball"
 )
 
 type cmdError struct {
@@ -34,27 +35,8 @@ const listTemplate = `{{ range .TestImports }}{{ . }}
 {{ end }}{{ range .XTestImports }}{{ . }}
 {{ end }}`
 
-// tar -cvzf /path_name_of_tarball/tb.tar.gz -C /path_name_of_dir .
 func tarball(dir, out string) (err error) {
-	tarp, err := world.LookPath("tar")
-	if err != nil {
-		return
-	}
-	targ := []string{"tar", "-cvzf", out, "-C", dir, "."}
-	var buf bytes.Buffer
-	cmd := world.Make(environ.Command{
-		W:    &buf,
-		Path: tarp,
-		Args: targ,
-	})
-	if e, _ := cmd.Run(); e != nil {
-		err = cmdErrorf(e, targ, buf.String(), "error building tarball")
-		return
-	}
-	//make sure the tarball exists
-	if !world.Exists(out) {
-		err = cmdErrorf(nil, nil, "", "cound't find tarball")
-	}
+	err = tb.CompressFile(dir, out)
 	return
 }
 
