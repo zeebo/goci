@@ -17,6 +17,7 @@ type localWorld interface {
 	//create/open files
 	Create(string) (io.WriteCloser, error)
 	Open(string) (io.ReadCloser, error)
+	MkdirAll(string) error
 }
 
 var (

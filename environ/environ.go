@@ -45,6 +45,10 @@ func (Env) Open(path string) (io.ReadCloser, error) {
 	return os.Open(path)
 }
 
+func (Env) MkdirAll(path string) error {
+	return os.MkdirAll(path, 0777)
+}
+
 func (Env) Make(c Command) (p Proc) {
 	cmd := &exec.Cmd{
 		Path: c.Path,

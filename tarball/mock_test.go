@@ -114,6 +114,12 @@ func (w testWorld) Open(name string) (io.ReadCloser, error) {
 	return testIO{w.t, name}, nil
 }
 
+//nothing to do
+func (w testWorld) MkdirAll(dir string) error {
+	w.t.Logf("world: MkdirAll(%s)", dir)
+	return nil
+}
+
 func (w testWorld) randName() string {
 	var bytes [4]byte
 	for i := range bytes {

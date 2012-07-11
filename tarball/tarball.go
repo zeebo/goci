@@ -18,6 +18,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 	fp "path/filepath"
 )
 
@@ -30,14 +31,8 @@ var (
 
 //Compress takes the given directory and compresses it into a file written to
 //out for later extraction.
-func Compress(dir, out string) (err error) {
-	f, err := world.Create(out)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-
-	g := gzip.NewWriter(f)
+func Compress(dir string, out io.Writer) (err error) {
+	g := gzip.NewWriter(out)
 	defer g.Close()
 
 	t := tar.NewWriter(g)
@@ -95,14 +90,8 @@ func Compress(dir, out string) (err error) {
 }
 
 //Extract takes a compressed file and extracts it to the given directory.
-func Extract(in, dir string) (err error) {
-	f, err := world.Open(in)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-
-	g, err := gzip.NewReader(f)
+func Extract(in io.Reader, dir string) (err error) {
+	g, err := gzip.NewReader(in)
 	if err != nil {
 		return
 	}
@@ -131,7 +120,7 @@ func Extract(in, dir string) (err error) {
 
 		//if it's a directory, try to make it
 		if hdr.Typeflag == tar.TypeDir {
-			err = os.MkdirAll(path, 0777)
+			err = world.MkdirAll(path)
 			if err != nil {
 				return
 			}
@@ -162,6 +151,7 @@ func headerFor(path string, fi os.FileInfo) (hdr *tar.Header, err error) {
 	//only set the header fields we care about
 	hdr.Name = path
 	hdr.Mode = 0777
+	hdr.ModTime = time.Now()
 
 	//figure out what kind of file we have
 	switch mode := fi.Mode(); {
