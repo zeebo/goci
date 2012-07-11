@@ -61,7 +61,7 @@ func (Env) Make(c Command) (p Proc) {
 	if c.W != nil {
 		cmd.Stdout, cmd.Stderr = c.W, c.W
 	}
-	return ProcCmd{cmd}
+	return procCmd{cmd}
 }
 
 type Command struct {
@@ -76,11 +76,11 @@ type Proc interface {
 	Run() (error, bool)
 }
 
-type ProcCmd struct {
+type procCmd struct {
 	*exec.Cmd
 }
 
-func (p ProcCmd) Run() (err error, success bool) {
+func (p procCmd) Run() (err error, success bool) {
 	err = p.Cmd.Run()
 	success = p.ProcessState.Success()
 	return
