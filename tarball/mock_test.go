@@ -10,8 +10,19 @@ import (
 	fp "path/filepath"
 )
 
+type logger struct {
+	t      *testing.T
+	events []string
+}
+
+func (l *logger) Logf(format string, vals ...interface{}) {
+	s := fmt.Sprintf(format, vals...)
+	l.t.Logf("%q", s)
+	l.events = append(l.events, s)
+}
+
 type testIO struct {
-	t    *testing.T
+	t    *logger
 	name string
 }
 
@@ -31,7 +42,7 @@ func (i testIO) Write(p []byte) (int, error) {
 }
 
 type testInfo struct {
-	t    *testing.T
+	t    *logger
 	name string
 	size int64
 }
@@ -72,14 +83,18 @@ func (testInfo) ModTime() (s time.Time) { panic("unused") }
 func (testInfo) Sys() (s interface{})   { panic("unused") }
 
 type testWorld struct {
-	t *testing.T
+	t *logger
 	r *rand.Rand
 
 	files map[string]io.ReadCloser
 }
 
+func (w testWorld) events() []string {
+	return w.t.events
+}
+
 func newTestWorld(t *testing.T, seed int64) (w testWorld) {
-	w.t = t
+	w.t = &logger{t, []string{}}
 	w.r = rand.New(rand.NewSource(seed))
 	w.files = map[string]io.ReadCloser{}
 	return

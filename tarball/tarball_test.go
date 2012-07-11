@@ -19,14 +19,9 @@ func TestRealChain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// defer os.RemoveAll(dir)
-	t.Log(dir)
+	defer os.RemoveAll(dir)
 
-	f2, err := world.Open(tarball)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := Extract(f2, dir); err != nil {
+	if err := ExtractFile(tarball, dir); err != nil {
 		t.Fatal(err)
 	}
 }

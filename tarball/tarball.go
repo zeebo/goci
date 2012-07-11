@@ -43,7 +43,10 @@ func CompressFile(dir, out string) (err error) {
 
 //Compress takes the given directory and compresses it to the io.Writer.
 func Compress(dir string, out io.Writer) (err error) {
-	g := gzip.NewWriter(out)
+	g, err := gzip.NewWriterLevel(out, compression)
+	if err != nil {
+		return
+	}
 	defer g.Close()
 
 	t := tar.NewWriter(g)

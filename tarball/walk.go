@@ -1,6 +1,7 @@
 package tarball
 
 import (
+	"compress/gzip"
 	"errors"
 	"github.com/zeebo/goci/environ"
 	"io"
@@ -20,11 +21,9 @@ type localWorld interface {
 	MkdirAll(string, os.FileMode) error
 }
 
-var (
-	world localWorld = environ.New()
-
-	skipDir = errors.New("skip this directory")
-)
+var world localWorld = environ.New()
+var compression = gzip.BestCompression
+var skipDir = errors.New("skip this directory")
 
 type walkFunc func(string, os.FileInfo, error) error
 
