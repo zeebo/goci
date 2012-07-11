@@ -32,7 +32,7 @@ var (
 //CompressFile takes the given directory and file name and compresses the
 //directory into a tar ball.
 func CompressFile(dir, out string) (err error) {
-	f, err := world.Create(out)
+	f, err := world.Create(out, 0666)
 	if err != nil {
 		return
 	}
@@ -142,7 +142,7 @@ func Extract(in io.Reader, dir string) (err error) {
 
 		//if it's a directory, try to make it
 		if hdr.Typeflag == tar.TypeDir {
-			err = world.MkdirAll(path)
+			err = world.MkdirAll(path, os.FileMode(hdr.Mode))
 			if err != nil {
 				return
 			}
@@ -152,7 +152,7 @@ func Extract(in io.Reader, dir string) (err error) {
 		}
 
 		//create the file and copy the data into it
-		of, err = world.Create(path)
+		of, err = world.Create(path, os.FileMode(hdr.Mode))
 		if err != nil {
 			return
 		}
@@ -172,7 +172,7 @@ func headerFor(path string, fi os.FileInfo) (hdr *tar.Header, err error) {
 
 	//only set the header fields we care about
 	hdr.Name = path
-	hdr.Mode = 0777
+	hdr.Mode = int64(fi.Mode().Perm()) //lower order bits so safe
 	hdr.ModTime = time.Now()
 
 	//figure out what kind of file we have

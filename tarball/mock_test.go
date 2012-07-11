@@ -100,8 +100,8 @@ func (w testWorld) Readdir(name string) (fi []os.FileInfo, err error) {
 	return
 }
 
-func (w testWorld) Create(name string) (io.WriteCloser, error) {
-	w.t.Logf("world: Create(%s)", name)
+func (w testWorld) Create(name string, mode os.FileMode) (io.WriteCloser, error) {
+	w.t.Logf("world: Create(%s, %#o)", name, mode)
 	return testIO{w.t, name}, nil
 }
 
@@ -114,9 +114,8 @@ func (w testWorld) Open(name string) (io.ReadCloser, error) {
 	return testIO{w.t, name}, nil
 }
 
-//nothing to do
-func (w testWorld) MkdirAll(dir string) error {
-	w.t.Logf("world: MkdirAll(%s)", dir)
+func (w testWorld) MkdirAll(dir string, mode os.FileMode) error {
+	w.t.Logf("world: MkdirAll(%s, %#o)", dir, mode)
 	return nil
 }
 

@@ -37,16 +37,16 @@ func (Env) Readdir(path string) (s []os.FileInfo, err error) {
 	return f.Readdir(-1)
 }
 
-func (Env) Create(path string) (io.WriteCloser, error) {
-	return os.Create(path)
+func (Env) Create(path string, mode os.FileMode) (io.WriteCloser, error) {
+	return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, mode)
 }
 
 func (Env) Open(path string) (io.ReadCloser, error) {
 	return os.Open(path)
 }
 
-func (Env) MkdirAll(path string) error {
-	return os.MkdirAll(path, 0777)
+func (Env) MkdirAll(path string, mode os.FileMode) error {
+	return os.MkdirAll(path, mode)
 }
 
 func (Env) Make(c Command) (p Proc) {

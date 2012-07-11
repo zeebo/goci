@@ -9,11 +9,7 @@ func TestCompress(t *testing.T) {
 	defer func(e localWorld) { world = e }(world)
 	world = newTestWorld(t, 3)
 
-	f, err := world.Create("foo.tar.gz")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := Compress("0tarball", f); err != nil {
+	if err := CompressFile("0tarball", "foo.tar.gz"); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -22,11 +18,7 @@ func TestCompressNotDirectory(t *testing.T) {
 	defer func(e localWorld) { world = e }(world)
 	world = newTestWorld(t, 3)
 
-	f, err := world.Create("foo.tar.gz")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := Compress("tarball", f); err != nil {
+	if err := CompressFile("tarball", "foo.tar.gz"); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -10,16 +10,10 @@ import (
 
 func TestRealChain(t *testing.T) {
 	tarball := "../foo.tar.gz"
-	f, err := world.Create(tarball)
-	if err != nil {
-		t.Fatal(err)
-	}
 	defer os.Remove(tarball)
-
-	if err := Compress(".", f); err != nil {
+	if err := CompressFile(".", tarball); err != nil {
 		t.Fatal(err)
 	}
-	f.Close()
 
 	dir, err := ioutil.TempDir("", "extract")
 	if err != nil {

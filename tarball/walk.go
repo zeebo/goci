@@ -15,9 +15,9 @@ type localWorld interface {
 	Readdir(string) ([]os.FileInfo, error)
 
 	//create/open files
-	Create(string) (io.WriteCloser, error)
+	Create(string, os.FileMode) (io.WriteCloser, error)
 	Open(string) (io.ReadCloser, error)
-	MkdirAll(string) error
+	MkdirAll(string, os.FileMode) error
 }
 
 var (
