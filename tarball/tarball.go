@@ -32,7 +32,7 @@ var (
 //CompressFile takes the given directory and file name and compresses the
 //directory into a tar ball.
 func CompressFile(dir, out string) (err error) {
-	f, err := world.Create(out, 0666)
+	f, err := World.Create(out, 0666)
 	if err != nil {
 		return
 	}
@@ -88,7 +88,7 @@ func Compress(dir string, out io.Writer) (err error) {
 		}
 
 		//open up the file for reading
-		r, err := world.Open(path)
+		r, err := World.Open(path)
 		if err != nil {
 			return
 		}
@@ -105,7 +105,7 @@ func Compress(dir string, out io.Writer) (err error) {
 
 //ExtractFile takes a compressed file and extracts it to the given directory
 func ExtractFile(in, dir string) (err error) {
-	f, err := world.Open(in)
+	f, err := World.Open(in)
 	if err != nil {
 		return
 	}
@@ -145,7 +145,7 @@ func Extract(in io.Reader, dir string) (err error) {
 
 		//if it's a directory, try to make it
 		if hdr.Typeflag == tar.TypeDir {
-			err = world.MkdirAll(path, os.FileMode(hdr.Mode))
+			err = World.MkdirAll(path, os.FileMode(hdr.Mode))
 			if err != nil {
 				return
 			}
@@ -155,7 +155,7 @@ func Extract(in io.Reader, dir string) (err error) {
 		}
 
 		//create the file and copy the data into it
-		of, err = world.Create(path, os.FileMode(hdr.Mode))
+		of, err = World.Create(path, os.FileMode(hdr.Mode))
 		if err != nil {
 			return
 		}

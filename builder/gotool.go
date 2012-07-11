@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/zeebo/goci/environ"
+	"github.com/zeebo/goci/tarball"
 	"io"
 	"strings"
 	fp "path/filepath"
 	p "path"
-	tb "github.com/zeebo/goci/tarball"
 )
 
 type cmdError struct {
@@ -35,8 +35,8 @@ const listTemplate = `{{ range .TestImports }}{{ . }}
 {{ end }}{{ range .XTestImports }}{{ . }}
 {{ end }}`
 
-func tarball(dir, out string) (err error) {
-	err = tb.CompressFile(dir, out)
+func pack(dir, out string) (err error) {
+	err = tarball.CompressFile(dir, out)
 	return
 }
 
@@ -50,7 +50,7 @@ func (b Builder) goCmd(buf io.Writer, dir string, args ...string) (p environ.Pro
 		Path: fp.Join(b.goroot, "bin", "go"),
 		Args: args,
 	}
-	return world.Make(cmd)
+	return World.Make(cmd)
 }
 
 //goRun is a convenience wrapper that builds and executes a command, returning
@@ -97,7 +97,7 @@ func (b Builder) goList(path string) (paths, testpaths []string, err error) {
 }
 
 func (b Builder) goTest(path string) (bin string, err error) {
-	dir, err := world.TempDir("build")
+	dir, err := World.TempDir("build")
 	if err != nil {
 		return
 	}

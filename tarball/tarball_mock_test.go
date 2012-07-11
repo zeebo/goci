@@ -2,10 +2,20 @@ package tarball
 
 import (
 	"compress/gzip"
+	"github.com/zeebo/goci/environ"
 	"os"
 	"reflect"
 	"testing"
 )
+
+func testMode(t *testing.T) (environ.TestEnv, func()) {
+	prevWorld, prevComp := World, compression
+	tw := environ.NewTest(t, 3)
+	World, compression = tw, gzip.NoCompression
+	return tw, func() {
+		World, compression = prevWorld, prevComp
+	}
+}
 
 func compare(t *testing.T, expect, got []string) {
 	if reflect.DeepEqual(expect, got) {
@@ -24,13 +34,8 @@ func compare(t *testing.T, expect, got []string) {
 }
 
 func TestCompress(t *testing.T) {
-	defer func(e localWorld) { world = e }(world)
-	tw := newTestWorld(t, 3)
-	world = tw
-
-	//disable compression for deterministic output
-	defer func(c int) { compression = c }(compression)
-	compression = gzip.NoCompression
+	tw, und := testMode(t)
+	defer und()
 
 	if err := CompressFile("0tarball", "foo.tar.gz"); err != nil {
 		t.Fatal(err)
@@ -63,17 +68,12 @@ func TestCompress(t *testing.T) {
 		"foo.tar.gz: Close()",
 	}
 
-	compare(t, expect, tw.events())
+	compare(t, expect, tw.Events())
 }
 
 func TestCompressNotDirectory(t *testing.T) {
-	defer func(e localWorld) { world = e }(world)
-	tw := newTestWorld(t, 3)
-	world = tw
-
-	//disable compression for deterministic output
-	defer func(c int) { compression = c }(compression)
-	compression = gzip.NoCompression
+	tw, und := testMode(t)
+	defer und()
 
 	if err := CompressFile("tarball", "foo.tar.gz"); err != nil {
 		t.Fatal(err)
@@ -97,20 +97,19 @@ func TestCompressNotDirectory(t *testing.T) {
 		"foo.tar.gz: Close()",
 	}
 
-	compare(t, expect, tw.events())
+	compare(t, expect, tw.Events())
 }
 
 func TestExtract(t *testing.T) {
-	defer func(e localWorld) { world = e }(world)
-	tw := newTestWorld(t, 3)
+	tw, und := testMode(t)
+	defer und()
 
 	//do a for realsies open and throw it into the world
 	r, err := os.Open("tarb.tar.gz")
 	if err != nil {
 		t.Fatal(err)
 	}
-	tw.files["foo"] = r
-	world = tw
+	tw.AddFile("foo", r)
 
 	if err := ExtractFile("foo", "bar"); err != nil {
 		t.Fatal(err)
@@ -137,5 +136,5 @@ func TestExtract(t *testing.T) {
 		"bar/walk.go: Close()",
 	}
 
-	compare(t, expect, tw.events())
+	compare(t, expect, tw.Events())
 }

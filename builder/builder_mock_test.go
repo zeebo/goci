@@ -2,32 +2,22 @@ package builder
 
 import (
 	"github.com/zeebo/goci/environ"
+	"github.com/zeebo/goci/tarball"
 	"strings"
 	"testing"
 )
 
-type existsWorld struct {
-	t *testing.T
+func testMode(t *testing.T, r environ.TestRun) (environ.TestEnv, func()) {
+	prevWorld, prevTarbWorld := World, tarball.World
+	tw := environ.NewTest(t, 3)
+	tw.SetRun(r)
+	World, tarball.World = tw, tw
+	return tw, func() {
+		World, tarball.World = prevWorld, prevTarbWorld
+	}
 }
 
-func (existsWorld) Exists(string) bool                    { return true }
-func (existsWorld) LookPath(i string) (string, error)     { return i, nil }
-func (existsWorld) TempDir(prefix string) (string, error) { return "/tmp/" + prefix, nil }
-
-func (e existsWorld) Make(c environ.Command) (p environ.Proc) {
-	return runner{e.t, c}
-}
-
-type runner struct {
-	t *testing.T
-	c environ.Command
-}
-
-func (r runner) Run() (error, bool) {
-	t, c := r.t, r.c
-
-	t.Log(c.Args)
-
+func testRun(t environ.Logger, c environ.Command) (error, bool) {
 	//giant switch of doom to mock out all the different commands
 	switch c.Args[0] {
 	case "hg":
@@ -70,9 +60,8 @@ func (r runner) Run() (error, bool) {
 }
 
 func TestMocked(t *testing.T) {
-	//mock out the world
-	defer func(e localWorld) { world = e }(world)
-	world = existsWorld{t}
+	tw, und := testMode(t, environ.TestRun(testRun))
+	defer und()
 
 	works := []*Work{
 		{
@@ -92,12 +81,13 @@ func TestMocked(t *testing.T) {
 
 	for _, w := range works {
 		for _, vcs := range []string{"git", "hg", "bzr"} {
+			tw.Reset()
 			w.VCSHint = vcs
 			_, _, err := New("", "", "").Build(w)
 			if err != nil {
 				t.Error(err)
+				tw.Dump()
 			} else {
-				t.Log("========")
 				t.Logf("%s[%s] passed", w.ImportPath, vcs)
 			}
 		}

@@ -10,7 +10,7 @@ import (
 	"sort"
 )
 
-type localWorld interface {
+type LocalWorld interface {
 	//get info about files/directories
 	Stat(string) (os.FileInfo, error)
 	Readdir(string) ([]os.FileInfo, error)
@@ -21,14 +21,15 @@ type localWorld interface {
 	MkdirAll(string, os.FileMode) error
 }
 
-var world localWorld = environ.New()
+var World LocalWorld = environ.New()
+
 var compression = gzip.BestCompression
 var skipDir = errors.New("skip this directory")
 
 type walkFunc func(string, os.FileInfo, error) error
 
 func walk(root string, walkFn walkFunc) error {
-	info, err := world.Stat(root)
+	info, err := World.Stat(root)
 	if err != nil {
 		return walkFn(root, nil, err)
 	}
@@ -48,7 +49,7 @@ func walkRec(path string, info os.FileInfo, walkFn walkFunc) error {
 		return nil
 	}
 
-	list, err := world.Readdir(path)
+	list, err := World.Readdir(path)
 	if err != nil {
 		return walkFn(path, info, err)
 	}

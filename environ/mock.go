@@ -1,14 +1,18 @@
-package tarball
+package environ
 
 import (
 	"fmt"
 	"io"
 	"math/rand"
 	"os"
+	fp "path/filepath"
 	"testing"
 	"time"
-	fp "path/filepath"
 )
+
+//
+// Logger
+//
 
 type logger struct {
 	t      *testing.T
@@ -20,6 +24,14 @@ func (l *logger) Logf(format string, vals ...interface{}) {
 	// l.t.Logf("%q", s)
 	l.events = append(l.events, s)
 }
+
+func (l *logger) Reset() {
+	l.events = l.events[:0]
+}
+
+//
+// Files
+//
 
 type testIO struct {
 	t    *logger
@@ -40,6 +52,10 @@ func (i testIO) Write(p []byte) (int, error) {
 	i.t.Logf("%s: Write(%d)", i.name, len(p))
 	return len(p), nil
 }
+
+//
+// Stat response
+//
 
 type testInfo struct {
 	t    *logger
@@ -82,31 +98,80 @@ func (t testInfo) Name() string { return t.name }
 func (testInfo) ModTime() (s time.Time) { panic("unused") }
 func (testInfo) Sys() (s interface{})   { panic("unused") }
 
-type testWorld struct {
-	t *logger
-	r *rand.Rand
+//
+// Processes
+//
 
+type Logger interface {
+	Logf(string, ...interface{})
+}
+
+type testProc struct {
+	t    *logger
+	name string
+	cmd  Command
+	run  TestRun
+}
+
+func (t *testProc) Run() (error, bool) {
+	t.t.Logf("%s: run dir:%s", t.name, t.cmd.Dir)
+	if t.run == nil {
+		return nil, true
+	}
+	return t.run(t.t, t.cmd)
+}
+
+//
+// Test Environment World
+//
+
+type TestEnv struct {
+	t     *logger
+	r     *rand.Rand
+	run   TestRun
 	files map[string]io.ReadCloser
 }
 
-func (w testWorld) events() []string {
-	return w.t.events
-}
-
-func newTestWorld(t *testing.T, seed int64) (w testWorld) {
+func NewTest(t *testing.T, seed int64) (w TestEnv) {
 	w.t = &logger{t, []string{}}
 	w.r = rand.New(rand.NewSource(seed))
 	w.files = map[string]io.ReadCloser{}
 	return
 }
 
-func (w testWorld) Stat(name string) (os.FileInfo, error) {
+// helper functions
+
+func (t *TestEnv) SetRun(r TestRun) {
+	t.run = r
+}
+
+func (w TestEnv) Events() []string {
+	return w.t.events
+}
+
+func (w TestEnv) Dump() {
+	for _, ev := range w.Events() {
+		w.t.t.Logf("%q", ev)
+	}
+}
+
+func (w TestEnv) AddFile(name string, r io.ReadCloser) {
+	w.files[name] = r
+}
+
+func (w TestEnv) Reset() {
+	w.t.Reset()
+}
+
+// implement the same functionality as the default environment
+
+func (w TestEnv) Stat(name string) (os.FileInfo, error) {
 	t := w.newInfo(name)
 	w.t.Logf("world: Stat(%s): %v", name, t)
 	return t, nil
 }
 
-func (w testWorld) Readdir(name string) (fi []os.FileInfo, err error) {
+func (w TestEnv) Readdir(name string) (fi []os.FileInfo, err error) {
 	numfi := w.r.Intn(5)
 	for i := 0; i < numfi; i++ {
 		fi = append(fi, w.newInfo(w.randName()))
@@ -115,12 +180,12 @@ func (w testWorld) Readdir(name string) (fi []os.FileInfo, err error) {
 	return
 }
 
-func (w testWorld) Create(name string, mode os.FileMode) (io.WriteCloser, error) {
+func (w TestEnv) Create(name string, mode os.FileMode) (io.WriteCloser, error) {
 	w.t.Logf("world: Create(%s, %#o)", name, mode)
 	return testIO{w.t, name}, nil
 }
 
-func (w testWorld) Open(name string) (io.ReadCloser, error) {
+func (w TestEnv) Open(name string) (io.ReadCloser, error) {
 	w.t.Logf("world: Open(%s)", name)
 	if r, ok := w.files[name]; ok {
 		w.t.Logf("world: returned set file")
@@ -129,12 +194,34 @@ func (w testWorld) Open(name string) (io.ReadCloser, error) {
 	return testIO{w.t, name}, nil
 }
 
-func (w testWorld) MkdirAll(dir string, mode os.FileMode) error {
+func (w TestEnv) MkdirAll(dir string, mode os.FileMode) error {
 	w.t.Logf("world: MkdirAll(%s, %#o)", dir, mode)
 	return nil
 }
 
-func (w testWorld) randName() string {
+func (w TestEnv) Make(c Command) (p Proc) {
+	name := w.randName()
+	w.t.Logf("world: Make(): %s: %v", name, c.Args)
+	return &testProc{w.t, name, c, w.run}
+}
+
+func (w TestEnv) Exists(path string) bool {
+	w.t.Logf("world: Exists(%s)", path)
+	return true
+}
+
+func (w TestEnv) LookPath(path string) (string, error) {
+	w.t.Logf("world: LookPath(%s)", path)
+	return path, nil
+}
+
+func (w TestEnv) TempDir(prefix string) (string, error) {
+	tdir := "/tmp/0" + prefix + w.randName()
+	w.t.Logf("world: TempDir(%s): %s", prefix, tdir)
+	return tdir, nil
+}
+
+func (w TestEnv) randName() string {
 	var bytes [4]byte
 	for i := range bytes {
 		bytes[i] = byte(w.r.Intn(1<<8 - 1))
@@ -142,6 +229,8 @@ func (w testWorld) randName() string {
 	return fmt.Sprintf("%x", bytes)
 }
 
-func (w testWorld) newInfo(name string) os.FileInfo {
+func (w TestEnv) newInfo(name string) os.FileInfo {
 	return testInfo{w.t, name, w.r.Int63n(1000)}
 }
+
+type TestRun func(Logger, Command) (error, bool)

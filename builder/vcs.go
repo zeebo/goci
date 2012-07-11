@@ -28,7 +28,7 @@ var vcsMap = map[string]vcs{
 func findVcs(path string) (v vcs) {
 	for name, vcs := range vcsMap {
 		p := fp.Join(path, "."+name)
-		if world.Exists(p) {
+		if World.Exists(p) {
 			v = vcs
 			return
 		}
@@ -120,17 +120,27 @@ func expandSplit(s string, vals map[string]string) []string {
 	return strings.Split(expand(s, vals), " ")
 }
 
+var cachedPath = map[string]string{}
+
 func (v *vcsInfo) expandCmd(dir string, w io.Writer, cmd string, keyval ...string) (p environ.Proc, args []string) {
 	vals := map[string]string{}
 	for i := 0; i < len(keyval); i += 2 {
 		vals[keyval[i]] = keyval[i+1]
 	}
-	path, err := world.LookPath(v.Name)
-	if err != nil {
-		path = v.Name
+
+	var path string
+	if ch, ok := cachedPath[v.Name]; ok {
+		path = ch
+	} else {
+		if pa, err := World.LookPath(v.Name); err != nil {
+			path = v.Name
+		} else {
+			path, cachedPath[v.Name] = pa, pa
+		}
 	}
+
 	args = append([]string{v.Name}, expandSplit(cmd, vals)...)
-	p = world.Make(environ.Command{
+	p = World.Make(environ.Command{
 		W:    w,
 		Dir:  dir,
 		Env:  os.Environ(),

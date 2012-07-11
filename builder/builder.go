@@ -11,7 +11,7 @@ import (
 	p "path"
 )
 
-type localWorld interface {
+type LocalWorld interface {
 	Exists(string) bool
 	LookPath(string) (string, error)
 	TempDir(string) (string, error)
@@ -22,7 +22,7 @@ var (
 	ErrTooMany         = errors.New("too many revisions in that work item")
 	ErrUnknownWorkType = errors.New("unknown work type")
 
-	world localWorld = environ.New()
+	World LocalWorld = environ.New()
 )
 
 //Builder is a type that builds go packages at specified revisions.
@@ -124,7 +124,7 @@ func (b Build) Clean() {
 
 func (b Builder) Build(w *Work) (builds []Build, revDate time.Time, err error) {
 	//create a GOPATH for this work item
-	b.gopath, err = world.TempDir("gopath")
+	b.gopath, err = World.TempDir("gopath")
 	if err != nil {
 		panic(err)
 	}
@@ -203,7 +203,7 @@ func (b Builder) Build(w *Work) (builds []Build, revDate time.Time, err error) {
 
 		//cover all the cases to append the build.
 		switch {
-		case bu.Error == "" && world.Exists(bu.BinaryPath):
+		case bu.Error == "" && World.Exists(bu.BinaryPath):
 			builds = append(builds, bu)
 		case bu.Error != "":
 			builds = append(builds, bu)
@@ -227,7 +227,7 @@ func (b Builder) build(path string) (bu Build) {
 		return
 	}
 
-	tardir, err := world.TempDir("tarball")
+	tardir, err := World.TempDir("tarball")
 	if err != nil {
 		bu.Error = err.Error()
 		return
@@ -237,7 +237,7 @@ func (b Builder) build(path string) (bu Build) {
 	packDir := fp.Join(b.gopath, "src", path)
 
 	bu.SourcePath = fp.Join(tardir, "src.tar.gz")
-	if err = tarball(packDir, bu.SourcePath); err != nil {
+	if err = pack(packDir, bu.SourcePath); err != nil {
 		bu.Error = err.Error()
 		return
 	}
