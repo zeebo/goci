@@ -82,6 +82,6 @@ type procCmd struct {
 
 func (p procCmd) Run() (err error, success bool) {
 	err = p.Cmd.Run()
-	success = p.ProcessState.Success()
+	success = err == nil && p.ProcessState.Success()
 	return
 }

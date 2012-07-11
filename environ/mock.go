@@ -92,19 +92,18 @@ func (t testInfo) IsDir() bool {
 	base := fp.Base(t.name)
 	return base[0] < '5'
 }
-func (t testInfo) Name() string { return t.name }
 
-//stubs (unsued in our code)
-func (testInfo) ModTime() (s time.Time) { panic("unused") }
-func (testInfo) Sys() (s interface{})   { panic("unused") }
+func (t testInfo) Name() string {
+	return t.name
+}
+
+//stubs (unsued in any code so far so return zero values)
+func (testInfo) ModTime() (s time.Time) { return }
+func (testInfo) Sys() (s interface{})   { return }
 
 //
 // Processes
 //
-
-type Logger interface {
-	Logf(string, ...interface{})
-}
 
 type testProc struct {
 	t    *logger
@@ -118,7 +117,7 @@ func (t *testProc) Run() (error, bool) {
 	if t.run == nil {
 		return nil, true
 	}
-	return t.run(t.t, t.cmd)
+	return t.run(t.cmd)
 }
 
 //
@@ -161,6 +160,10 @@ func (w TestEnv) AddFile(name string, r io.ReadCloser) {
 
 func (w TestEnv) Reset() {
 	w.t.Reset()
+}
+
+func (w TestEnv) Logf(format string, vals ...interface{}) {
+	w.t.Logf(format, vals...)
 }
 
 // implement the same functionality as the default environment
@@ -233,4 +236,4 @@ func (w TestEnv) newInfo(name string) os.FileInfo {
 	return testInfo{w.t, name, w.r.Int63n(1000)}
 }
 
-type TestRun func(Logger, Command) (error, bool)
+type TestRun func(Command) (error, bool)

@@ -17,7 +17,7 @@ func testMode(t *testing.T, r environ.TestRun) (environ.TestEnv, func()) {
 	}
 }
 
-func testRun(t environ.Logger, c environ.Command) (error, bool) {
+func testRun(c environ.Command) (error, bool) {
 	//giant switch of doom to mock out all the different commands
 	switch c.Args[0] {
 	case "hg":

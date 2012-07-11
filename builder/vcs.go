@@ -128,15 +128,9 @@ func (v *vcsInfo) expandCmd(dir string, w io.Writer, cmd string, keyval ...strin
 		vals[keyval[i]] = keyval[i+1]
 	}
 
-	var path string
-	if ch, ok := cachedPath[v.Name]; ok {
-		path = ch
-	} else {
-		if pa, err := World.LookPath(v.Name); err != nil {
-			path = v.Name
-		} else {
-			path, cachedPath[v.Name] = pa, pa
-		}
+	path, err := World.LookPath(v.Name)
+	if err != nil {
+		path = v.Name
 	}
 
 	args = append([]string{v.Name}, expandSplit(cmd, vals)...)
