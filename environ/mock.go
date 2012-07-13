@@ -246,6 +246,12 @@ func (w TestEnv) TempDir(prefix string) (string, error) {
 	return tdir, nil
 }
 
+//Environ logs the call and returns an empty environment.
+func (w TestEnv) Environ() []string {
+	w.t.Logf("world: Environ()")
+	return []string{}
+}
+
 func (w TestEnv) randName() string {
 	var bytes [4]byte
 	for i := range bytes {

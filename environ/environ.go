@@ -73,12 +73,21 @@ func (Env) Make(c Command) (p Proc) {
 	if c.W != nil {
 		cmd.Stdout, cmd.Stderr = c.W, c.W
 	}
+	if c.R != nil {
+		cmd.Stdin = c.R
+	}
 	return procCmd{cmd}
+}
+
+//Environ is a wrapper around os.Environ
+func (Env) Environ() []string {
+	return os.Environ()
 }
 
 //Command is a type that represents the information for executing a command.
 type Command struct {
 	W    io.Writer
+	R    io.Reader
 	Dir  string
 	Env  []string
 	Path string
