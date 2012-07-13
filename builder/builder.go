@@ -112,6 +112,7 @@ type Build struct {
 
 	BinaryPath string
 	SourcePath string
+	ImportPath string
 
 	Error string
 }
@@ -221,6 +222,7 @@ func (b Builder) build(path string) (bu Build) {
 	var err error
 
 	bu.Date = time.Now()
+	bu.ImportPath = path
 	bu.BinaryPath, err = b.goTest(path)
 	if err != nil {
 		bu.Error = err.Error()
