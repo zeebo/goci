@@ -6,6 +6,9 @@ package tracker
 import (
 	"appengine"
 	"appengine/datastore"
+	gorpc "code.google.com/p/gorilla/rpc"
+	gojson "code.google.com/p/gorilla/rpc/json"
+	"encoding/json"
 	"errors"
 	"math/rand"
 	"net/http"
@@ -14,8 +17,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	gojson "code.google.com/p/gorilla/rpc/json"
-	gorpc "code.google.com/p/gorilla/rpc"
 )
 
 func init() {
@@ -34,6 +35,26 @@ func init() {
 	http.Handle("/tracker", s)
 }
 
+func toString(key *datastore.Key) string {
+	b, err := json.Marshal(key)
+	if err != nil {
+		panic(err)
+	}
+	return string(b)
+}
+
+func fromString(key string) *datastore.Key {
+	k := new(datastore.Key)
+	b, err := json.Marshal(key)
+	if err != nil {
+		panic(err)
+	}
+	if err := json.Unmarshal(b, k); err != nil {
+		panic(err)
+	}
+	return k
+}
+
 //Tracker is an rpc for announcing and managing the presence of services
 type Tracker struct {
 	pinger.Pinger //a Tracker repsonds to ping
@@ -42,16 +63,9 @@ type Tracker struct {
 //Set up a DefaultTracker so it can be called without an rpc layer
 var DefaultTracker = Tracker{}
 
-//AnnounceArgs is the argument type of the Announce function
-type AnnounceArgs struct {
-	GOOS, GOARCH string //the goos/goarch of the service
-	Type         string //either "Builder" or "Runner"
-	URL          string //the url of the service to make rpc calls
-}
-
 //verify makes sure that the arguments are all specified correctly and returns
 //an error that can be encoded over an rpc request.
-func (args *AnnounceArgs) verify() (err error) {
+func verify(args *rpc.AnnounceArgs) (err error) {
 	switch {
 	case args.GOARCH == "":
 		err = rpc.Errorf("GOARCH unspecified")
@@ -73,14 +87,8 @@ func isEntity(kind string) bool {
 	return false
 }
 
-//AnnounceReply is the reply type of the Announce function
-type AnnounceReply struct {
-	//Key is the datastore key that corresponds to the service if successful
-	Key *datastore.Key
-}
-
 //Announce adds the given service into the tracker pool
-func (Tracker) Announce(req *http.Request, args *AnnounceArgs, rep *AnnounceReply) (err error) {
+func (Tracker) Announce(req *http.Request, args *rpc.AnnounceArgs, rep *rpc.AnnounceReply) (err error) {
 	defer func() {
 		//if we don't have an rpc.Error, encode it as one
 		if _, ok := err.(rpc.Error); err != nil && !ok {
@@ -88,7 +96,7 @@ func (Tracker) Announce(req *http.Request, args *AnnounceArgs, rep *AnnounceRepl
 		}
 	}()
 
-	if err = args.verify(); err != nil {
+	if err = verify(args); err != nil {
 		return
 	}
 
@@ -139,20 +147,12 @@ func (Tracker) Announce(req *http.Request, args *AnnounceArgs, rep *AnnounceRepl
 	}
 
 	//set the key for the service
-	rep.Key = key
+	rep.Key = toString(key)
 	return
 }
 
-//RemoveArgs is the argument type of the Remove function
-type RemoveArgs struct {
-	Key *datastore.Key
-}
-
-//RemoveReply is the reply type of the Remove function
-type RemoveReply struct{}
-
 //Remove removes a service from the tracker.
-func (Tracker) Remove(req *http.Request, args *RemoveArgs, rep *RemoveReply) (err error) {
+func (Tracker) Remove(req *http.Request, args *rpc.RemoveArgs, rep *rpc.RemoveReply) (err error) {
 	defer func() {
 		//if we don't have an rpc.Error, encode it as one
 		if _, ok := err.(rpc.Error); err != nil && !ok {
@@ -163,14 +163,16 @@ func (Tracker) Remove(req *http.Request, args *RemoveArgs, rep *RemoveReply) (er
 	ctx := appengine.NewContext(req)
 	ctx.Infof("Got a remove request from %s", req.RemoteAddr)
 
+	key := fromString(args.Key)
+
 	//ensure what we have is a service
-	if !isEntity(args.Key.Kind()) {
+	if !isEntity(key.Kind()) {
 		err = rpc.Errorf("key is not a builder or runner")
 		return
 	}
 
 	//delete it
-	err = datastore.Delete(ctx, args.Key)
+	err = datastore.Delete(ctx, key)
 	return
 }
 

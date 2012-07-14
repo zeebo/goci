@@ -8,6 +8,7 @@ import (
 	"httputil"
 	"math/rand"
 	"net/http"
+	"rpc"
 	"runtime"
 	"strings"
 	"tracker"
@@ -42,13 +43,13 @@ func add(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *ht
 	}
 
 	//set up the request
-	args := &tracker.AnnounceArgs{
+	args := &rpc.AnnounceArgs{
 		GOOS:   GOOS,
 		GOARCH: GOARCH,
 		Type:   Type,
 		URL:    fmt.Sprintf("foo%d", rand.Int()),
 	}
-	var reply tracker.AnnounceReply
+	var reply rpc.AnnounceReply
 	ctx.Infof("%+v", args)
 
 	//perform the call
