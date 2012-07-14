@@ -106,7 +106,7 @@ func (Tracker) Announce(req *http.Request, args *rpc.AnnounceArgs, rep *rpc.Anno
 	//TODO(zeebo): make a connection to the provided URL
 	//and call the Type.Ping method to make sure it exists
 	// cl := client.NewClient(args.URL, urlfetch.Client(ctx), client.JsonCodec)
-	// err = cl.Call(fmt.Sprintf("%s.Ping", args.Type), nil, nil)
+	// err = cl.Call("Pinger.Ping", nil, nil)
 	// if err != nil {
 	// 	return
 	// }

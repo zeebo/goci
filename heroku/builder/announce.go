@@ -28,13 +28,17 @@ func announce_with_args(args *rpc.AnnounceArgs) {
 }
 
 func announce() {
-	args := &rpc.AnnounceArgs{
+	announce_with_args(&rpc.AnnounceArgs{
 		GOOS:   runtime.GOOS,
 		GOARCH: runtime.GOARCH,
 		Type:   "Builder",
 		URL:    env("RPC_URL", "http://builder.goci.me/rpc"),
-	}
-	announce_with_args(args)
-	args.Type = "Runner"
-	announce_with_args(args)
+	})
+
+	announce_with_args(&rpc.AnnounceArgs{
+		GOOS:   runtime.GOOS,
+		GOARCH: runtime.GOARCH,
+		Type:   "Runner",
+		URL:    env("RPC_URL", "http://builder.goci.me/rpc"),
+	})
 }

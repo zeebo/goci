@@ -1,8 +1,6 @@
 package main
 
 import (
-	"code.google.com/p/gorilla/rpc"
-	"code.google.com/p/gorilla/rpc/json"
 	"github.com/zeebo/goci/builder"
 	"log"
 	"net/http"
@@ -83,11 +81,7 @@ var queue = WorkQueue{
 
 func init() {
 	go queue.run()
-
-	server := rpc.NewServer()
-	server.RegisterCodec(json.NewCodec(), "application/json")
-	if err := server.RegisterService(queue, "Queue"); err != nil {
+	if err := rpc_server.RegisterService(queue, "Queue"); err != nil {
 		log.Panic(err)
 	}
-	http.Handle("/rpc", server)
 }
