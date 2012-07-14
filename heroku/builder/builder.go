@@ -20,6 +20,7 @@ func main() {
 		}
 		announce()
 	}()
+	defer cleanup.cleanup()
 
 	panic(http.ListenAndServe(":9080", nil))
 }
