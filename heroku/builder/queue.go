@@ -89,5 +89,5 @@ func init() {
 	if err := server.RegisterService(queue, "Queue"); err != nil {
 		log.Panic(err)
 	}
-	http.Handle("/rpc/queue", server)
+	http.Handle("/rpc", server)
 }
