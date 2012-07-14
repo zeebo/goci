@@ -23,7 +23,7 @@ type LocalWorld interface {
 
 var World LocalWorld = environ.New()
 
-func InstallGo(dir string) (bin string, err error) {
+func InstallGo(GOOS, GOARCH, dir string) (bin string, err error) {
 	dir = fp.Clean(dir)
 
 	vers := runtime.Version()
@@ -42,6 +42,39 @@ func InstallGo(dir string) (bin string, err error) {
 
 	err = tarball.Extract(resp.Body, dir)
 	if err != nil {
+		return
+	}
+
+	command := "make.bash"
+	if runtime.GOOS == "windows" {
+		command = "make.bat"
+	}
+
+	env := []string{
+		fmt.Sprintf("GOOS=%s", GOOS),
+		fmt.Sprintf("GOARCH=%s", GOARCH),
+		fmt.Sprintf("PATH=%s", os.Getenv("PATH")), //inherit path
+	}
+
+	//cross compiling so disable cgo
+	if runtime.GOOS != GOOS || runtime.GOARCH != GOARCH {
+		env = append(env, "CGO_ENABLED=0")
+	}
+
+	cmd := fp.Join(dir, "go", "src", command)
+	proc := World.Make(environ.Command{
+		Dir:  fp.Join(dir, "go", "src"),
+		Path: cmd,
+		Args: []string{cmd},
+		Env:  env,
+	})
+
+	err, succ := proc.Run()
+	if err != nil {
+		return
+	}
+	if !succ {
+		err = errors.New("Error running make")
 		return
 	}
 
