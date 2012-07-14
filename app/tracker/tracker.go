@@ -34,11 +34,6 @@ func init() {
 	http.Handle("/tracker", s)
 }
 
-const (
-	ttl   = 6 * time.Minute
-	retry = 10 * time.Second
-)
-
 //Tracker is an rpc for announcing and managing the presence of services
 type Tracker struct {
 	pinger.Pinger //a Tracker repsonds to ping
@@ -80,10 +75,6 @@ func isEntity(kind string) bool {
 
 //AnnounceReply is the reply type of the Announce function
 type AnnounceReply struct {
-	//the minimum amount of time the service should wait until retrying
-	//the announce
-	RetryIn time.Duration
-
 	//Key is the datastore key that corresponds to the service if successful
 	Key *datastore.Key
 }
@@ -98,7 +89,6 @@ func (Tracker) Announce(req *http.Request, args *AnnounceArgs, rep *AnnounceRepl
 	}()
 
 	if err = args.verify(); err != nil {
-		rep.RetryIn = retry
 		return
 	}
 
@@ -110,7 +100,6 @@ func (Tracker) Announce(req *http.Request, args *AnnounceArgs, rep *AnnounceRepl
 	// cl := client.NewClient(args.URL, urlfetch.Client(ctx), client.JsonCodec)
 	// err = cl.Call(fmt.Sprintf("%s.Ping", args.Type), nil, nil)
 	// if err != nil {
-	// 	rep.RetryIn = retry
 	// 	return
 	// }
 
@@ -146,7 +135,6 @@ func (Tracker) Announce(req *http.Request, args *AnnounceArgs, rep *AnnounceRepl
 
 	//save the service in the datastore
 	if key, err = datastore.Put(ctx, key, e); err != nil {
-		rep.RetryIn = retry
 		return
 	}
 
@@ -161,11 +149,7 @@ type RemoveArgs struct {
 }
 
 //RemoveReply is the reply type of the Remove function
-type RemoveReply struct {
-	//the mininum amount of time the service should wait until retrying the
-	//remove
-	RetryIn time.Duration
-}
+type RemoveReply struct{}
 
 //Remove removes a service from the tracker.
 func (Tracker) Remove(req *http.Request, args *RemoveArgs, rep *RemoveReply) (err error) {
@@ -182,7 +166,6 @@ func (Tracker) Remove(req *http.Request, args *RemoveArgs, rep *RemoveReply) (er
 	//ensure what we have is a service
 	if !isEntity(args.Key.Kind()) {
 		err = rpc.Errorf("key is not a builder or runner")
-		rep.RetryIn = retry
 		return
 	}
 
