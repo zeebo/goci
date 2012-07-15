@@ -7,9 +7,9 @@ import (
 	"testing"
 )
 
-func testMode(t *testing.T, r environ.TestRun) (environ.TestEnv, func()) {
+func testMode(r environ.TestRun) (environ.TestEnv, func()) {
 	prevWorld, prevTarbWorld := World, tarball.World
-	tw := environ.NewTest(t, 3)
+	tw := environ.NewTest(3)
 	tw.SetRun(r)
 	World, tarball.World = tw, tw
 	return tw, func() {
@@ -60,7 +60,7 @@ func testRun(c environ.Command) (error, bool) {
 }
 
 func TestMocked(t *testing.T) {
-	tw, und := testMode(t, environ.TestRun(testRun))
+	tw, und := testMode(environ.TestRun(testRun))
 	defer und()
 
 	works := []*Work{
@@ -86,7 +86,7 @@ func TestMocked(t *testing.T) {
 			_, _, err := New("", "", "").Build(w)
 			if err != nil {
 				t.Error(err)
-				tw.Dump()
+				tw.Dump(t)
 			} else {
 				t.Logf("%s[%s] passed", w.ImportPath, vcs)
 			}

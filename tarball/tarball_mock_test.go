@@ -8,9 +8,9 @@ import (
 	"testing"
 )
 
-func testMode(t *testing.T) (environ.TestEnv, func()) {
+func testMode() (environ.TestEnv, func()) {
 	prevWorld, prevComp := World, compression
-	tw := environ.NewTest(t, 3)
+	tw := environ.NewTest(3)
 	World, compression = tw, gzip.NoCompression
 	return tw, func() {
 		World, compression = prevWorld, prevComp
@@ -34,7 +34,7 @@ func compare(t *testing.T, expect, got []string) {
 }
 
 func TestCompress(t *testing.T) {
-	tw, und := testMode(t)
+	tw, und := testMode()
 	defer und()
 
 	if err := CompressFile("0tarball", "foo.tar.gz"); err != nil {
@@ -72,7 +72,7 @@ func TestCompress(t *testing.T) {
 }
 
 func TestCompressNotDirectory(t *testing.T) {
-	tw, und := testMode(t)
+	tw, und := testMode()
 	defer und()
 
 	if err := CompressFile("tarball", "foo.tar.gz"); err != nil {
@@ -101,7 +101,7 @@ func TestCompressNotDirectory(t *testing.T) {
 }
 
 func TestExtract(t *testing.T) {
-	tw, und := testMode(t)
+	tw, und := testMode()
 	defer und()
 
 	//do a for realsies open and throw it into the world
