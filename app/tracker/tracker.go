@@ -152,7 +152,7 @@ func (Tracker) Announce(req *http.Request, args *rpc.AnnounceArgs, rep *rpc.Anno
 }
 
 //Remove removes a service from the tracker.
-func (Tracker) Remove(req *http.Request, args *rpc.RemoveArgs, rep *rpc.RemoveReply) (err error) {
+func (Tracker) Remove(req *http.Request, args *rpc.RemoveArgs, rep *rpc.None) (err error) {
 	defer func() {
 		//if we don't have an rpc.Error, encode it as one
 		if _, ok := err.(rpc.Error); err != nil && !ok {

@@ -12,7 +12,7 @@ func env(key, def string) string {
 	return def
 }
 
-func must_env(key string) string {
+func mustEnv(key string) string {
 	if k := os.Getenv(key); k != "" {
 		return k
 	}

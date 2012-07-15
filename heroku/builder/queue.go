@@ -1,8 +1,8 @@
 package main
 
 import (
+	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/builder"
-	"log"
 	"net/http"
 )
 
@@ -39,11 +39,8 @@ func (q WorkQueue) run() {
 	}
 }
 
-//None is an empty rpc element
-type None struct{}
-
 //Queue is an RPC method for pushing things onto the queue.
-func (q WorkQueue) Push(req *http.Request, work *builder.Work, void *None) (err error) {
+func (q WorkQueue) Push(req *http.Request, work *builder.Work, void *rpc.None) (err error) {
 	log.Println("Pushing", *work)
 	q.push(*work)
 	return
@@ -81,7 +78,7 @@ var queue = WorkQueue{
 
 func init() {
 	go queue.run()
-	if err := rpc_server.RegisterService(queue, "Queue"); err != nil {
-		log.Panic(err)
+	if err := rpcServer.RegisterService(queue, "Queue"); err != nil {
+		bail(err)
 	}
 }

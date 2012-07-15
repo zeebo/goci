@@ -3,7 +3,6 @@ package main
 import (
 	"code.google.com/p/gorilla/rpc"
 	"code.google.com/p/gorilla/rpc/json"
-	"log"
 	"net/http"
 	"os"
 )
@@ -15,21 +14,26 @@ func env(key, def string) (r string) {
 	return
 }
 
-var rpc_server = rpc.NewServer()
+var rpcServer = rpc.NewServer()
 
 func init() {
-	rpc_server.RegisterCodec(json.NewCodec(), "application/json")
+	rpcServer.RegisterCodec(json.NewCodec(), "application/json")
+}
+
+func bail(v interface{}) {
+	defer cleanup.cleanup()
+	panic(v)
 }
 
 func main() {
 	go func() {
 		if err := setup(); err != nil {
-			log.Panic(err)
+			bail(err)
 		}
 		announce()
 	}()
 	defer cleanup.cleanup()
 
-	http.Handle("/rpc", rpc_server)
-	panic(http.ListenAndServe(":9080", nil))
+	http.Handle("/rpc", rpcServer)
+	bail(http.ListenAndServe(":9080", nil))
 }

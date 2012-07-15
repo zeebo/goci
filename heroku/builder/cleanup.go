@@ -1,13 +1,17 @@
 package main
 
+import "sync"
+
 type cleaner struct {
 	in chan func()
 	fs chan []func()
+	o  *sync.Once
 }
 
 var cleanup = cleaner{
 	in: make(chan func()),
 	fs: make(chan []func()),
+	o:  new(sync.Once),
 }
 
 func (c cleaner) run() {
@@ -30,7 +34,9 @@ func (c cleaner) funcs() []func() {
 }
 
 func (c cleaner) cleanup() {
-	for _, f := range c.funcs() {
-		f()
-	}
+	c.o.Do(func() {
+		for _, f := range c.funcs() {
+			f()
+		}
+	})
 }

@@ -99,7 +99,7 @@ func InstallVCS(dir string) (bin string, err error) {
 
 	dir = fp.Join(dir, "venv")
 
-	vcs_inst_cmd := fmt.Sprintf(`
+	vcsInstCmd := fmt.Sprintf(`
 		python "%s" --python python2.7 --distribute --never-download %s
 		. %s
 		pip install --use-mirrors mercurial
@@ -115,7 +115,7 @@ func InstallVCS(dir string) (bin string, err error) {
 		return
 	}
 	p := World.Make(environ.Command{
-		R:    strings.NewReader(vcs_inst_cmd),
+		R:    strings.NewReader(vcsInstCmd),
 		Path: path,
 		Args: []string{path},
 		Env:  World.Environ(),

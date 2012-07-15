@@ -32,8 +32,8 @@ type Builder struct {
 	gopath       string
 
 	//generated
-	base_env []string
-	env      []string
+	baseEnv []string
+	env     []string
 }
 
 //New returns a Builder that can be used for building Work objects.
@@ -54,7 +54,7 @@ func New(GOOS, GOARCH, GOROOT string) (b Builder) {
 		GOARCH = runtime.GOARCH
 	}
 	if GOROOT == "" {
-		GOROOT = must_env("GOROOT")
+		GOROOT = mustEnv("GOROOT")
 	}
 
 	//create the builder
@@ -62,11 +62,11 @@ func New(GOOS, GOARCH, GOROOT string) (b Builder) {
 		goos:   GOOS,
 		goarch: GOARCH,
 		goroot: GOROOT,
-		base_env: []string{
+		baseEnv: []string{
 			fmt.Sprintf("GOROOT=%s", GOROOT),
 			fmt.Sprintf("GOOS=%s", GOOS),
 			fmt.Sprintf("GOARCH=%s", GOARCH),
-			fmt.Sprintf("PATH=%s", must_env("PATH")),
+			fmt.Sprintf("PATH=%s", mustEnv("PATH")),
 		},
 	}
 	return
@@ -132,7 +132,7 @@ func (b Builder) Build(w *Work) (builds []Build, revDate time.Time, err error) {
 	defer os.RemoveAll(b.gopath)
 
 	//set up the env to include the new gopath
-	b.env = append(b.env, b.base_env...)
+	b.env = append(b.env, b.baseEnv...)
 	b.env = append(b.env, fmt.Sprintf("GOPATH=%s", b.gopath))
 
 	//get the import path (just download the package)

@@ -31,5 +31,5 @@ type RemoveArgs struct {
 	Key string
 }
 
-//RemoveReply is the reply type of the Remove function
-type RemoveReply struct{}
+//None is an empty rpc element
+type None struct{}
