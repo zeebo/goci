@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"net/http"
 )
@@ -56,6 +57,14 @@ func (c *Client) Call(method string, args interface{}, reply interface{}) (err e
 		return
 	}
 	defer resp.Body.Close()
+
+	//make sure we got an ok response, or copy an error out
+	if resp.StatusCode != http.StatusOK {
+		var body bytes.Buffer
+		io.Copy(&body, resp.Body)
+		err = errors.New(body.String())
+		return
+	}
 
 	//read back the response
 	err = c.codec.DecodeResponse(resp.Body, reply)
