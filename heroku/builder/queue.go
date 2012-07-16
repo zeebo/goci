@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/zeebo/goci/app/rpc"
-	"github.com/zeebo/goci/builder"
 	"net/http"
 )
 
@@ -41,14 +40,12 @@ func (q TaskQueue) run() {
 
 //Queue is an RPC method for pushing things onto the queue.
 func (q TaskQueue) Push(req *http.Request, work *rpc.BuilderTask, void *rpc.None) (err error) {
-	log.Println("Pushing", *work)
 	q.push(*work)
 	return
 }
 
 //Items is an RPC method for getting the current items in the queue.
 func (q TaskQueue) Items(req *http.Request, void *rpc.None, resp *[]rpc.BuilderTask) (err error) {
-	log.Println("Getting Items")
 	*resp = q.items()
 	return
 }
