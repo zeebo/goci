@@ -6,23 +6,18 @@ import (
 	"net/http"
 )
 
-type Task struct {
-	Work   builder.Work
-	Runner string
-}
-
 //TaskQueue is a queue with unlimited buffer for work items
 type TaskQueue struct {
-	in  chan Task
-	out chan Task
-	ich chan []Task
+	in  chan rpc.BuilderTask
+	out chan rpc.BuilderTask
+	ich chan []rpc.BuilderTask
 }
 
 //run performs the logic of the queue through the channels
 func (q TaskQueue) run() {
-	items := make([]Task, 0)
-	var out chan<- Task
-	var item Task
+	items := make([]rpc.BuilderTask, 0)
+	var out chan<- rpc.BuilderTask
+	var item rpc.BuilderTask
 
 	for {
 		select {
@@ -45,40 +40,40 @@ func (q TaskQueue) run() {
 }
 
 //Queue is an RPC method for pushing things onto the queue.
-func (q TaskQueue) Push(req *http.Request, work *Task, void *rpc.None) (err error) {
+func (q TaskQueue) Push(req *http.Request, work *rpc.BuilderTask, void *rpc.None) (err error) {
 	log.Println("Pushing", *work)
 	q.push(*work)
 	return
 }
 
 //Items is an RPC method for getting the current items in the queue.
-func (q TaskQueue) Items(req *http.Request, void *None, resp *[]Task) (err error) {
+func (q TaskQueue) Items(req *http.Request, void *rpc.None, resp *[]rpc.BuilderTask) (err error) {
 	log.Println("Getting Items")
 	*resp = q.items()
 	return
 }
 
 //push puts an item in to the queue.
-func (q TaskQueue) push(w Task) {
+func (q TaskQueue) push(w rpc.BuilderTask) {
 	q.in <- w
 }
 
 //pop grabs an item from the queue.
-func (q TaskQueue) pop() (w Task) {
+func (q TaskQueue) pop() (w rpc.BuilderTask) {
 	w = <-q.out
 	return
 }
 
 //items returns the current set of queued items.
-func (q TaskQueue) items() []Task {
+func (q TaskQueue) items() []rpc.BuilderTask {
 	return <-q.ich
 }
 
 //create our local queue
 var queue = TaskQueue{
-	in:  make(chan Task),
-	out: make(chan Task),
-	ich: make(chan []Task),
+	in:  make(chan rpc.BuilderTask),
+	out: make(chan rpc.BuilderTask),
+	ich: make(chan []rpc.BuilderTask),
 }
 
 func init() {

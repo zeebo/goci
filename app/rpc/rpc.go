@@ -1,14 +1,20 @@
 package rpc
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/zeebo/goci/builder"
+)
 
 //Error is an error type suitable for sending over an rpc response
 type Error string
 
+//Error implemented the error interface for the Error type
 func (r Error) Error() string {
 	return string(r)
 }
 
+//Errorf is a helper method for creating an rpc error that can be transmitted
+//in json.
 func Errorf(format string, v ...interface{}) error {
 	return Error(fmt.Sprintf(format, v...))
 }
@@ -28,8 +34,15 @@ type AnnounceReply struct {
 
 //RemoveArgs is the argument type of the Remove function
 type RemoveArgs struct {
+	//Key is the datastore key that corresponds to the service to be removed
 	Key string
 }
 
 //None is an empty rpc element
 type None struct{}
+
+//BuilderTask is a task sent to a Builder
+type BuilderTask struct {
+	Work   builder.Work //the Work item to be completed
+	Runner string       //the rpc url of the runner for this task
+}
