@@ -3,8 +3,11 @@ package main
 import (
 	"code.google.com/p/gorilla/rpc"
 	"code.google.com/p/gorilla/rpc/json"
+	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 //env gets an environment variable with a default
@@ -41,6 +44,21 @@ func main() {
 		}
 		announce()
 	}()
+
+	//set up the signal handler to bail and run cleanup
+	signals := []os.Signal{
+		syscall.SIGQUIT,
+		syscall.SIGKILL,
+		syscall.SIGINT,
+	}
+	ch := make(chan os.Signal, len(signals))
+	signal.Notify(ch, signals...)
+	go func() {
+		sig := <-ch
+		log.Printf("Captured a %v\n", sig)
+		bail(nil)
+	}()
+
 	http.Handle("/rpc", rpcServer)
 	bail(http.ListenAndServe(":9080", nil))
 }
