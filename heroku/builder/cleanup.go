@@ -10,10 +10,17 @@ type cleaner struct {
 }
 
 //cleanup is an instance of a cleaner.
-var cleanup = cleaner{
-	in: make(chan func()),
-	fs: make(chan []func()),
-	o:  new(sync.Once),
+var cleanup = newCleaner()
+
+//newCleaner returns a new cleaner ready to use.
+func newCleaner() (c cleaner) {
+	c = cleaner{
+		in: make(chan func()),
+		fs: make(chan []func()),
+		o:  new(sync.Once),
+	}
+	go c.run()
+	return
 }
 
 //run handles the event loop for the cleaner.

@@ -67,14 +67,20 @@ func (q TaskQueue) items() []rpc.BuilderTask {
 }
 
 //create our local queue
-var queue = TaskQueue{
-	in:  make(chan rpc.BuilderTask),
-	out: make(chan rpc.BuilderTask),
-	ich: make(chan []rpc.BuilderTask),
+var queue = newTaskQueue()
+
+//newTaskQueue creates a new queue
+func newTaskQueue() (q TaskQueue) {
+	q = TaskQueue{
+		in:  make(chan rpc.BuilderTask),
+		out: make(chan rpc.BuilderTask),
+		ich: make(chan []rpc.BuilderTask),
+	}
+	go q.run()
+	return
 }
 
 func init() {
-	go queue.run()
 	if err := rpcServer.RegisterService(queue, "Queue"); err != nil {
 		bail(err)
 	}
