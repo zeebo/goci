@@ -2,5 +2,6 @@
 !*/
 !*.go
 !*.md
+!*.yaml
 
 app/code.google.com
