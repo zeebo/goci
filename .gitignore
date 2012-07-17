@@ -1,2 +1,7 @@
 app/code.google.com
 *.py*
+
+*
+!*.go
+!*.md
+!.gitignore
