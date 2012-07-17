@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"strconv"
 )
 
 //Codec implements the functionality that a client needs to send requests to
@@ -49,9 +48,14 @@ func (c *Client) Call(method string, args interface{}, reply interface{}) (err e
 	if err != nil {
 		return
 	}
-	req.Header.Set("Content-Type", c.codec.ContentType())
-	req.Header.Set("Content-Length", strconv.FormatInt(int64(len(buf)), 10))
-	req.Header.Set("Connection", "close") //don't keep it alive
+
+	//dev_appserver hack. It doesn't handle chunked transfer encoding.
+	req.TransferEncoding = []string{"identity"}
+	req.ContentLength = int64(len(buf))
+
+	//nonhacks
+	req.Header.Add("Content-Type", c.codec.ContentType())
+	req.Close = true
 
 	//invoke the method
 	resp, err := c.client.Do(req)
