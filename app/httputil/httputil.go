@@ -5,6 +5,7 @@ package httputil
 
 import (
 	"appengine"
+	"appengine/datastore"
 	"fmt"
 	"net/http"
 )
@@ -27,4 +28,25 @@ type Error struct {
 
 func Errorf(err error, format string, v ...interface{}) *Error {
 	return &Error{err, fmt.Sprintf(format, v...), 500}
+}
+
+func ToString(key *datastore.Key) (s string) {
+	b, err := json.Marshal(key)
+	if err != nil {
+		panic(err)
+	}
+	//remove the `"` surrounding the string to avoid double marshal
+	return string(b[1 : len(b)-1])
+}
+
+func FromString(key string) *datastore.Key {
+	k := new(datastore.Key)
+	b, err := json.Marshal(key)
+	if err != nil {
+		panic(err)
+	}
+	if err := json.Unmarshal(b, k); err != nil {
+		panic(err)
+	}
+	return k
 }

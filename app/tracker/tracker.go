@@ -11,6 +11,7 @@ import (
 	gojson "code.google.com/p/gorilla/rpc/json"
 	"encoding/json"
 	"errors"
+	"httputil"
 	"math/rand"
 	"net/http"
 	"pinger"
@@ -35,27 +36,6 @@ func init() {
 
 	//add the tracker service to the paths
 	http.Handle("/tracker", s)
-}
-
-func toString(key *datastore.Key) (s string) {
-	b, err := json.Marshal(key)
-	if err != nil {
-		panic(err)
-	}
-	//remove the `"` surrounding the string to avoid double marshal
-	return string(b[1 : len(b)-1])
-}
-
-func fromString(key string) *datastore.Key {
-	k := new(datastore.Key)
-	b, err := json.Marshal(key)
-	if err != nil {
-		panic(err)
-	}
-	if err := json.Unmarshal(b, k); err != nil {
-		panic(err)
-	}
-	return k
 }
 
 //Tracker is an rpc for announcing and managing the presence of services
@@ -150,7 +130,7 @@ func (Tracker) Announce(req *http.Request, args *rpc.AnnounceArgs, rep *rpc.Anno
 	}
 
 	//set the key for the service
-	rep.Key = toString(key)
+	rep.Key = httputil.ToString(key)
 	return
 }
 
@@ -166,7 +146,7 @@ func (Tracker) Remove(req *http.Request, args *rpc.RemoveArgs, rep *rpc.None) (e
 	ctx := appengine.NewContext(req)
 	ctx.Infof("Got a remove request from %s", req.RemoteAddr)
 
-	key := fromString(args.Key)
+	key := httputil.FromString(args.Key)
 
 	//ensure what we have is a service
 	if !isEntity(key.Kind()) {
