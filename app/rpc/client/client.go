@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 )
 
 //Codec implements the functionality that a client needs to send requests to
@@ -49,6 +50,7 @@ func (c *Client) Call(method string, args interface{}, reply interface{}) (err e
 		return
 	}
 	req.Header.Set("Content-Type", c.codec.ContentType())
+	req.Header.Set("Content-Length", strconv.FormatInt(int64(len(buf)), 10))
 	req.Header.Set("Connection", "close") //don't keep it alive
 
 	//invoke the method
