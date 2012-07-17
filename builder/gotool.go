@@ -6,9 +6,9 @@ import (
 	"github.com/zeebo/goci/environ"
 	"github.com/zeebo/goci/tarball"
 	"io"
-	"strings"
-	fp "path/filepath"
 	p "path"
+	fp "path/filepath"
+	"strings"
 )
 
 type cmdError struct {

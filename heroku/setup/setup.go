@@ -8,9 +8,9 @@ import (
 	"github.com/zeebo/goci/tarball"
 	"net/http"
 	"os"
+	fp "path/filepath"
 	"runtime"
 	"strings"
-	fp "path/filepath"
 )
 
 type LocalWorld interface {

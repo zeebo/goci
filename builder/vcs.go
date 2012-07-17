@@ -6,9 +6,9 @@ import (
 	"github.com/zeebo/goci/environ"
 	"io"
 	"os"
+	fp "path/filepath"
 	"strings"
 	"time"
-	fp "path/filepath"
 )
 
 type vcs interface {
