@@ -25,9 +25,11 @@ func init() {
 
 //bail is a helper function to run cleanup and panic
 func bail(v interface{}) {
-	defer cleanup.cleanup()
+	cleanup.cleanup()
 	if v != nil {
 		panic(v)
+	} else {
+		os.Exit(0)
 	}
 }
 
