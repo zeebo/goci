@@ -1,4 +1,4 @@
 cron:
-- description: minute cleanup
-  url: /tracker/clean
+- description: requeue things
+  url: /queue/requeue
   schedule: every 1 minutes

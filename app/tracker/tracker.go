@@ -243,7 +243,6 @@ func (s *seeds) set(GOOS, GOARCH, Type string, v int64) {
 func getService(ctx appengine.Context, GOOS, GOARCH, Type string, s interface{}) (key *datastore.Key, err error) {
 	//grab the most recent run key
 	seed := lastSeeds.get(GOOS, GOARCH, Type)
-	defer ctx.Infof("Done [%v]", err)
 again:
 	ctx.Infof("Finding a %v/%v/%v [%d]", Type, GOOS, GOARCH, seed)
 	//run the query
@@ -285,7 +284,6 @@ func getBuilder(ctx appengine.Context, GOOS, GOARCH string) (key *datastore.Key,
 //LeasePair returns a pair of Builder and Runners that can be used to run tests.
 //It doesn't let you specify the type of runner you want.
 func LeasePair(ctx appengine.Context) (builder, runner *datastore.Key, b *Builder, r *Runner, err error) {
-	ctx.Infof("%+v", lastSeeds)
 	//grab a runner
 	runner, r, err = getRunner(ctx, "", "")
 	if err != nil {

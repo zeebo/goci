@@ -13,10 +13,10 @@ var tracker = client.New(
 	client.JsonCodec,
 )
 
-func announceWithArgs(args *rpc.AnnounceArgs) {
+func announceWithArgs(args *rpc.AnnounceArgs) (err error) {
 	reply := new(rpc.AnnounceReply)
-	if err := tracker.Call("Tracker.Announce", args, reply); err != nil {
-		bail(err)
+	if err = tracker.Call("Tracker.Announce", args, reply); err != nil {
+		return
 	}
 	cleanup.attach(func() {
 		args := &rpc.RemoveArgs{
@@ -25,22 +25,31 @@ func announceWithArgs(args *rpc.AnnounceArgs) {
 		reply := &rpc.None{}
 		tracker.Call("Tracker.Remove", args, reply)
 	})
+	return
 }
 
-func announce() {
+func announce() (err error) {
 	url := env("RPC_URL", "http://builder.goci.me/rpc")
 
-	announceWithArgs(&rpc.AnnounceArgs{
+	err = announceWithArgs(&rpc.AnnounceArgs{
 		GOOS:   runtime.GOOS,
 		GOARCH: runtime.GOARCH,
 		Type:   "Builder",
 		URL:    url,
 	})
+	if err != nil {
+		return
+	}
 
-	announceWithArgs(&rpc.AnnounceArgs{
+	err = announceWithArgs(&rpc.AnnounceArgs{
 		GOOS:   runtime.GOOS,
 		GOARCH: runtime.GOARCH,
 		Type:   "Runner",
 		URL:    url,
 	})
+	if err != nil {
+		return
+	}
+
+	return
 }

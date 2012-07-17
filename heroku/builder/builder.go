@@ -42,7 +42,12 @@ func main() {
 		if err := setup(); err != nil {
 			bail(err)
 		}
-		announce()
+		if err := announce(); err != nil {
+			bail(err)
+		}
+
+		//run the builder loop after a sucessful announce
+		go builder()
 	}()
 
 	//set up the signal handler to bail and run cleanup

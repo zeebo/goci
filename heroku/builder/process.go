@@ -6,5 +6,5 @@ import (
 )
 
 func process(task rpc.BuilderTask) {
-	log.Println("got task:", task)
+	log.Printf("got task: %+v", task)
 }
