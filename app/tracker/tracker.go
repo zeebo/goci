@@ -6,6 +6,7 @@ package tracker
 import (
 	"appengine"
 	"appengine/datastore"
+	"appengine/urlfetch"
 	gorpc "code.google.com/p/gorilla/rpc"
 	gojson "code.google.com/p/gorilla/rpc/json"
 	"encoding/json"
@@ -14,6 +15,7 @@ import (
 	"net/http"
 	"pinger"
 	"rpc"
+	"rpc/client"
 	"strings"
 	"sync"
 	"time"
@@ -104,13 +106,13 @@ func (Tracker) Announce(req *http.Request, args *rpc.AnnounceArgs, rep *rpc.Anno
 	ctx := appengine.NewContext(req)
 	ctx.Infof("Got announce request from %s", req.RemoteAddr)
 
-	//TODO(zeebo): make a connection to the provided URL
-	//and call the Type.Ping method to make sure it exists
-	// cl := client.NewClient(args.URL, urlfetch.Client(ctx), client.JsonCodec)
-	// err = cl.Call("Pinger.Ping", nil, nil)
-	// if err != nil {
-	// 	return
-	// }
+	//ping them to make sure we can make valid rpc calls
+	cl := client.New(args.URL, urlfetch.Client(ctx), client.JsonCodec)
+	err = cl.Call("Pinger.Ping", nil, new(rpc.None))
+	if err != nil {
+		ctx.Infof("Failed to Ping the announce.")
+		return
+	}
 
 	//create the entity
 	var e interface{}
