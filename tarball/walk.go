@@ -1,29 +1,12 @@
 package tarball
 
 import (
-	"compress/gzip"
 	"errors"
-	"github.com/zeebo/goci/environ"
-	"io"
 	"os"
 	fp "path/filepath"
 	"sort"
 )
 
-type LocalWorld interface {
-	//get info about files/directories
-	Stat(string) (os.FileInfo, error)
-	Readdir(string) ([]os.FileInfo, error)
-
-	//create/open files
-	Create(string, os.FileMode) (io.WriteCloser, error)
-	Open(string) (io.ReadCloser, error)
-	MkdirAll(string, os.FileMode) error
-}
-
-var World LocalWorld = environ.New()
-
-var compression = gzip.BestCompression
 var skipDir = errors.New("skip this directory")
 
 type walkFunc func(string, os.FileInfo, error) error
@@ -67,7 +50,7 @@ func walkRec(path string, info os.FileInfo, walkFn walkFunc) error {
 	return nil
 }
 
-// byName implements sort.Interface.
+//names implements sort.Interface.
 type names []os.FileInfo
 
 func (n names) Len() int           { return len(n) }
