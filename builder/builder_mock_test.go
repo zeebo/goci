@@ -1,6 +1,7 @@
 package builder
 
 import (
+	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/environ"
 	"github.com/zeebo/goci/tarball"
 	"strings"
@@ -63,7 +64,7 @@ func TestMocked(t *testing.T) {
 	tw, und := testMode(environ.TestRun(testRun))
 	defer und()
 
-	works := []*Work{
+	works := []*rpc.Work{
 		{
 			Revision:   "e9dd26552f10d390b5f9f59c6a9cfdc30ed1431c",
 			ImportPath: "github.com/zeebo/irc",

@@ -1,9 +1,6 @@
 package rpc
 
-import (
-	"fmt"
-	"github.com/zeebo/goci/builder"
-)
+import "fmt"
 
 //Error is an error type suitable for sending over an rpc response
 type Error string
@@ -41,8 +38,23 @@ type RemoveArgs struct {
 //None is an empty rpc element
 type None struct{}
 
+//Work is an incoming work item to generate the builds for a given revision and
+//import path. If Revision is empty, the revision chosen by go get is used. If
+//Subpackages is true, it will build binaries for all subpackages of the import
+//path as well.
+type Work struct {
+	Revision    string
+	ImportPath  string
+	Subpackages bool
+
+	//VCSHint is an optional parameter that specifies the version control system
+	//used by the package. If set to the empty string, we will search for the 
+	//system by looking for the metadata directory.
+	VCSHint string
+}
+
 //BuilderTask is a task sent to a Builder
 type BuilderTask struct {
-	Work   builder.Work //the Work item to be completed
-	Runner string       //the rpc url of the runner for this task
+	Work   Work   //the Work item to be completed
+	Runner string //the rpc url of the runner for this task
 }

@@ -3,12 +3,13 @@ package builder
 import (
 	"errors"
 	"fmt"
+	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/environ"
 	"os"
+	p "path"
+	fp "path/filepath"
 	"runtime"
 	"time"
-	fp "path/filepath"
-	p "path"
 )
 
 type LocalWorld interface {
@@ -89,21 +90,6 @@ var exeSuffix = func() string {
 	return ""
 }()
 
-//Work is an incoming work item to generate the builds for a given revision and
-//import path. If Revision is empty, the revision chosen by go get is used. If
-//Subpackages is true, it will build binaries for all subpackages of the import
-//path as well.
-type Work struct {
-	Revision    string
-	ImportPath  string
-	Subpackages bool
-
-	//VCSHint is an optional parameter that specifies the version control system
-	//used by the package. If set to the empty string, we will search for the 
-	//system by looking for the metadata directory.
-	VCSHint string
-}
-
 //Build is a type that represents a built test and tarballed source ready to be
 //sent to a runner. It contains an error if there were any problems building the
 //test binary.
@@ -123,7 +109,7 @@ func (b Build) Clean() {
 	os.RemoveAll(p.Base(b.SourcePath))
 }
 
-func (b Builder) Build(w *Work) (builds []Build, revDate time.Time, err error) {
+func (b Builder) Build(w *rpc.Work) (builds []Build, revDate time.Time, err error) {
 	//create a GOPATH for this work item
 	b.gopath, err = World.TempDir("gopath")
 	if err != nil {
