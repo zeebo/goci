@@ -35,12 +35,13 @@ func init() {
 	http.Handle("/tracker", s)
 }
 
-func toString(key *datastore.Key) string {
+func toString(key *datastore.Key) (s string) {
 	b, err := json.Marshal(key)
 	if err != nil {
 		panic(err)
 	}
-	return string(b)
+	//remove the `"` surrounding the string to avoid double marshal
+	return string(b[1 : len(b)-1])
 }
 
 func fromString(key string) *datastore.Key {
