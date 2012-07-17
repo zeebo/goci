@@ -55,18 +55,19 @@ type Work struct {
 
 //BuilderTask is a task sent to a Builder
 type BuilderTask struct {
-	Work   Work   //the Work item to be completed
-	Key    string //the datastore key for the Work item
-	Runner string //the rpc url of the runner for this task
-	ID     int64  //the id that goci is using to track this task
+	Work     Work   //the Work item to be completed
+	Key      string //the datastore key for the Work item (forward to runner)
+	ID       string //the ID of the TaskInfo in the datastore (forward to runner)
+	Runner   string //the rpc url of the runner for this task
+	Response string //the rpc url of the response (forward to the runner)
 }
 
 //RunnerResponse is the response from the Runner to the tracker
 type RunnerResponse struct {
-	Work    Work   //the Work item to be completed
-	Key     string //the datastore key for the Work item
-	ID      int64  //the id that goci is using to track the task
-	Outputs []struct {
+	Key         string //the datastore key for the Work item
+	ID          string //the ID of the TaskInfo in the datastore
+	BuildOutput string //the output of the build phase
+	Outputs     []struct {
 		ImportPath string //the import path of the binary
 		Output     string //the output from running it
 	}

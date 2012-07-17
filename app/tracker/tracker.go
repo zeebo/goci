@@ -9,7 +9,6 @@ import (
 	"appengine/urlfetch"
 	gorpc "code.google.com/p/gorilla/rpc"
 	gojson "code.google.com/p/gorilla/rpc/json"
-	"encoding/json"
 	"errors"
 	"httputil"
 	"math/rand"

@@ -4,19 +4,20 @@ package test
 
 import (
 	"appengine"
+	"appengine/datastore"
 	"fmt"
 	"httputil"
-	"math/rand"
 	"net/http"
+	"queue"
 	"rpc"
-	"runtime"
-	"strings"
+	"time"
 	"tracker"
 )
 
 func init() {
 	http.Handle("/_test/lease", httputil.Handler(lease))
 	http.Handle("/_test/ping", httputil.Handler(ping))
+	http.Handle("/_test/addwork", httputil.Handler(addwork))
 }
 
 func lease(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *httputil.Error) {
@@ -36,5 +37,30 @@ func ping(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *h
 		return
 	}
 	fmt.Fprintf(w, "ping!")
+	return
+}
+
+func addwork(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *httputil.Error) {
+	q := &queue.Work{
+		Work: rpc.Work{
+			Revision:   "foo",
+			ImportPath: "bar",
+		},
+		Data:    "foo",
+		Created: time.Now(),
+	}
+
+	key := datastore.NewIncompleteKey(ctx, "Work", nil)
+	var err error
+	if key, err = datastore.Put(ctx, key, q); err != nil {
+		e = httputil.Errorf(err, "error storing work item")
+		return
+	}
+
+	if err = queue.AddQueue(ctx, httputil.ToString(key)); err != nil {
+		e = httputil.Errorf(err, "error adding work item to queue")
+		return
+	}
+
 	return
 }
