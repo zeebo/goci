@@ -71,12 +71,8 @@ func isEntity(kind string) bool {
 
 //Announce adds the given service into the tracker pool
 func (Tracker) Announce(req *http.Request, args *rpc.AnnounceArgs, rep *rpc.AnnounceReply) (err error) {
-	defer func() {
-		//if we don't have an rpc.Error, encode it as one
-		if _, ok := err.(rpc.Error); err != nil && !ok {
-			err = rpc.Errorf("%s", err)
-		}
-	}()
+	//wrap our error on the way out
+	defer rpc.Wrap(&err)
 
 	if err = verify(args); err != nil {
 		return
@@ -135,16 +131,14 @@ func (Tracker) Announce(req *http.Request, args *rpc.AnnounceArgs, rep *rpc.Anno
 
 //Remove removes a service from the tracker.
 func (Tracker) Remove(req *http.Request, args *rpc.RemoveArgs, rep *rpc.None) (err error) {
-	defer func() {
-		//if we don't have an rpc.Error, encode it as one
-		if _, ok := err.(rpc.Error); err != nil && !ok {
-			err = rpc.Errorf("%s", err)
-		}
-	}()
+	//wrap our error on the way out
+	defer rpc.Wrap(&err)
 
+	//create our context
 	ctx := appengine.NewContext(req)
 	ctx.Infof("Got a remove request from %s", req.RemoteAddr)
 
+	//grab the key
 	key := httputil.FromString(args.Key)
 
 	//ensure what we have is a service

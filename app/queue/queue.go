@@ -13,100 +13,11 @@ import (
 	"httputil"
 	"net/http"
 	"net/url"
-	"reflect"
 	"rpc"
 	"rpc/client"
 	"time"
 	"tracker"
 )
-
-//Work is the datastore entity representing the work item that came in
-type Work struct {
-	Work    rpc.Work  `datastore:"-"` //the parsed and distilled work item
-	Data    string    //the raw data that came in
-	Created time.Time //when the item was received
-}
-
-var wtype = reflect.TypeOf(Work{})
-
-func dispatch(c <-chan datastore.Property, ch1, ch2 chan<- datastore.Property) {
-	var buf []datastore.Property
-	for v := range c {
-		if _, ok := wtype.FieldByName(v.Name); !ok {
-			ch1 <- v
-		} else {
-			buf = append(buf, v)
-		}
-	}
-	close(ch1)
-	for _, v := range buf {
-		ch2 <- v
-	}
-	close(ch2)
-}
-
-func concat(c chan<- datastore.Property, chs ...<-chan datastore.Property) {
-	for _, ch := range chs {
-		for v := range ch {
-			c <- v
-		}
-	}
-	close(c)
-}
-
-func consume(ch <-chan datastore.Property) {
-	for _ = range ch {
-	}
-}
-
-//Load implements the load portion of the PropertyLoadSaver interface.
-func (w *Work) Load(c <-chan datastore.Property) (err error) {
-	//buffer and order the results so Work comes first
-	ch1, ch2 := make(chan datastore.Property), make(chan datastore.Property)
-	done := make(chan bool)
-	go func() { dispatch(c, ch1, ch2); close(done) }()
-
-	//consume everything so nothing is leaked
-	defer consume(ch2)
-	defer consume(ch1)
-
-	if err = datastore.LoadStruct(&w.Work, ch1); err != nil {
-		return
-	}
-	if err = datastore.LoadStruct(w, ch2); err != nil {
-		return
-	}
-
-	//wait for the ordering to finish
-	<-done
-	return
-}
-
-//Save implements the save portion of the PropertyLoadSaver interface.
-func (w *Work) Save(c chan<- datastore.Property) (err error) {
-	ch1, ch2 := make(chan datastore.Property), make(chan datastore.Property)
-
-	done := make(chan bool)
-	go func() { concat(c, ch1, ch2); close(done) }()
-
-	if err = datastore.SaveStruct(&w.Work, ch1); err != nil {
-		return
-	}
-	if err = datastore.SaveStruct(w, ch2); err != nil {
-		return
-	}
-
-	//wait for concat
-	<-done
-	return
-}
-
-//TaskInfo is an entity that stores when a task was sent out so the cron can
-//readd tasks that have expired.
-type TaskInfo struct {
-	Key     string
-	Created time.Time
-}
 
 func init() {
 	//create a new rpc server
@@ -122,7 +33,38 @@ func init() {
 	http.Handle("/queue/response", s)
 }
 
-func AddQueue(ctx appengine.Context, key string) (err error) {
+//Distiller is a type that can be added into the queue. It distills into a work
+//item that can be sent to builders.
+type Distiller interface {
+	Distill() (rpc.Work, string)
+}
+
+//QueueWork takes a Distiller and adds it into the work queue.
+func QueueWork(ctx appengine.Context, d Distiller) (err error) {
+	//distill and create our work item
+	work, data := d.Distill()
+	q := &Work{
+		Work:    work,
+		Data:    data,
+		Created: time.Now(),
+	}
+
+	//store it in the datastore
+	key := datastore.NewIncompleteKey(ctx, "Work", nil)
+	if key, err = datastore.Put(ctx, key, q); err != nil {
+		return
+	}
+
+	//add the key to the queue
+	if err = addQueue(ctx, httputil.ToString(key)); err != nil {
+		return
+	}
+
+	return
+}
+
+//addQueue puts the key in the queue to be dispatched.
+func addQueue(ctx appengine.Context, key string) (err error) {
 	t := taskqueue.NewPOSTTask("/queue/work", url.Values{
 		"key": {key},
 	})
@@ -130,11 +72,13 @@ func AddQueue(ctx appengine.Context, key string) (err error) {
 	return
 }
 
+//queueRequeue is a cron job that requeues all the tasks that took more than
+//10 minutes to complete.
 func queueRequeue(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *httputil.Error) {
 	//search the datastore for expired TaskInfo and throw the key back into the queue
 	var vals []*TaskInfo
 	keys, err := datastore.NewQuery("TaskInfo").
-		Filter("Created < ", time.Now().Add(-5*time.Minute)).
+		Filter("Created < ", time.Now().Add(-10*time.Minute)).
 		GetAll(ctx, &vals)
 
 	if err != nil {
@@ -154,7 +98,7 @@ func queueRequeue(w http.ResponseWriter, req *http.Request, ctx appengine.Contex
 
 	//throw the keys back into the queue
 	for _, info := range vals {
-		if err := AddQueue(ctx, info.Key); err != nil {
+		if err := addQueue(ctx, info.Key); err != nil {
 			e = httputil.Errorf(err, "error adding info to queue")
 			return
 		}
@@ -163,6 +107,9 @@ func queueRequeue(w http.ResponseWriter, req *http.Request, ctx appengine.Contex
 	return
 }
 
+//queueWork is the handler that gets called for a queue item. It grabs a builder
+//and runner and dispatches the work item to them, recoding when that operation
+//started.
 func queueWork(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *httputil.Error) {
 	//grab the key of the work item
 	key := httputil.FromString(req.FormValue("key"))
@@ -203,7 +150,7 @@ func queueWork(w http.ResponseWriter, req *http.Request, ctx appengine.Context) 
 
 	//send the task off to the builder queue
 	cl := client.New(builder.URL, urlfetch.Client(ctx), client.JsonCodec)
-	err = cl.Call("Queue.Push", task, new(rpc.None))
+	err = cl.Call("BuilderQueue.Push", task, new(rpc.None))
 	if err != nil {
 		e = httputil.Errorf(err, "error pushing task into queue")
 		return
@@ -215,23 +162,12 @@ func queueWork(w http.ResponseWriter, req *http.Request, ctx appengine.Context) 
 //Response is a service that records Runner responses
 type Response struct{}
 
-func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None) (err error) {
-	defer func() {
-		//if we don't have an rpc.Error, encode it as one
-		if _, ok := err.(rpc.Error); err != nil && !ok {
-			err = rpc.Errorf("%s", err)
-		}
-	}()
-
-	//create our context
-	ctx := appengine.NewContext(req)
-	ctx.Infof("Storing runner result")
-
-	//make sure the TaskInfo for this request still exists, and if so, remove it
-	var found bool
+//findTaskInfo fetches and deletes the task info with the given id, returning
+//if it was able to do so.
+func findTaskInfo(ctx appengine.Context, id string) (found bool, err error) {
 	trans := func(c appengine.Context) (err error) {
 		info := new(TaskInfo)
-		key := httputil.FromString(args.ID)
+		key := httputil.FromString(id)
 		if err = datastore.Get(c, key, info); err != nil {
 			return
 		}
@@ -244,6 +180,20 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 	if err = datastore.RunInTransaction(ctx, trans, nil); err != nil {
 		return
 	}
+	return
+}
+
+//Post is the rpc method that the Runner uses to give a response about an item.
+func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None) (err error) {
+	//wrap our error on the way out
+	defer rpc.Wrap(&err)
+
+	//create our context
+	ctx := appengine.NewContext(req)
+	ctx.Infof("Storing runner result")
+
+	//make sure the TaskInfo for this request still exists, and if so, remove it
+	found, err := findTaskInfo(ctx, args.ID)
 
 	//if we didn't find our TaskInfo, just bail
 	if !found {
@@ -251,12 +201,31 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 		return
 	}
 
-	//store the response
-	wkey := httputil.FromString(args.Key)
-	key := datastore.NewIncompleteKey(ctx, "RunnerResponse", wkey)
-	if _, err = datastore.Put(ctx, key, args); err != nil {
+	//TODO(zeebo): store the response
+
+	//we did it!
+	return
+}
+
+//Error is used when there were any errors in building the test
+func (Response) Error(req *http.Request, args *rpc.BuilderResponse, resp *rpc.None) (err error) {
+	//wrap our error on the way out
+	defer rpc.Wrap(&err)
+
+	//create the context
+	ctx := appengine.NewContext(req)
+	ctx.Infof("Storing a builder error")
+
+	//make sure the TaskInfo for this request still exists, and if so, remove it
+	found, err := findTaskInfo(ctx, args.ID)
+
+	//if we didn't find it, just bail
+	if !found {
+		ctx.Errorf("Got a late response")
 		return
 	}
+
+	//TODO(zeebo): store the response
 
 	//we did it!
 	return

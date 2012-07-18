@@ -46,8 +46,9 @@ func main() {
 			bail(err)
 		}
 
-		//run the builder loop after a sucessful announce
-		go builder()
+		//run the builder+runner loops after a sucessful announce
+		go buildLoop()
+		go runLoop()
 	}()
 
 	//set up the signal handler to bail and run cleanup
@@ -68,11 +69,21 @@ func main() {
 	bail(http.ListenAndServe(":9080", nil))
 }
 
-//builder is a simple goroutine that 
-func builder() {
+//buildLoop is a simple goroutine that grabs items from the queue and sends them
+//off for processing.
+func buildLoop() {
 	for {
 		//get a task from the queue
-		task := queue.pop()
+		task := builderQueue.pop()
 		process(task)
+	}
+}
+
+//runLoop is a simple goroutine that grabs items from the queue and sends them
+//off for processing.
+func runLoop() {
+	for {
+		task := runnerQueue.pop()
+		process_run(task)
 	}
 }

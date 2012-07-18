@@ -29,7 +29,7 @@ func announceWithArgs(args *rpc.AnnounceArgs) (err error) {
 }
 
 func announce() (err error) {
-	url := env("RPC_URL", "http://builder.goci.me/rpc")
+	url := urlWithPath("/rpc")
 
 	err = announceWithArgs(&rpc.AnnounceArgs{
 		GOOS:   runtime.GOOS,

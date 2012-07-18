@@ -1,6 +1,9 @@
 package rpc
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 //Error is an error type suitable for sending over an rpc response
 type Error string
@@ -14,6 +17,17 @@ func (r Error) Error() string {
 //in json.
 func Errorf(format string, v ...interface{}) error {
 	return Error(fmt.Sprintf(format, v...))
+}
+
+//Wrap is a convenience function to wrap whatever error we get in an rpc Error
+func Wrap(errp *error) {
+	if errp == nil {
+		return
+	}
+	err := *errp
+	if _, ok := err.(Error); err != nil && ok {
+		*errp = Errorf("%s", err)
+	}
 }
 
 //AnnounceArgs is the argument type of the Announce function
@@ -53,6 +67,11 @@ type Work struct {
 	VCSHint string
 }
 
+//Distill makes a Work able to be sent in to the queue.
+func (w Work) Distill() (Work, string) {
+	return w, ""
+}
+
 //BuilderTask is a task sent to a Builder
 type BuilderTask struct {
 	Work     Work   //the Work item to be completed
@@ -62,13 +81,45 @@ type BuilderTask struct {
 	Response string //the rpc url of the response (forward to the runner)
 }
 
+//RunnerTask is a task sent by a Builder to a runner
+type RunnerTask struct {
+	Key      string    //the key of the work item
+	ID       string    //the id of the task
+	Response string    //the rpc url of the response
+	Revision string    //the revision we ended up testing
+	RevDate  time.Time //the time this revision was made
+	Tasks    []RunTest //the set of binarys to be executed
+}
+
+//RunTask represents an individual binary to be installed and run.
+type RunTest struct {
+	BinaryURL  string //the url to download the binary
+	SourceURL  string //the url to download the tarball
+	ImportPath string //the import path of the packge the binary is testing
+}
+
 //RunnerResponse is the response from the Runner to the tracker
 type RunnerResponse struct {
-	Key         string //the datastore key for the Work item
-	ID          string //the ID of the TaskInfo in the datastore
-	BuildOutput string //the output of the build phase
-	Outputs     []struct {
-		ImportPath string //the import path of the binary
-		Output     string //the output from running it
-	}
+	Key         string    //the datastore key for the Work item
+	ID          string    //the ID of the TaskInfo in the datastore
+	BuildOutput string    //the output of the build phase
+	Revision    string    //the revision we ended up testing
+	RevDate     time.Time //the time this revision was made
+	Outputs     []Output  //the list of outputs from the tests
+}
+
+//BuilderResponse is the response from the Builder if the build failed for any
+//reason.
+type BuilderResponse struct {
+	Key         string   //the key of the work item
+	ID          string   //the id of the task
+	Error       string   //the error in setting up the builds
+	BuildErrors []Output //the errors in building the binaries
+}
+
+//Output is a type that wraps the output of a build, be it the actual output or
+//the error produced.
+type Output struct {
+	ImportPath string //the import path of the binary that produced the output
+	Output     string //the output of the test
 }

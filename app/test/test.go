@@ -4,13 +4,11 @@ package test
 
 import (
 	"appengine"
-	"appengine/datastore"
 	"fmt"
 	"httputil"
 	"net/http"
 	"queue"
 	"rpc"
-	"time"
 	"tracker"
 )
 
@@ -41,23 +39,14 @@ func ping(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *h
 }
 
 func addwork(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *httputil.Error) {
-	q := &queue.Work{
-		Work: rpc.Work{
-			Revision:   "foo",
-			ImportPath: "bar",
-		},
-		Data:    "foo",
-		Created: time.Now(),
+	//create our little work item
+	q := rpc.Work{
+		Revision:   "e9dd26552f10d390b5f9f59c6a9cfdc30ed1431c",
+		ImportPath: "github.com/zeebo/irc",
 	}
 
-	key := datastore.NewIncompleteKey(ctx, "Work", nil)
-	var err error
-	if key, err = datastore.Put(ctx, key, q); err != nil {
-		e = httputil.Errorf(err, "error storing work item")
-		return
-	}
-
-	if err = queue.AddQueue(ctx, httputil.ToString(key)); err != nil {
+	//add it to the queue
+	if err := queue.QueueWork(ctx, q); err != nil {
 		e = httputil.Errorf(err, "error adding work item to queue")
 		return
 	}
