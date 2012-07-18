@@ -4,6 +4,7 @@ import (
 	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/app/rpc/client"
 	"github.com/zeebo/goci/builder"
+	"log"
 	"net/http"
 	"net/url"
 )
@@ -35,6 +36,8 @@ func urlWithPath(path string) string {
 //with the build failure output, or forwards a request to the Runner given by
 //the task to get the info for the build.
 func process(task rpc.BuilderTask) {
+	log.Printf("Builder processing %+v", task)
+
 	//build the work item
 	builds, revDate, err := defaultBuilder.Build(&task.Work)
 
@@ -64,9 +67,13 @@ func process(task rpc.BuilderTask) {
 			})
 		}
 
+		log.Printf("Builder error response: %+v", resp)
+
 		//send it off and ignore the error
 		cl := client.New(task.Response, http.DefaultClient, client.JsonCodec)
-		cl.Call("Response.Error", resp, new(rpc.None))
+		if err := cl.Call("Response.Error", resp, new(rpc.None)); err != nil {
+			log.Println("Error sending build failure response:", err)
+		}
 		return
 	}
 
@@ -91,8 +98,12 @@ func process(task rpc.BuilderTask) {
 		})
 	}
 
+	log.Printf("Builder forwarding to runner: %+v", req)
+
 	//send off to the runner and ignore the error
 	cl := client.New(task.Runner, http.DefaultClient, client.JsonCodec)
-	cl.Call("RunnerQueue.Push", req, new(rpc.None))
+	if err := cl.Call("RunnerQueue.Push", req, new(rpc.None)); err != nil {
+		log.Println("Error sending to runner queue:", err)
+	}
 	return
 }

@@ -118,6 +118,7 @@ func (b Builder) Build(w *rpc.Work) (builds []Build, revDate time.Time, err erro
 	defer os.RemoveAll(b.gopath)
 
 	//set up the env to include the new gopath
+	b.env = nil
 	b.env = append(b.env, b.baseEnv...)
 	b.env = append(b.env, fmt.Sprintf("GOPATH=%s", b.gopath))
 

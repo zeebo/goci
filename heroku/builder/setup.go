@@ -28,8 +28,19 @@ func valid() (err error) {
 }
 
 func setup() (err error) {
-	//if everything is valid, we're done. no setup to do.
+	//if everything is valid, we're done. no setup to do except the builder
 	if err = valid(); err == nil {
+		//find the go command again
+		var path string
+		path, err = World.LookPath("go")
+		if err != nil {
+			//something crazy happened because we just found it
+			bail(err)
+		}
+
+		//get our goroot two directories up
+		goroot := filepath.Dir(filepath.Dir(path))
+		defaultBuilder = builder.New("", "", goroot)
 		return
 	}
 
