@@ -74,7 +74,7 @@ func main() {
 func buildLoop() {
 	for {
 		//get a task from the queue
-		task := builderQueue.pop()
+		task := builderQueue.Pop()
 		process(task)
 	}
 }
@@ -83,7 +83,7 @@ func buildLoop() {
 //off for processing.
 func runLoop() {
 	for {
-		task := runnerQueue.pop()
+		task := runnerQueue.Pop()
 		process_run(task)
 	}
 }
