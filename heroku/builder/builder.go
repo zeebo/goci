@@ -41,35 +41,16 @@ func bail(v interface{}) {
 }
 
 func main() {
-	//async run the setup and when that finishes announce
-	go func() {
-		if err := setup(); err != nil {
-			bail(err)
-		}
-		if err := announce(); err != nil {
-			bail(err)
-		}
-
-		//run the builder+runner loops after a sucessful announce
-		go buildLoop()
-		go runLoop()
-	}()
+	//async run the setup and when that finishes announce and start loops
+	go performInit()
 
 	//set up the signal handler to bail and run cleanup
-	signals := []os.Signal{
-		syscall.SIGQUIT,
-		syscall.SIGKILL,
-		syscall.SIGINT,
-	}
-	ch := make(chan os.Signal, len(signals))
-	signal.Notify(ch, signals...)
-	go func() {
-		sig := <-ch
-		log.Printf("Captured a %v\n", sig)
-		bail(nil)
-	}()
+	go handleSignals()
 
+	//add our handlers
 	http.Handle("/rpc", rpcServer)
+
+	//ListenAndServe!
 	bail(http.ListenAndServe(":9080", nil))
 }
 
@@ -90,4 +71,35 @@ func runLoop() {
 		task := runnerQueue.Pop()
 		process_run(task)
 	}
+}
+
+//handleSignals sets up a channel listening on some signals and will bail when
+//receiving any of them.
+func handleSignals() {
+	signals := []os.Signal{
+		syscall.SIGQUIT,
+		syscall.SIGKILL,
+		syscall.SIGINT,
+	}
+	ch := make(chan os.Signal, len(signals))
+	signal.Notify(ch, signals...)
+	sig := <-ch
+	log.Printf("Captured a %v\n", sig)
+	bail(nil)
+}
+
+//performInit performs the application initialization: set up the builder and
+//announce our capabilities to the tracker, starting the runloops if it was 
+//sucessful.
+func performInit() {
+	if err := setup(); err != nil {
+		bail(err)
+	}
+	if err := announce(); err != nil {
+		bail(err)
+	}
+
+	//run the builder+runner loops after a sucessful announce
+	go buildLoop()
+	go runLoop()
 }
