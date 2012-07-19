@@ -33,11 +33,10 @@ func init() {
 //bail is a helper function to run cleanup and panic
 func bail(v interface{}) {
 	cleanup.cleanup()
-	if v != nil {
-		panic(v)
-	} else {
+	if v == nil {
 		os.Exit(0)
 	}
+	panic(v)
 }
 
 func main() {
