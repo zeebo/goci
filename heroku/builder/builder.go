@@ -3,6 +3,7 @@ package main
 import (
 	"code.google.com/p/gorilla/rpc"
 	"code.google.com/p/gorilla/rpc/json"
+	"github.com/zeebo/goci/builder"
 	"log"
 	"net/http"
 	"os"
@@ -20,6 +21,9 @@ func env(key, def string) (r string) {
 
 //rpcServer is the rpc server for interacting with the builder
 var rpcServer = rpc.NewServer()
+
+//defaultBuilder is the builder we use and created by the setup function.
+var defaultBuilder builder.Builder
 
 func init() {
 	//the rpcServer speaks jsonrpc

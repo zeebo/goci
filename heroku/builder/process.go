@@ -6,31 +6,7 @@ import (
 	"github.com/zeebo/goci/builder"
 	"log"
 	"net/http"
-	"net/url"
 )
-
-//defaultBuilder is the builder we use and created by the setup function.
-var defaultBuilder builder.Builder
-
-//baseUrl is the url we use for downloading binaries and tarballs
-var baseUrl *url.URL
-
-//parse our baseUrl in from the environment
-func init() {
-	var err error
-	baseUrl, err = url.Parse(env("BASE_URL", "http://builder.goci.me"))
-	if err != nil {
-		bail(err)
-	}
-}
-
-//urlWithPath makes a copy of the baseUrl and sets the path to the provided path
-//and returns the string representation
-func urlWithPath(path string) string {
-	urlCopy := *baseUrl
-	urlCopy.Path = path
-	return urlCopy.String()
-}
 
 //process takes a task and builds the result and either responds to the tracker
 //with the build failure output, or forwards a request to the Runner given by
