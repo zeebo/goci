@@ -2,27 +2,14 @@ package builder
 
 import (
 	"encoding/json"
+	"github.com/zeebo/goci/app/rpc"
 	"path/filepath"
 	"strings"
 )
 
-//Config represents a json struct that is read in by the Builder. It can describe
-//things like notifcations or other configuration data for the test. It is loaded
-//from files named `.goci` in the package directory. The file is loaded by descending
-//the package heiarchy loading in the config and overwriting values as it goes,
-//so that config files lower in the path inherit the values from higher in the
-//path.
-type Config struct {
-	//omitempty is used so that values set previously don't get overwritten by
-	//empty values in the next read.
-	NotifyJabber string `json:",omitempty"` // a jabber address for an XMPP message
-	NotifyOn     string `json:",omitempty"` // one of: `pass`, `fail`, `always`, `change`
-	NotifyURL    string `json:",omitempty"` // a URL that will be posted with the result data
-}
-
 //loadConfig grabs the Config data for the given import path by walking up the
 //directory tree of the import path and overwriting older data with newer data.
-func (b Builder) loadConfig(baseImport, subImport string) (c Config, err error) {
+func (b Builder) loadConfig(baseImport, subImport string) (c rpc.Config, err error) {
 	//we start at the source directory of the baseImport and work our way up
 	//to the subImport
 	base := filepath.Join(b.gopath, "src", baseImport)
@@ -52,7 +39,7 @@ func (b Builder) loadConfig(baseImport, subImport string) (c Config, err error) 
 
 //loadConfigAt looks for a .goci file in the given directory and attemps to load
 //its data into the passed in config.
-func loadConfigAt(c *Config, dir string) (err error) {
+func loadConfigAt(c *rpc.Config, dir string) (err error) {
 	file := filepath.Join(dir, ".goci")
 
 	//check if the file exists first (we won't have a race for it being deleted)

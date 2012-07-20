@@ -96,6 +96,7 @@ type RunTest struct {
 	BinaryURL  string //the url to download the binary
 	SourceURL  string //the url to download the tarball
 	ImportPath string //the import path of the packge the binary is testing
+	Config     Config
 }
 
 //RunnerResponse is the response from the Runner to the tracker
@@ -121,5 +122,6 @@ type BuilderResponse struct {
 //the error produced.
 type Output struct {
 	ImportPath string //the import path of the binary that produced the output
+	Config     Config //the configuration for the test
 	Output     string //the output of the test
 }

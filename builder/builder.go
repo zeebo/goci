@@ -103,7 +103,7 @@ type Build struct {
 	ImportPath string
 
 	//The Config used for this file
-	Config Config
+	Config rpc.Config
 
 	Error string
 }
