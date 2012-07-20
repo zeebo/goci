@@ -2,10 +2,13 @@
 
 package builder
 
-import "testing"
+import (
+	"github.com/zeebo/goci/app/rpc"
+	"testing"
+)
 
 func TestSingleImport(t *testing.T) {
-	w := Work{
+	w := rpc.Work{
 		Revision:   "e9dd26552f10d390b5f9f59c6a9cfdc30ed1431c",
 		ImportPath: "github.com/zeebo/irc",
 	}
@@ -21,7 +24,7 @@ func TestSingleImport(t *testing.T) {
 }
 
 func TestSubpackageImport(t *testing.T) {
-	w := Work{
+	w := rpc.Work{
 		Revision:    "cc5e03949586c5b697c9a3080cc3bf7501a14d96",
 		ImportPath:  "github.com/dustin/githubhooks",
 		Subpackages: true,
@@ -41,7 +44,7 @@ func TestSubpackageImport(t *testing.T) {
 }
 
 func TestBazaarImport(t *testing.T) {
-	w := Work{
+	w := rpc.Work{
 		Revision:   "140",
 		ImportPath: "labix.org/v2/mgo",
 	}
