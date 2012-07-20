@@ -52,6 +52,7 @@ func main() {
 
 	//add our handlers
 	handlePost("/rpc", rpcServer, "rpc")
+	handleGet("/download/:id", http.HandlerFunc(download), "download")
 
 	//ListenAndServe!
 	bail(http.ListenAndServe(":9080", defaultRouter))

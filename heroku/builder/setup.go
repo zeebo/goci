@@ -4,6 +4,7 @@ import (
 	"github.com/zeebo/goci/builder"
 	"github.com/zeebo/goci/environ"
 	hsetup "github.com/zeebo/goci/heroku/setup"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -13,6 +14,7 @@ import (
 type LocalWorld interface {
 	TempDir(string) (string, error)
 	LookPath(string) (string, error)
+	Open(string) (io.ReadCloser, error)
 }
 
 var World LocalWorld = environ.New()

@@ -1,7 +1,10 @@
 package main
 
 import (
+	"io"
+	"log"
 	"math/rand"
+	"net/http"
 	"strconv"
 	"sync"
 )
@@ -48,4 +51,28 @@ func (d *downloader) Delete(id string) {
 	defer d.Unlock()
 
 	delete(d.items, id)
+}
+
+//download serves the file specified by the defaultDownloader and the given id
+//to the client. It is good for only one call.
+func download(w http.ResponseWriter, req *http.Request) {
+	id := req.FormValue(":id")
+	path, ok := defaultDownloader.Lookup(id)
+	if !ok {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	defer defaultDownloader.Delete(id)
+
+	f, err := World.Open(path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer f.Close()
+
+	_, err = io.Copy(w, f)
+	if err != nil {
+		log.Println("error copying download:", err)
+	}
 }
