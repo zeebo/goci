@@ -1,6 +1,7 @@
 package main
 
 import (
+	"code.google.com/p/gorilla/pat"
 	"code.google.com/p/gorilla/rpc"
 	"code.google.com/p/gorilla/rpc/json"
 	"github.com/zeebo/goci/builder"
@@ -22,13 +23,16 @@ func env(key, def string) (r string) {
 //rpcServer is the rpc server for interacting with the builder
 var rpcServer = rpc.NewServer()
 
-//defaultBuilder is the builder we use and created by the setup function.
-var defaultBuilder builder.Builder
-
 func init() {
 	//the rpcServer speaks jsonrpc
 	rpcServer.RegisterCodec(json.NewCodec(), "application/json")
 }
+
+//defaultBuilder is the builder we use and created by the setup function.
+var defaultBuilder builder.Builder
+
+//defaultRouter is the router we use to host and reverse urls.
+var defaultRouter = pat.New()
 
 //bail is a helper function to run cleanup and panic
 func bail(v interface{}) {
@@ -47,10 +51,10 @@ func main() {
 	go handleSignals()
 
 	//add our handlers
-	http.Handle("/rpc", rpcServer)
+	handlePost("/rpc", rpcServer, "rpc")
 
 	//ListenAndServe!
-	bail(http.ListenAndServe(":9080", nil))
+	bail(http.ListenAndServe(":9080", defaultRouter))
 }
 
 //buildLoop is a simple goroutine that grabs items from the queue and sends them
