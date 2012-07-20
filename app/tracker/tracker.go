@@ -206,7 +206,7 @@ type seeds struct {
 
 //lastSeeds is a mapping of entity types to the last seed value seen of that
 //type so that we attempt to distribute load across the services.
-var lastSeeds = seeds{c: map[string]int64{}}
+var lastSeeds = &seeds{c: map[string]int64{}}
 
 //key returns the key used in the map for the set of constrains.
 func (s *seeds) key(GOOS, GOARCH, Type string) string {
