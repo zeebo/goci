@@ -10,7 +10,7 @@ import (
 )
 
 //defaultDownloader is the downloader we use for keeping track of our binaries.
-var defaultDownloader = downloader{items: map[string]string{}}
+var defaultDownloader = &downloader{items: map[string]string{}}
 
 //downloader is a locked map of ids to file paths.
 type downloader struct {
