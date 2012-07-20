@@ -9,7 +9,7 @@ import (
 
 func TestSingleImport(t *testing.T) {
 	w := rpc.Work{
-		Revision:   "e9dd26552f10d390b5f9f59c6a9cfdc30ed1431c",
+		Revision:   "d80b78af7cba69b8a152a46b8a1f7b9f72d954a0",
 		ImportPath: "github.com/zeebo/irc",
 	}
 	b := New("", "", "")

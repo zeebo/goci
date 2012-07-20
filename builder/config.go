@@ -13,9 +13,11 @@ import (
 //so that config files lower in the path inherit the values from higher in the
 //path.
 type Config struct {
-	NotifyJabber string   `json:",omitempty"` // a jabber address for an XMPP message
-	NotifyOn     []string `json:",omitempty"` // fail, pass, change, always
-	NotifyURL    string   `json:",omitempty"` // a URL that will be posted with the result data
+	//omitempty is used so that values set previously don't get overwritten by
+	//empty values in the next read.
+	NotifyJabber string `json:",omitempty"` // a jabber address for an XMPP message
+	NotifyOn     string `json:",omitempty"` // one of: `pass`, `fail`, `always`, `change`
+	NotifyURL    string `json:",omitempty"` // a URL that will be posted with the result data
 }
 
 //loadConfig grabs the Config data for the given import path by walking up the
@@ -52,7 +54,11 @@ func (b Builder) loadConfig(baseImport, subImport string) (c Config, err error) 
 //its data into the passed in config.
 func loadConfigAt(c *Config, dir string) (err error) {
 	file := filepath.Join(dir, ".goci")
-	//fi
+
+	//check if the file exists first (we won't have a race for it being deleted)
+	if !World.Exists(file) {
+		return
+	}
 
 	//don't report errors in loading the file
 	r, err := World.Open(file)
