@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/environ"
+	"io"
 	"os"
 	p "path"
 	fp "path/filepath"
@@ -17,6 +18,7 @@ type LocalWorld interface {
 	LookPath(string) (string, error)
 	TempDir(string) (string, error)
 	Make(environ.Command) environ.Proc
+	Open(string) (io.ReadCloser, error)
 }
 
 var (
@@ -99,6 +101,9 @@ type Build struct {
 	BinaryPath string
 	SourcePath string
 	ImportPath string
+
+	//The Config used for this file
+	Config Config
 
 	Error string
 }
@@ -187,7 +192,7 @@ func (b Builder) Build(w *rpc.Work) (builds []Build, revDate time.Time, err erro
 
 	//build each of the tests
 	for _, tpath := range paths {
-		bu := b.build(tpath)
+		bu := b.build(w.ImportPath, tpath)
 
 		//cover all the cases to append the build.
 		switch {
@@ -205,27 +210,40 @@ func (b Builder) Build(w *rpc.Work) (builds []Build, revDate time.Time, err erro
 
 //build generates a test binary and tarball of the source for a given import path
 //and returns a Build that represents this data.
-func (b Builder) build(path string) (bu Build) {
+func (b Builder) build(baseImport, subImport string) (bu Build) {
 	var err error
 
+	//set some information that is always able to be retreived
 	bu.Date = time.Now()
-	bu.ImportPath = path
-	bu.BinaryPath, err = b.goTest(path)
+	bu.ImportPath = subImport
+
+	//load our our config file from the baseImport up to the rest of the path.
+	bu.Config, err = b.loadConfig(baseImport, subImport)
 	if err != nil {
 		bu.Error = err.Error()
 		return
 	}
 
+	//build the test
+	bu.BinaryPath, err = b.goTest(subImport)
+	if err != nil {
+		bu.Error = err.Error()
+		return
+	}
+
+	//create a tarball directory
 	tardir, err := World.TempDir("tarball")
 	if err != nil {
 		bu.Error = err.Error()
 		return
 	}
-
-	//we can find the downloaded package in the first entry of the gopath
-	packDir := fp.Join(b.gopath, "src", path)
-
+	//set the SourcePath first so that we can clean it up in case of an error
 	bu.SourcePath = fp.Join(tardir, "src.tar.gz")
+
+	//go to where the source for the subImport resides
+	packDir := fp.Join(b.gopath, "src", subImport)
+
+	//pack the source code
 	if err = pack(packDir, bu.SourcePath); err != nil {
 		bu.Error = err.Error()
 		return
