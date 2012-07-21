@@ -110,7 +110,17 @@ type Build struct {
 
 //Clean removes the directories that the binary and tarball are in.
 func (b Build) Clean() {
+	b.CleanBinary()
+	b.CleanSource()
+}
+
+//CleanBinary just cleans the directory that the binary is in.
+func (b Build) CleanBinary() {
 	os.RemoveAll(p.Base(b.BinaryPath))
+}
+
+//CleanSource just cleans the directory that the source is in.
+func (b Build) CleanSource() {
 	os.RemoveAll(p.Base(b.SourcePath))
 }
 

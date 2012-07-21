@@ -83,30 +83,30 @@ type BuilderTask struct {
 
 //RunnerTask is a task sent by a Builder to a runner
 type RunnerTask struct {
-	Key      string    //the key of the work item
-	ID       string    //the id of the task
+	Key      string    //the key of the work item to pass into response
+	ID       string    //the id of the task to pass into response
+	Revision string    //the revision we ended up testing to pass into response
+	RevDate  time.Time //the time this revision was made to pass into response
+	Tests    []RunTest //the set of binarys to be executed
 	Response string    //the rpc url of the response
-	Revision string    //the revision we ended up testing
-	RevDate  time.Time //the time this revision was made
-	Tasks    []RunTest //the set of binarys to be executed
 }
 
-//RunTask represents an individual binary to be installed and run.
+//RunTest represents an individual binary to be installed and run.
 type RunTest struct {
 	BinaryURL  string //the url to download the binary
 	SourceURL  string //the url to download the tarball
+	ID         string //the ID of the the task
 	ImportPath string //the import path of the packge the binary is testing
-	Config     Config
+	Config     Config //the configuration for this test
 }
 
 //RunnerResponse is the response from the Runner to the tracker
 type RunnerResponse struct {
-	Key         string    //the datastore key for the Work item
-	ID          string    //the ID of the TaskInfo in the datastore
-	BuildOutput string    //the output of the build phase
-	Revision    string    //the revision we ended up testing
-	RevDate     time.Time //the time this revision was made
-	Outputs     []Output  //the list of outputs from the tests
+	Key      string    //the datastore key for the Work item
+	ID       string    //the ID of the TaskInfo in the datastore
+	Revision string    //the revision we ended up testing
+	RevDate  time.Time //the time this revision was made
+	Outputs  []Output  //the list of outputs from the tests
 }
 
 //BuilderResponse is the response from the Builder if the build failed for any
@@ -124,4 +124,5 @@ type Output struct {
 	ImportPath string //the import path of the binary that produced the output
 	Config     Config //the configuration for the test
 	Output     string //the output of the test
+	Error      string //an error that happened
 }

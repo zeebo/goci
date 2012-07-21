@@ -35,7 +35,7 @@ func reverse(name string, things ...interface{}) string {
 	//look up the route and panic if theres a problem
 	u, err := defaultRouter.GetRoute(name).URL(strs...)
 	if err != nil {
-		panic(err)
+		bail(err)
 	}
 	return u.Path
 }

@@ -52,10 +52,11 @@ func main() {
 
 	//add our handlers
 	handlePost("/rpc", rpcServer, "rpc")
-	handleGet("/download/:id", http.HandlerFunc(download), "download")
+	handleGet("/download/{id}", http.HandlerFunc(download), "download")
 
 	//ListenAndServe!
-	bail(http.ListenAndServe(":9080", defaultRouter))
+	http.Handle("/", defaultRouter)
+	bail(http.ListenAndServe(":9080", nil))
 }
 
 //buildLoop is a simple goroutine that grabs items from the queue and sends them

@@ -63,15 +63,16 @@ func process(task rpc.BuilderTask) {
 	}
 	for _, b := range builds {
 		//register the tarball and binary paths with the downloader
-		binid := defaultDownloader.Register(b.BinaryPath)
-		souid := defaultDownloader.Register(b.SourcePath)
+		binid := defaultDownloader.Register(b.BinaryPath, func() { b.CleanBinary() })
+		souid := defaultDownloader.Register(b.SourcePath, func() { b.CleanSource() })
 
 		//add the task with the urls
-		req.Tasks = append(req.Tasks, rpc.RunTest{
-			BinaryURL:  urlWithPath(reverse("download", binid)),
-			SourceURL:  urlWithPath(reverse("download", souid)),
-			Config:     b.Config,
+		req.Tests = append(req.Tests, rpc.RunTest{
+			BinaryURL:  urlWithPath(reverse("download", "id", binid)),
+			SourceURL:  urlWithPath(reverse("download", "id", souid)),
+			ID:         task.ID,
 			ImportPath: b.ImportPath,
+			Config:     b.Config,
 		})
 	}
 

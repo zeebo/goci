@@ -29,7 +29,7 @@ func announceWithArgs(args *rpc.AnnounceArgs) (err error) {
 }
 
 func announce() (err error) {
-	url := urlWithPath("/rpc")
+	url := urlWithPath(reverse("rpc"))
 
 	err = announceWithArgs(&rpc.AnnounceArgs{
 		GOOS:   runtime.GOOS,
