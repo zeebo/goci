@@ -84,6 +84,11 @@ func (Env) Environ() []string {
 	return os.Environ()
 }
 
+//RemoveAll is a wrapper around os.RemoveAll
+func (Env) RemoveAll(path string) (err error) {
+	return os.RemoveAll(path)
+}
+
 //Command is a type that represents the information for executing a command.
 type Command struct {
 	W    io.Writer
@@ -98,6 +103,9 @@ type Command struct {
 //the command.
 type Proc interface {
 	Run() (error, bool)
+	Start() error
+	Kill() error
+	Wait() error
 }
 
 //procCmd is the internal representation of a process.
@@ -105,7 +113,13 @@ type procCmd struct {
 	*exec.Cmd
 }
 
-//Run makes procCmd ad Proc and just hands it off to the wrapped exec command.
+//Kill makes procCmd a Proc and just runs Kill on the underlying Process.
+func (p procCmd) Kill() (err error) {
+	err = p.Process.Kill()
+	return
+}
+
+//Run makes procCmd a Proc and just hands it off to the wrapped exec command.
 func (p procCmd) Run() (err error, success bool) {
 	err = p.Cmd.Run()
 	success = err == nil && p.ProcessState.Success()

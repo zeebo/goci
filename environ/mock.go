@@ -109,6 +109,7 @@ type testProc struct {
 	name string
 	cmd  Command
 	run  TestRun
+	done chan bool
 }
 
 func (t *testProc) Run() (error, bool) {
@@ -117,6 +118,30 @@ func (t *testProc) Run() (error, bool) {
 		return nil, true
 	}
 	return t.run(t.cmd)
+}
+
+func (t *testProc) Start() error {
+	t.t.Logf("%s: start dir:%s", t.name, t.cmd.Dir)
+	if t.run == nil {
+		return nil
+	}
+	go func() {
+		t.run(t.cmd)
+		t.done <- true
+	}()
+	return nil
+}
+
+func (t *testProc) Kill() error {
+	t.t.Logf("%s: kill", t.name)
+	return nil
+}
+
+func (t *testProc) Wait() error {
+	t.t.Logf("%s: wait", t.name)
+	<-t.done
+	t.t.Logf("%s: wait finished", t.name)
+	return nil
 }
 
 //
@@ -219,12 +244,18 @@ func (w TestEnv) MkdirAll(dir string, mode os.FileMode) error {
 	return nil
 }
 
+//RemoveAll logs the call.
+func (w TestEnv) RemoveAll(path string) error {
+	w.t.Logf("world: RemoveAll(%s)", path)
+	return nil
+}
+
 //Make logs the call and returns a Proc that runs the function set by SetRun
 //when called, logging that call.
 func (w TestEnv) Make(c Command) (p Proc) {
 	name := w.randName()
 	w.t.Logf("world: Make(): %s: %v", name, c.Args)
-	return &testProc{w.t, name, c, w.run}
+	return &testProc{w.t, name, c, w.run, make(chan bool, 1)}
 }
 
 //Exists logs the call and returns true.
