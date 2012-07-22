@@ -25,16 +25,21 @@ type ManagedClient struct {
 }
 
 func NewManaged(app, api string, count int, ttl time.Duration) *ManagedClient {
+	sem := make(chan bool, count)
+	for i := 0; i < count; i++ {
+		sem <- true
+	}
+
 	return &ManagedClient{
 		client: New(app, api),
-		sem:    make(chan bool, count),
+		sem:    sem,
 		ttl:    ttl,
 		spawn:  map[string]taskInfo{},
 	}
 }
 
-func (m *ManagedClient) acquire() { m.sem <- true }
-func (m *ManagedClient) release() { <-m.sem }
+func (m *ManagedClient) acquire() { <-m.sem }
+func (m *ManagedClient) release() { m.sem <- true }
 
 func (m *ManagedClient) Run(a Action) (id string, err error) {
 	//acquire the semaphore
