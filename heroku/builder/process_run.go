@@ -12,7 +12,7 @@ import (
 var defaultClient = heroku.NewManaged(
 	env("APP_NAME", "goci"), //name of the app (goci)
 	env("API_KEY", "fail"),  //api key (secret!)
-	2,                       // maximum of 2 dynos running tests
+	2,                       //maximum of 2 dynos running tests
 	1*time.Minute,           //can only live for 1 minute
 )
 
