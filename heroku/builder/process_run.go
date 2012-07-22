@@ -32,11 +32,11 @@ func process_run(task rpc.RunnerTask) {
 
 	//create the rpc url
 	rpcUrl := urlWithPath(reverse("rpc"))
-	for _, rt := range task.Tests {
+	for i, rt := range task.Tests {
 
 		//create an action for our managed heroku client
 		action := heroku.Action{
-			Command: fmt.Sprintf("bin/runner %s", rpcUrl),
+			Command: fmt.Sprintf("bin/runner %s %s %d", rpcUrl, task.ID, i),
 			Error: func(err string) {
 				r.resps <- rpc.Output{
 					ImportPath: rt.ImportPath,

@@ -70,7 +70,6 @@ func process(task rpc.BuilderTask) {
 		req.Tests = append(req.Tests, rpc.RunTest{
 			BinaryURL:  urlWithPath(reverse("download", "id", binid)),
 			SourceURL:  urlWithPath(reverse("download", "id", souid)),
-			ID:         task.ID,
 			ImportPath: b.ImportPath,
 			Config:     b.Config,
 		})

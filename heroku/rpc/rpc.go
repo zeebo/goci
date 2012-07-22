@@ -10,3 +10,8 @@ type TestResponse struct {
 	Output rpc.Output //the output of the test 
 	ID     string     //the ID for the test
 }
+
+type TestRequest struct {
+	ID    string //the ID of the test
+	Index int    //the index of the test to be run
+}

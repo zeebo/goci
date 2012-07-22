@@ -95,7 +95,6 @@ type RunnerTask struct {
 type RunTest struct {
 	BinaryURL  string //the url to download the binary
 	SourceURL  string //the url to download the tarball
-	ID         string //the ID of the the task
 	ImportPath string //the import path of the packge the binary is testing
 	Config     Config //the configuration for this test
 }
