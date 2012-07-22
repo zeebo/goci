@@ -3,5 +3,6 @@
 !*.go
 !*.md
 !*.yaml
-
+!.heroku
+!Procfile
 app/code.google.com
