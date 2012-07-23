@@ -1,4 +1,4 @@
-package main
+package builder
 
 import (
 	"code.google.com/p/gorilla/pat"
