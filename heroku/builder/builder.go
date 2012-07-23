@@ -44,7 +44,7 @@ func main() {
 
 	//ListenAndServe!
 	http.Handle("/", defaultRouter)
-	bail(http.ListenAndServe(":9080", nil))
+	bail(http.ListenAndServe(":"+env("PORT", "9080"), nil))
 }
 
 //handleSignals sets up a channel listening on some signals and will bail when
