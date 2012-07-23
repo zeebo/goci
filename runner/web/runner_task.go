@@ -89,6 +89,6 @@ func (r *runnerTask) run() {
 	//send if off
 	cl := client.New(r.task.Response, http.DefaultClient, client.JsonCodec)
 	if err := cl.Call("Response.Post", resp, new(rpc.None)); err != nil {
-
+		log.Printf("Error pushing response: %s", err)
 	}
 }
