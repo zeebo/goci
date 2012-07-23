@@ -51,6 +51,7 @@ func (r *responder) createResponse(output, err string) *hrpc.TestResponse {
 //post sends the TestResponse to the TestManager
 func (r *responder) post(args *hrpc.TestResponse) {
 	cl := client.New(r.url, http.DefaultClient, client.JsonCodec)
+	log.Printf("Posting response[%s]: %+v", r.url, args)
 	cl.Call("Runner.Post", args, new(rpc.None))
 }
 
@@ -72,6 +73,7 @@ func (r *responder) loadTest() (err error) {
 		Index: r.index,
 	}
 	err = cl.Call("Runner.Request", args, &r.test)
+	log.Printf("Handling request[%s]: %+v", r.url, r.test)
 	return
 }
 
