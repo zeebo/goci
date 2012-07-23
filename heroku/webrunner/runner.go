@@ -4,6 +4,9 @@ import (
 	"github.com/zeebo/goci/runner/web"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 //env gets an environment variable with a default
