@@ -1,10 +1,10 @@
-package builder
+package main
 
 import (
 	"code.google.com/p/gorilla/pat"
-	"code.google.com/p/gorilla/rpc"
-	"code.google.com/p/gorilla/rpc/json"
 	"github.com/zeebo/goci/builder"
+	bweb "github.com/zeebo/goci/builder/web"
+	rweb "github.com/zeebo/goci/runner/web"
 	"log"
 	"net/http"
 	"os"
@@ -18,14 +18,6 @@ func env(key, def string) (r string) {
 		r = def
 	}
 	return
-}
-
-//rpcServer is the rpc server for interacting with the builder
-var rpcServer = rpc.NewServer()
-
-func init() {
-	//the rpcServer speaks jsonrpc
-	rpcServer.RegisterCodec(json.NewCodec(), "application/json")
 }
 
 //defaultBuilder is the builder we use and created by the setup function.
@@ -50,32 +42,9 @@ func main() {
 	//set up the signal handler to bail and run cleanup
 	go handleSignals()
 
-	//add our handlers
-	handlePost("/rpc", rpcServer, "rpc")
-	handleGet("/download/{id}", http.HandlerFunc(download), "download")
-
 	//ListenAndServe!
 	http.Handle("/", defaultRouter)
 	bail(http.ListenAndServe(":9080", nil))
-}
-
-//buildLoop is a simple goroutine that grabs items from the queue and sends them
-//off for processing.
-func buildLoop() {
-	for {
-		//get a task from the queue
-		task := builderQueue.Pop()
-		process(task)
-	}
-}
-
-//runLoop is a simple goroutine that grabs items from the queue and sends them
-//off for processing.
-func runLoop() {
-	for {
-		task := runnerQueue.Pop()
-		process_run(task)
-	}
 }
 
 //handleSignals sets up a channel listening on some signals and will bail when
@@ -100,11 +69,35 @@ func performInit() {
 	if err := setup(); err != nil {
 		bail(err)
 	}
-	if err := announce(); err != nil {
+
+	tracker := env("TRACKER", "http://goci.me/tracker")
+
+	//set up a builder and host it
+	builder := bweb.New(
+		defaultBuilder,
+		tracker,
+		urlWithPath("/builder"),
+	)
+	handleRequest("/builder", builder, "builder")
+	if err := builder.Announce(); err != nil {
 		bail(err)
 	}
+	cleanup.attach(func() {
+		builder.Remove()
+	})
 
-	//run the builder+runner loops after a sucessful announce
-	go buildLoop()
-	go runLoop()
+	//set up the runner
+	runner := rweb.New(
+		env("APP_NAME", "goci"),
+		env("API_KEY", "foo"),
+		tracker,
+		urlWithPath("/runner"),
+	)
+	handleRequest("/runner", runner, "runner")
+	if err := runner.Announce(); err != nil {
+		bail(err)
+	}
+	cleanup.attach(func() {
+		runner.Remove()
+	})
 }

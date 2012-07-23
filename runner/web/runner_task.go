@@ -1,15 +1,12 @@
-package builder
+package web
 
 import (
 	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/app/rpc/client"
-	"log"
+	"github.com/zeebo/goci/heroku"
 	"net/http"
 	"sync"
 )
-
-//defaultTaskMap is the default map of ID to open tasks
-var defaultTaskMap = &runnerTaskMap{items: map[string]*runnerTask{}}
 
 //runerTaskMap stores a mapping of ids to runnerTasks
 type runnerTaskMap struct {
@@ -23,7 +20,7 @@ func (m *runnerTaskMap) Register(task *runnerTask) {
 	defer m.Unlock()
 
 	if _, ok := m.items[task.task.ID]; ok {
-		bail("id already exists")
+		panic("id already exists")
 	}
 
 	//store it
@@ -50,6 +47,9 @@ func (m *runnerTaskMap) Delete(id string) {
 
 //runnerTask represents a runner task in progress.
 type runnerTask struct {
+	mc *heroku.ManagedClient
+	tm *runnerTaskMap
+
 	task  rpc.RunnerTask
 	resps chan rpc.Output
 	ids   map[string]chan string
@@ -65,14 +65,14 @@ func (r *runnerTask) run() {
 
 		//signal to the default client that we're finished with this id
 		idch := r.ids[o.ImportPath]
-		defaultClient.Finished(<-idch)
+		r.mc.Finished(<-idch)
 
 		//append the output
 		outs = append(outs, o)
 	}
 
 	//we're done grabbing output so delete ourselves from the task map
-	defaultTaskMap.Delete(r.task.ID)
+	r.tm.Delete(r.task.ID)
 
 	//build a RunnerResponse
 	resp := &rpc.RunnerResponse{
@@ -83,11 +83,9 @@ func (r *runnerTask) run() {
 		Outputs:  outs,
 	}
 
-	log.Printf("Sending response: %+v", resp)
-
 	//send if off
 	cl := client.New(r.task.Response, http.DefaultClient, client.JsonCodec)
 	if err := cl.Call("Response.Post", resp, new(rpc.None)); err != nil {
-		log.Println("Error sending runner response:", err)
+
 	}
 }

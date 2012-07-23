@@ -72,8 +72,20 @@ func New(GOOS, GOARCH, GOROOT string) (b Builder) {
 			fmt.Sprintf("PATH=%s", mustEnv("PATH")),
 		},
 	}
+
+	//see if we should disable CGO based on GOOS/GOARCH
+	if runtime.GOOS != GOOS || runtime.GOARCH != GOARCH {
+		b.baseEnv = append(b.baseEnv, "CGO_ENABLED=0")
+	}
+
 	return
 }
+
+//GOOS returns the GOOS the builder will make binaries for.
+func (b Builder) GOOS() string { return b.goos }
+
+//GOARCH returns the GOARCH the builder will make binaries for.
+func (b Builder) GOARCH() string { return b.goarch }
 
 //Cleanup removes any temporary files created by the Builder. It is intended to
 //be called after all work items the Builder will ever create have been created,
@@ -84,13 +96,12 @@ func (b Builder) Cleanup() {
 
 //exeSuffix is a value that is appended to the end of a binary depending on what
 //os we're using.
-//TODO(zeebo): make sure this is right for cross platform builders
-var exeSuffix = func() string {
-	if runtime.GOOS == "windows" {
+func (b Builder) exeSuffix() string {
+	if b.goos == "windows" {
 		return ".exe"
 	}
 	return ""
-}()
+}
 
 //Build is a type that represents a built test and tarballed source ready to be
 //sent to a runner. It contains an error if there were any problems building the

@@ -109,7 +109,7 @@ func (b Builder) goTest(path string) (bin string, err error) {
 
 	//what the go tool does from inspecting the source
 	_, elem := p.Split(path)
-	bin = fp.Join(dir, elem+".test"+exeSuffix)
+	bin = fp.Join(dir, elem+".test"+b.exeSuffix())
 	return
 }
 

@@ -191,6 +191,7 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 	//create our context
 	ctx := appengine.NewContext(req)
 	ctx.Infof("Storing runner result")
+	ctx.Infof("%+v", args)
 
 	//make sure the TaskInfo for this request still exists, and if so, remove it
 	found, err := findTaskInfo(ctx, args.ID)
@@ -215,6 +216,7 @@ func (Response) Error(req *http.Request, args *rpc.BuilderResponse, resp *rpc.No
 	//create the context
 	ctx := appengine.NewContext(req)
 	ctx.Infof("Storing a builder error")
+	ctx.Infof("%+v", args)
 
 	//make sure the TaskInfo for this request still exists, and if so, remove it
 	found, err := findTaskInfo(ctx, args.ID)

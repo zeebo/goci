@@ -1,4 +1,4 @@
-package builder
+package main
 
 import (
 	"github.com/zeebo/goci/builder"
