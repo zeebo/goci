@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/heroku"
+	"log"
 )
 
 func (r *Runner) process(task rpc.RunnerTask) {
@@ -16,6 +17,8 @@ func (r *Runner) process(task rpc.RunnerTask) {
 		ids:   make(map[string]chan string),
 	}
 	go rtask.run()
+
+	log.Printf("Incoming task: %+v", task)
 
 	//register our task with our task map
 	r.tm.Register(rtask)

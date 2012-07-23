@@ -4,6 +4,7 @@ import (
 	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/app/rpc/client"
 	"github.com/zeebo/goci/builder"
+	"log"
 	"net/http"
 )
 
@@ -13,6 +14,8 @@ import (
 func (b *Builder) process(task rpc.BuilderTask) {
 	//build the work item
 	builds, revDate, err := b.b.Build(&task.Work)
+
+	log.Printf("Incoming build: %+v", task)
 
 	//filter out all the builds that have errors
 	var errbuilds []builder.Build
@@ -39,6 +42,8 @@ func (b *Builder) process(task rpc.BuilderTask) {
 				Output:     build.Error,
 			})
 		}
+
+		log.Printf("Pushing error[%s]: %+v", task.Response, resp)
 
 		//send it off and ignore the error
 		cl := client.New(task.Response, http.DefaultClient, client.JsonCodec)
@@ -75,6 +80,8 @@ func (b *Builder) process(task rpc.BuilderTask) {
 			Config:     build.Config,
 		})
 	}
+
+	log.Printf("Pushing request[%s]: %+v", task.Runner, req)
 
 	//send off to the runner and ignore the error
 	cl := client.New(task.Runner, http.DefaultClient, client.JsonCodec)

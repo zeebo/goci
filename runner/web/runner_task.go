@@ -4,6 +4,7 @@ import (
 	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/app/rpc/client"
 	"github.com/zeebo/goci/heroku"
+	"log"
 	"net/http"
 	"sync"
 )
@@ -82,6 +83,8 @@ func (r *runnerTask) run() {
 		RevDate:  r.task.RevDate,
 		Outputs:  outs,
 	}
+
+	log.Printf("Pushing response[%s]: %+v", r.task.Response, resp)
 
 	//send if off
 	cl := client.New(r.task.Response, http.DefaultClient, client.JsonCodec)
