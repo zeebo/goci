@@ -143,7 +143,7 @@ func queueWork(w http.ResponseWriter, req *http.Request, ctx appengine.Context) 
 	task := &rpc.BuilderTask{
 		Work:     work.Work,
 		Runner:   runner.URL,
-		Response: "http://localhost:8080/queue/response",
+		Response: "http://zeeb.us.to:8081/queue/response",
 		Key:      httputil.ToString(key),
 		ID:       httputil.ToString(id),
 	}
