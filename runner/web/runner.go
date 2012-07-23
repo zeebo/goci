@@ -45,6 +45,11 @@ func New(app, api string, tracker, hosted string) *Runner {
 		panic(err)
 	}
 
+	//register ourselves in the rpc
+	if err := n.rpc.RegisterService(n, ""); err != nil {
+		panic(err)
+	}
+
 	//register the codec
 	n.rpc.RegisterCodec(json.NewCodec(), "application/json")
 
