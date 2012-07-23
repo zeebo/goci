@@ -7,8 +7,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
+	"sync"
 )
 
 type LocalWorld interface {
@@ -42,7 +42,7 @@ func setup() (err error) {
 
 		//get our goroot two directories up
 		goroot := filepath.Dir(filepath.Dir(path))
-		defaultBuilder = builder.New("", "", goroot)
+		defaultBuilder = builder.New("linux", "amd64", goroot)
 		return
 	}
 
@@ -59,19 +59,24 @@ func setup() (err error) {
 	//concurrently install Go and hg+bzr
 	errs := make(chan error, 2)
 	var gobin, vcbin string
+	var group sync.WaitGroup
+	group.Add(2)
 
 	//launch the goroutine for installing go
 	go func() {
 		var err error
-		gobin, err = hsetup.InstallGo(runtime.GOOS, runtime.GOARCH, dir)
+		gobin, err = hsetup.InstallGo("linux", "amd64", dir)
 		errs <- err
+		group.Done()
 	}()
 
 	//launch the goroutine for installing the vcs
 	go func() {
 		var err error
-		vcbin, err = hsetup.InstallVCS(dir)
+		distdir := filepath.Join("heroku", "dist")
+		vcbin, err = hsetup.InstallVCS(distdir, dir)
 		errs <- err
+		group.Done()
 	}()
 
 	//return the first error we get
@@ -81,6 +86,7 @@ func setup() (err error) {
 			return
 		}
 	}
+	group.Wait() //ensure the writes to the bin dirs are visible
 
 	//add the bin directories to our path
 	path := []string{os.Getenv("PATH"), gobin, vcbin}
@@ -92,7 +98,7 @@ func setup() (err error) {
 	}
 
 	//create our defaultBuilder with the popped GOBIN as the GOROOT
-	defaultBuilder = builder.New("", "", filepath.Dir(gobin))
+	defaultBuilder = builder.New("linux", "amd64", filepath.Dir(gobin))
 
 	//we're all set up!
 	return

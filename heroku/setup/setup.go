@@ -82,9 +82,8 @@ func InstallGo(GOOS, GOARCH, dir string) (bin string, err error) {
 	return
 }
 
-func InstallVCS(dir string) (bin string, err error) {
+func InstallVCS(distdir, dir string) (bin string, err error) {
 	//check for our dist directory
-	distdir := fp.Join("heroku", "dist")
 	if !World.Exists(distdir) {
 		err = errors.New("unable to find dist directory: " + distdir)
 		return
