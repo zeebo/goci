@@ -1,3 +1,3 @@
 BASE=github.com/zeebo/goci
 + github.com/zeebo/goci/runner
-+ github.com/zeebo/goci/heroku/webrunner
++ github.com/zeebo/goci/bins/webrunner
