@@ -35,6 +35,7 @@ func main() {
 		syscall.SIGQUIT,
 		syscall.SIGKILL,
 		syscall.SIGINT,
+		syscall.SIGTERM,
 	}
 	ch := make(chan os.Signal, len(signals))
 	signal.Notify(ch, signals...)
