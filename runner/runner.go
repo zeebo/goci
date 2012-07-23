@@ -51,7 +51,7 @@ func (r *responder) createResponse(output, err string) *hrpc.TestResponse {
 //post sends the TestResponse to the TestManager
 func (r *responder) post(args *hrpc.TestResponse) {
 	cl := client.New(r.url, http.DefaultClient, client.JsonCodec)
-	cl.Call("RunManager.Post", args, new(rpc.None))
+	cl.Call("Runner.Post", args, new(rpc.None))
 }
 
 //bail is a helper function to post an error
@@ -71,7 +71,7 @@ func (r *responder) loadTest() (err error) {
 		ID:    r.id,
 		Index: r.index,
 	}
-	err = cl.Call("RunManager.Request", args, &r.test)
+	err = cl.Call("Runner.Request", args, &r.test)
 	return
 }
 
