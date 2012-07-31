@@ -8,8 +8,6 @@ import (
 	"appengine/datastore"
 	"appengine/taskqueue"
 	"appengine/urlfetch"
-	gorcp "code.google.com/p/gorilla/rpc"
-	gojson "code.google.com/p/gorilla/rpc/json"
 	"httputil"
 	"net/http"
 	"net/url"
@@ -20,17 +18,9 @@ import (
 )
 
 func init() {
-	//create a new rpc server
-	s := gorcp.NewServer()
-	s.RegisterCodec(gojson.NewCodec(), "application/json")
-
-	//add the response queue
-	s.RegisterService(Response{}, "")
-
 	//add our handlers including the rpc server
 	http.Handle("/queue/work", httputil.Handler(queueWork))
 	http.Handle("/queue/requeue", httputil.Handler(queueRequeue))
-	http.Handle("/queue/response", s)
 }
 
 //Distiller is a type that can be added into the queue. It distills into a work
@@ -69,6 +59,27 @@ func addQueue(ctx appengine.Context, key string) (err error) {
 		"key": {key},
 	})
 	_, err = taskqueue.Add(ctx, t, "work")
+	return
+}
+
+//findTaskInfo fetches and deletes the task info with the given id, returning
+//if it was able to do so.
+func FindTaskInfo(ctx appengine.Context, id string) (found bool, err error) {
+	trans := func(c appengine.Context) (err error) {
+		info := new(TaskInfo)
+		key := httputil.FromString(id)
+		if err = datastore.Get(c, key, info); err != nil {
+			return
+		}
+		if err = datastore.Delete(c, key); err != nil {
+			return
+		}
+		found = true
+		return
+	}
+	if err = datastore.RunInTransaction(ctx, trans, nil); err != nil {
+		return
+	}
 	return
 }
 
@@ -143,7 +154,7 @@ func queueWork(w http.ResponseWriter, req *http.Request, ctx appengine.Context) 
 	task := &rpc.BuilderTask{
 		Work:     work.Work,
 		Runner:   runner.URL,
-		Response: "http://zeeb.us.to:8081/queue/response",
+		Response: "http://zeeb.us.to:8081/response",
 		Key:      httputil.ToString(key),
 		ID:       httputil.ToString(id),
 	}
@@ -156,79 +167,5 @@ func queueWork(w http.ResponseWriter, req *http.Request, ctx appengine.Context) 
 		return
 	}
 
-	return
-}
-
-//Response is a service that records Runner responses
-type Response struct{}
-
-//findTaskInfo fetches and deletes the task info with the given id, returning
-//if it was able to do so.
-func findTaskInfo(ctx appengine.Context, id string) (found bool, err error) {
-	trans := func(c appengine.Context) (err error) {
-		info := new(TaskInfo)
-		key := httputil.FromString(id)
-		if err = datastore.Get(c, key, info); err != nil {
-			return
-		}
-		if err = datastore.Delete(c, key); err != nil {
-			return
-		}
-		found = true
-		return
-	}
-	if err = datastore.RunInTransaction(ctx, trans, nil); err != nil {
-		return
-	}
-	return
-}
-
-//Post is the rpc method that the Runner uses to give a response about an item.
-func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None) (err error) {
-	//wrap our error on the way out
-	defer rpc.Wrap(&err)
-
-	//create our context
-	ctx := appengine.NewContext(req)
-	ctx.Infof("Storing runner result")
-	ctx.Infof("%+v", args)
-
-	//make sure the TaskInfo for this request still exists, and if so, remove it
-	found, err := findTaskInfo(ctx, args.ID)
-
-	//if we didn't find our TaskInfo, just bail
-	if !found {
-		ctx.Errorf("Got a late response")
-		return
-	}
-
-	//TODO(zeebo): store the response
-
-	//we did it!
-	return
-}
-
-//Error is used when there were any errors in building the test
-func (Response) Error(req *http.Request, args *rpc.BuilderResponse, resp *rpc.None) (err error) {
-	//wrap our error on the way out
-	defer rpc.Wrap(&err)
-
-	//create the context
-	ctx := appengine.NewContext(req)
-	ctx.Infof("Storing a builder error")
-	ctx.Infof("%+v", args)
-
-	//make sure the TaskInfo for this request still exists, and if so, remove it
-	found, err := findTaskInfo(ctx, args.ID)
-
-	//if we didn't find it, just bail
-	if !found {
-		ctx.Errorf("Got a late response")
-		return
-	}
-
-	//TODO(zeebo): store the response
-
-	//we did it!
 	return
 }
