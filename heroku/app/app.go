@@ -55,7 +55,7 @@ func main() {
 		goroot = filepath.Join(dir, "go")
 
 		//create the goroot first
-		if err := os.Mkdir(goroot, 0644); err != nil {
+		if err := os.Mkdir(goroot, 0777); err != nil {
 			ech <- err
 			return
 		}
