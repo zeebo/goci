@@ -54,6 +54,12 @@ func main() {
 		//set the goroot
 		goroot = filepath.Join(dir, "go")
 
+		//make the tempdir writable
+		if err := os.Chmod(dir, 0777); err != nil {
+			ech <- err
+			return
+		}
+
 		bin, err := setup.InstallGo(dir)
 		if err != nil {
 			ech <- err
