@@ -52,6 +52,8 @@ func main() {
 		panic(err)
 	}
 
+	goroot := filepath.Join(tmpdir, "TODO:fixme")
+
 	//create the builder and announce it
 	bu := buweb.New(
 		builder.New("linux", "amd64", goroot),
