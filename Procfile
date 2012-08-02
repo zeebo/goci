@@ -1,1 +1,1 @@
-web: bin/webrunner
+web: bin/app

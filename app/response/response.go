@@ -57,37 +57,45 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 	//get the key of the work item
 	key := httputil.FromString(args.Key)
 
-	//create a WorkResult
-	w := &WorkResult{
-		Success: true,
-		When:    time.Now(),
-	}
-
-	//store it
-	wkey := datastore.NewIncompleteKey(ctx, "WorkResult", key)
-	if wkey, err = datastore.Put(ctx, wkey, w); err != nil {
-		ctx.Errorf("Error storing WorkResult: %v", err)
-		return
-	}
-
-	//store the test results
-	for _, out := range args.Outputs {
-		//make a TestResult
-		t := &TestResult{
-			ImportPath: out.ImportPath,
-			Revision:   args.Revision,
-			RevDate:    args.RevDate,
-			When:       time.Now(),
-			Output:     out.Output,
-			Passed:     strings.HasSuffix(out.Output, "\nPASS\n"),
+	trans := func(ctx appengine.Context) (err error) {
+		//create a WorkResult
+		w := &WorkResult{
+			Success: true,
+			When:    time.Now(),
 		}
 
 		//store it
-		tkey := datastore.NewIncompleteKey(ctx, "TestResult", wkey)
-		if _, err = datastore.Put(ctx, tkey, t); err != nil {
-			ctx.Errorf("Error storing TestResult: %v", err)
+		wkey := datastore.NewIncompleteKey(ctx, "WorkResult", key)
+		if wkey, err = datastore.Put(ctx, wkey, w); err != nil {
+			ctx.Errorf("Error storing WorkResult: %v", err)
 			return
 		}
+
+		//store the test results
+		for _, out := range args.Outputs {
+			//make a TestResult
+			t := &TestResult{
+				ImportPath: out.ImportPath,
+				Revision:   args.Revision,
+				RevDate:    args.RevDate,
+				When:       time.Now(),
+				Output:     out.Output,
+				Passed:     strings.HasSuffix(out.Output, "\nPASS\n"),
+			}
+
+			//store it
+			tkey := datastore.NewIncompleteKey(ctx, "TestResult", wkey)
+			if _, err = datastore.Put(ctx, tkey, t); err != nil {
+				ctx.Errorf("Error storing TestResult: %v", err)
+				return
+			}
+		}
+
+		return
+	}
+
+	if err = datastore.RunInTransaction(ctx, trans, nil); err != nil {
+		return
 	}
 
 	//we did it!
