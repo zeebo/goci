@@ -3,12 +3,12 @@ package main
 import (
 	"github.com/zeebo/goci/builder"
 	buweb "github.com/zeebo/goci/builder/web"
-	"github.com/zeebo/goci/heroku/setup"
 	ruweb "github.com/zeebo/goci/runner/web"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"syscall"
@@ -40,80 +40,16 @@ func main() {
 	}
 	defer ru.Remove()
 
-	//run the painful setup in parallel
-	ech, bins := make(chan error), make(chan string)
-	var goroot string
-
-	//the goroot
-	go func() {
-		dir, err := ioutil.TempDir("", "goroot")
-		if err != nil {
-			ech <- err
-			return
-		}
-		//set the goroot
-		goroot = filepath.Join(dir, "go")
-
-		log.Println("Got temp dir")
-
-		//create the goroot first
-		if err := os.Mkdir(goroot, 0777); err != nil {
-			ech <- err
-			return
-		}
-
-		log.Println("Made goroot")
-
-		bin, err := setup.InstallGo(dir)
-		if err != nil {
-			log.Println("Error installing go", err)
-			ech <- err
-			return
-		}
-
-		log.Println("Installed Go")
-
-		ech <- nil
-		bins <- bin
-	}()
-
-	//the tools
-	go func() {
-		dir, err := ioutil.TempDir("", "tools")
-		if err != nil {
-			ech <- err
-			return
-		}
-
-		log.Println("Got tools dir")
-
-		bin, err := setup.InstallVCS("heroku/dist", dir)
-		if err != nil {
-			log.Println("Error installing vcs", err)
-			ech <- err
-			return
-		}
-
-		log.Println("Installed tools")
-
-		ech <- nil
-		bins <- bin
-	}()
-
-	//grab two errors (should be nil)
-	for i := 0; i < 2; i++ {
-		if err := <-ech; err != nil {
-			panic(err)
-		}
+	//run the setup script
+	tmpdir, err := ioutil.TempDir("", "tools")
+	if err != nil {
+		panic(err)
 	}
+	defer os.RemoveAll(tmpdir)
 
-	log.Println("Setup complete")
-
-	//grab both the bin dirs (we always get 2 because we got 2 nil errors)
-	for i := 0; i < 2; i++ {
-		path := os.Getenv("PATH")
-		bin := <-bins
-		os.Setenv("PATH", path+string(filepath.ListSeparator)+bin)
+	cmd := exec.Command("bash", "heroku_setup.sh", "heroku/dist", tmpdir)
+	if err := cmd.Run(); err != nil {
+		panic(err)
 	}
 
 	//create the builder and announce it
