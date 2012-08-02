@@ -66,6 +66,7 @@ func main() {
 
 		bin, err := setup.InstallGo(dir)
 		if err != nil {
+			log.Println("Error installing go", err)
 			ech <- err
 			return
 		}
@@ -88,6 +89,7 @@ func main() {
 
 		bin, err := setup.InstallVCS("heroku/dist", dir)
 		if err != nil {
+			log.Println("Error installing vcs", err)
 			ech <- err
 			return
 		}
