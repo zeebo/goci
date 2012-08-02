@@ -54,17 +54,23 @@ func main() {
 		//set the goroot
 		goroot = filepath.Join(dir, "go")
 
+		log.Println("Got temp dir")
+
 		//create the goroot first
 		if err := os.Mkdir(goroot, 0777); err != nil {
 			ech <- err
 			return
 		}
 
+		log.Println("Made goroot")
+
 		bin, err := setup.InstallGo(dir)
 		if err != nil {
 			ech <- err
 			return
 		}
+
+		log.Println("Installed Go")
 
 		ech <- nil
 		bins <- bin
@@ -78,11 +84,15 @@ func main() {
 			return
 		}
 
+		log.Println("Got tools dir")
+
 		bin, err := setup.InstallVCS("heroku/dist", dir)
 		if err != nil {
 			ech <- err
 			return
 		}
+
+		log.Println("Installed tools")
 
 		ech <- nil
 		bins <- bin
@@ -94,6 +104,8 @@ func main() {
 			panic(err)
 		}
 	}
+
+	log.Println("Setup complete")
 
 	//grab both the bin dirs (we always get 2 because we got 2 nil errors)
 	for i := 0; i < 2; i++ {
