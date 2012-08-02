@@ -6,6 +6,7 @@ import (
 	"github.com/zeebo/goci/heroku/setup"
 	ruweb "github.com/zeebo/goci/runner/web"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
