@@ -45,6 +45,12 @@ func addwork(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e
 		ImportPath: "github.com/zeebo/irc",
 	}
 
+	q = rpc.Work{
+		Revision:    "8a893ab6efcf71ba0cd1ee764df9ee1742259b30",
+		ImportPath:  "github.com/zeebo/goci",
+		Subpackages: true,
+	}
+
 	//add it to the queue
 	if err := queue.QueueWork(ctx, q); err != nil {
 		e = httputil.Errorf(err, "error adding work item to queue")

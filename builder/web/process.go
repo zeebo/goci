@@ -32,6 +32,10 @@ func (b *Builder) process(task rpc.BuilderTask) {
 		resp := &rpc.BuilderResponse{
 			Key: task.Key,
 			ID:  task.ID,
+
+			//these fields may be zero if we didn't get that far
+			Revision: task.Work.Revision,
+			RevDate:  revDate,
 		}
 		if err != nil {
 			resp.Error = err.Error()

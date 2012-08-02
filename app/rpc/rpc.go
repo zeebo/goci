@@ -111,10 +111,12 @@ type RunnerResponse struct {
 //BuilderResponse is the response from the Builder if the build failed for any
 //reason.
 type BuilderResponse struct {
-	Key         string   //the key of the work item
-	ID          string   //the id of the task
-	Error       string   //the error in setting up the builds
-	BuildErrors []Output //the errors in building the binaries
+	Key         string    //the key of the work item
+	ID          string    //the id of the task
+	Error       string    //the error in setting up the builds
+	BuildErrors []Output  //the errors in building the binaries
+	Revision    string    //the revision of the work item (if known)
+	RevDate     time.Time //the time the revision was commit (if known)
 }
 
 //Output is a type that wraps the output of a build, be it the actual output or
