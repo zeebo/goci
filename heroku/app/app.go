@@ -54,8 +54,8 @@ func main() {
 		//set the goroot
 		goroot = filepath.Join(dir, "go")
 
-		//make the tempdir writable
-		if err := os.Chmod(dir, 0777); err != nil {
+		//create the goroot first
+		if err := os.Mkdir(goroot, 0644); err != nil {
 			ech <- err
 			return
 		}

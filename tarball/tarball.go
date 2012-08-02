@@ -145,7 +145,7 @@ func Extract(in io.Reader, dir string) (err error) {
 
 		//if it's a directory, try to make it
 		if hdr.Typeflag == tar.TypeDir {
-			err = World.MkdirAll(path, 0777)
+			err = World.MkdirAll(path, os.FileMode(hdr.Mode)&os.ModePerm)
 			if err != nil {
 				return
 			}
@@ -155,7 +155,7 @@ func Extract(in io.Reader, dir string) (err error) {
 		}
 
 		//create the file and copy the data into it
-		of, err = World.Create(path, 0777)
+		of, err = World.Create(path, os.FileMode(hdr.Mode)&os.ModePerm)
 		if err != nil {
 			return
 		}
