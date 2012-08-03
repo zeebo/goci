@@ -29,7 +29,7 @@ func main() {
 		env("TRACKER", "http://goci.me/tracker"),
 		env("RUNHOSTED", "http://runner.goci.me/runner"),
 	)
-	http.Handle("/runner", ru)
+	http.Handle("/runner", http.StripPrefix("/runner", ru))
 
 	//start the server
 	go http.ListenAndServe(":"+env("PORT", "9080"), nil)
@@ -67,7 +67,7 @@ func main() {
 		env("TRACKER", "http://goci.me/tracker"),
 		env("BUILDHOSTED", "http://runner.goci.me/builder"),
 	)
-	http.Handle("/builder", bu)
+	http.Handle("/builder", http.StripPrefix("/builder", bu))
 
 	if err := bu.Announce(); err != nil {
 		panic(err)
