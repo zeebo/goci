@@ -84,7 +84,7 @@ func TestMocked(t *testing.T) {
 		for _, vcs := range []string{"git", "hg", "bzr"} {
 			tw.Reset()
 			w.VCSHint = vcs
-			_, _, err := New("", "", "").Build(w)
+			_, _, err := New("", "", "goroot").Build(w)
 			if err != nil {
 				t.Error(err)
 				tw.Dump(t)

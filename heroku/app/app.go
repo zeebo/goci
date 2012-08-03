@@ -27,7 +27,7 @@ func main() {
 		env("APP_NAME", "goci"),
 		env("API_KEY", "foo"),
 		env("TRACKER", "http://goci.me/tracker"),
-		env("RUNHOSTED", "http://runner.goci.me/runner"),
+		env("RUNHOSTED", "http://runner.goci.me/runner/"),
 	)
 	http.Handle("/runner/", http.StripPrefix("/runner", ru))
 
@@ -65,7 +65,7 @@ func main() {
 	bu := buweb.New(
 		builder.New("linux", "amd64", goroot),
 		env("TRACKER", "http://goci.me/tracker"),
-		env("BUILDHOSTED", "http://runner.goci.me/builder"),
+		env("BUILDHOSTED", "http://runner.goci.me/builder/"),
 	)
 	http.Handle("/builder/", http.StripPrefix("/builder", bu))
 
