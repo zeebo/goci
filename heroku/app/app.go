@@ -52,7 +52,14 @@ func main() {
 		panic(err)
 	}
 
-	goroot := filepath.Join(tmpdir, "TODO:fixme")
+	//store our goroot
+	goroot := filepath.Join(tmpdir, "go1.0.2.linux-amd64", "go")
+
+	//add goroot/bin and venv/bin to path
+	path := os.Getenv("PATH")
+	path += string(filepath.ListSeparator) + filepath.Join(goroot, "bin")
+	path += string(filepath.ListSeparator) + filepath.Join(tmpdir, "venv", "bin")
+	os.Setenv("PATH", path)
 
 	//create the builder and announce it
 	bu := buweb.New(
