@@ -157,6 +157,7 @@ func run_build_item(build builder.Build, w *Work) {
 	if err := build.Error(); err != nil {
 		b.Error = err.Error()
 		b.Passed = false
+		close(b.poke)
 		return
 	}
 
