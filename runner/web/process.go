@@ -33,7 +33,8 @@ func (r *Runner) process(task rpc.RunnerTask) {
 				rtask.resps <- rpc.Output{
 					ImportPath: rt.ImportPath,
 					Config:     rt.Config,
-					Error:      err,
+					Type:       rpc.OutputError,
+					Output:     err,
 				}
 			},
 		}

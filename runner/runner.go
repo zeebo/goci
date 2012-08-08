@@ -36,14 +36,14 @@ type responder struct {
 }
 
 //createResponse creates a TestResponse with the given error and output strings
-func (r *responder) createResponse(output, err string) *hrpc.TestResponse {
+func (r *responder) createResponse(output string, typ rpc.OutputType) *hrpc.TestResponse {
 	return &hrpc.TestResponse{
 		ID: r.id,
 		Output: rpc.Output{
 			ImportPath: r.test.ImportPath,
 			Config:     r.test.Config,
 			Output:     output,
-			Error:      err,
+			Type:       typ,
 		},
 	}
 }
@@ -57,12 +57,14 @@ func (r *responder) post(args *hrpc.TestResponse) {
 
 //bail is a helper function to post an error
 func (r *responder) bail(e interface{}) {
-	r.post(r.createResponse("", fmt.Sprint(e)))
+	resp := r.createResponse(fmt.Sprint(e), rpc.OutputError)
+	r.post(resp)
 }
 
 //success is a helper function to post an output
 func (r *responder) success(e interface{}) {
-	r.post(r.createResponse(fmt.Sprint(e), ""))
+	resp := r.createResponse(fmt.Sprint(e), rpc.OutputSuccess)
+	r.post(resp)
 }
 
 //loadTest loads the test field of the responder, returning any errors.

@@ -48,18 +48,18 @@ func (m *runnerTaskMap) Delete(id string) {
 
 //runnerTask represents a runner task in progress.
 type runnerTask struct {
-	mc *heroku.ManagedClient
-	tm *runnerTaskMap
+	mc *heroku.ManagedClient //client to interact with heroku
+	tm *runnerTaskMap        //the map of ids to runner tasks
 
-	task  rpc.RunnerTask
-	resps chan rpc.Output
-	ids   map[string]chan string
+	task  rpc.RunnerTask         //the task we're running
+	resps chan rpc.Output        //the channel of outputs
+	ids   map[string]chan string //the ids of the heroku instances
 }
 
 //run grabs all the items from the channel and sends in a response
 func (r *runnerTask) run() {
 	//grab all of the output
-	outs := make([]rpc.Output, 0, cap(r.resps))
+	outs := make([]rpc.Output, 0, cap(r.resps)+len(r.task.WontBuilds))
 	for i := 0; i < cap(r.resps); i++ {
 		//grab an outout
 		o := <-r.resps
@@ -75,13 +75,16 @@ func (r *runnerTask) run() {
 	//we're done grabbing output so delete ourselves from the task map
 	r.tm.Delete(r.task.ID)
 
+	//copy the wontbuilds in to the outputs
+	outs = append(outs, r.task.WontBuilds...)
+
 	//build a RunnerResponse
 	resp := &rpc.RunnerResponse{
 		Key:      r.task.Key,
 		ID:       r.task.ID,
 		Revision: r.task.Revision,
 		RevDate:  r.task.RevDate,
-		Outputs:  outs,
+		Tests:    outs,
 	}
 
 	log.Printf("Pushing response[%s]: %+v", r.task.Response, resp)

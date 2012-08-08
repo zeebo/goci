@@ -116,6 +116,7 @@ type Build struct {
 	//The Config used for this file
 	Config rpc.Config
 
+	//an error in the build
 	Error string
 }
 
@@ -135,6 +136,8 @@ func (b Build) CleanSource() {
 	os.RemoveAll(p.Base(b.SourcePath))
 }
 
+//Build converts a work item into a set of builds, the revision date for the
+//revision specified in the work item.
 func (b Builder) Build(w *rpc.Work) (builds []Build, revDate time.Time, err error) {
 	//create a GOPATH for this work item
 	b.gopath, err = World.TempDir("gopath")
@@ -206,10 +209,10 @@ func (b Builder) Build(w *rpc.Work) (builds []Build, revDate time.Time, err erro
 	deppaths = append(deppaths, testpaths...)
 	deppaths = unique(deppaths)
 
-	//download, update and install all the deps this revision imports
-	if err = b.goGet(false, deppaths...); err != nil {
-		return
-	}
+	//download, update and install all the deps this revision imports, ignoring
+	//the errors returned so that we get the build errors when trying to build
+	//the individual tests.
+	b.goGet(false, deppaths...)
 
 	//build each of the tests
 	for _, tpath := range paths {
@@ -221,7 +224,7 @@ func (b Builder) Build(w *rpc.Work) (builds []Build, revDate time.Time, err erro
 			builds = append(builds, bu)
 		case bu.Error != "":
 			builds = append(builds, bu)
-		default:
+		default: //no error + no binary path => no test
 			bu.Clean()
 		}
 	}

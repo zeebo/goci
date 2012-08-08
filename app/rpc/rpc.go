@@ -83,12 +83,13 @@ type BuilderTask struct {
 
 //RunnerTask is a task sent by a Builder to a runner
 type RunnerTask struct {
-	Key      string    //the key of the work item to pass into response
-	ID       string    //the id of the task to pass into response
-	Revision string    //the revision we ended up testing to pass into response
-	RevDate  time.Time //the time this revision was made to pass into response
-	Tests    []RunTest //the set of binarys to be executed
-	Response string    //the rpc url of the response
+	Key        string    //the key of the work item to pass into response
+	ID         string    //the id of the task to pass into response
+	Revision   string    //the revision we ended up testing to pass into response
+	RevDate    time.Time //the time this revision was made to pass into response
+	Tests      []RunTest //the set of binarys to be executed
+	WontBuilds []Output  //the set of tests that failed to build
+	Response   string    //the rpc url of the response
 }
 
 //RunTest represents an individual binary to be installed and run.
@@ -105,25 +106,33 @@ type RunnerResponse struct {
 	ID       string    //the ID of the TaskInfo in the datastore
 	Revision string    //the revision we ended up testing
 	RevDate  time.Time //the time this revision was made
-	Outputs  []Output  //the list of outputs from the tests
+	Tests    []Output  //the list of tests
 }
 
 //BuilderResponse is the response from the Builder if the build failed for any
 //reason.
 type BuilderResponse struct {
-	Key         string    //the key of the work item
-	ID          string    //the id of the task
-	Error       string    //the error in setting up the builds
-	BuildErrors []Output  //the errors in building the binaries
-	Revision    string    //the revision of the work item (if known)
-	RevDate     time.Time //the time the revision was commit (if known)
+	Key      string    //the key of the work item
+	ID       string    //the id of the task
+	Error    string    //the error in setting up the builds
+	Revision string    //the revision of the work item (if known)
+	RevDate  time.Time //the time the revision was commit (if known)
 }
 
 //Output is a type that wraps the output of a build, be it the actual output or
 //the error produced.
 type Output struct {
-	ImportPath string //the import path of the binary that produced the output
-	Config     Config //the configuration for the test
-	Output     string //the output of the test
-	Error      string //an error that happened
+	ImportPath string     //the import path of the binary that produced the output
+	Config     Config     //the configuration for the test
+	Type       OutputType //the type of output (Success/WontBuild/Error)
+	Output     string     //the output of the test
 }
+
+//OutputType is an enumeration of types of outputs.
+type OutputType string
+
+const (
+	OutputSuccess   OutputType = "Success"
+	OutputWontBuild OutputType = "WontBuild"
+	OutputError     OutputType = "Error"
+)

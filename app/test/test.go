@@ -46,7 +46,7 @@ func addwork(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e
 	}
 
 	q = rpc.Work{
-		Revision:    "27ac1746719f81466487767a7151aa2f39d4b6a2",
+		Revision:    "7e283bf6dbf4c97a00647f873faa0b513ad59fbf",
 		ImportPath:  "github.com/zeebo/goci",
 		Subpackages: true,
 	}

@@ -3,7 +3,6 @@ package web
 import (
 	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/app/rpc/client"
-	"github.com/zeebo/goci/builder"
 	"log"
 	"net/http"
 )
@@ -12,39 +11,23 @@ import (
 //with the build failure output, or forwards a request to the Runner given by
 //the task to get the info for the build.
 func (b *Builder) process(task rpc.BuilderTask) {
+	log.Printf("Incoming build: %+v", task)
+
 	//build the work item
 	builds, revDate, err := b.b.Build(&task.Work)
 
-	log.Printf("Incoming build: %+v", task)
-
-	//filter out all the builds that have errors
-	var errbuilds []builder.Build
-	for _, build := range builds {
-		if build.Error != "" {
-			errbuilds = append(errbuilds, build)
-		}
-	}
-
 	//check if we have any errors
-	if err != nil || len(errbuilds) > 0 {
+	if err != nil {
 
 		//build our response
 		resp := &rpc.BuilderResponse{
-			Key: task.Key,
-			ID:  task.ID,
+			Key:   task.Key,
+			ID:    task.ID,
+			Error: err.Error(),
 
 			//these fields may be zero if we didn't get that far
 			Revision: task.Work.Revision,
 			RevDate:  revDate,
-		}
-		if err != nil {
-			resp.Error = err.Error()
-		}
-		for _, build := range errbuilds {
-			resp.BuildErrors = append(resp.BuildErrors, rpc.Output{
-				ImportPath: build.ImportPath,
-				Output:     build.Error,
-			})
 		}
 
 		log.Printf("Pushing error[%s]: %+v", task.Response, resp)
@@ -52,7 +35,7 @@ func (b *Builder) process(task rpc.BuilderTask) {
 		//send it off and ignore the error
 		cl := client.New(task.Response, http.DefaultClient, client.JsonCodec)
 		if err := cl.Call("Response.Error", resp, new(rpc.None)); err != nil {
-
+			//ignored
 		}
 		return
 	}
@@ -66,6 +49,18 @@ func (b *Builder) process(task rpc.BuilderTask) {
 		Response: task.Response,
 	}
 	for _, build := range builds {
+		//if the build has an error, then add it to the failures and continue
+		//no need to schedule a download
+		if build.Error != "" {
+			req.WontBuilds = append(req.WontBuilds, rpc.Output{
+				ImportPath: build.ImportPath,
+				Config:     build.Config,
+				Output:     build.Error,
+				Type:       rpc.OutputWontBuild,
+			})
+			continue
+		}
+
 		//register the tarball and binary paths with the downloader
 		binid := b.dler.Register(dl{
 			path:  build.BinaryPath,

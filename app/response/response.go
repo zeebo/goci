@@ -8,6 +8,7 @@ import (
 	"appengine/datastore"
 	gorcp "code.google.com/p/gorilla/rpc"
 	gojson "code.google.com/p/gorilla/rpc/json"
+	"fmt"
 	"httputil"
 	"net/http"
 	"queue"
@@ -60,8 +61,10 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 	trans := func(ctx appengine.Context) (err error) {
 		//create a WorkResult
 		w := &WorkResult{
-			Success: true,
-			When:    time.Now(),
+			Success:  true,
+			Revision: args.Revision,
+			RevDate:  args.RevDate,
+			When:     time.Now(),
 		}
 
 		//store it
@@ -72,15 +75,34 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 		}
 
 		//store the test results
-		for _, out := range args.Outputs {
+		for _, out := range args.Tests {
+
+			//get the status from the output type and output
+			var status string
+			switch out.Type {
+			case rpc.OutputSuccess:
+				if strings.HasSuffix(out.Output, "\nPASS\n") {
+					status = "Pass"
+				} else {
+					status = "Fail"
+				}
+			case rpc.OutputWontBuild:
+				status = "WontBuild"
+			case rpc.OutputError:
+				status = "Error"
+			default:
+				err = fmt.Errorf("unknown output type: %s", out.Type)
+				return
+			}
+
 			//make a TestResult
 			t := &TestResult{
 				ImportPath: out.ImportPath,
 				Revision:   args.Revision,
 				RevDate:    args.RevDate,
 				When:       time.Now(),
-				Output:     out.Output,
-				Passed:     strings.HasSuffix(out.Output, "\nPASS\n"),
+				Output:     []byte(out.Output),
+				Status:     status,
 			}
 
 			//store it
@@ -132,35 +154,18 @@ func (Response) Error(req *http.Request, args *rpc.BuilderResponse, resp *rpc.No
 
 	//create a WorkResult
 	w := &WorkResult{
-		Success: false,
-		When:    time.Now(),
-		Error:   args.Error,
+		Success:  false,
+		When:     time.Now(),
+		Revision: args.Revision,
+		RevDate:  args.RevDate,
+		Error:    []byte(args.Error),
 	}
 
 	//store it
 	wkey := datastore.NewIncompleteKey(ctx, "WorkResult", key)
-	if wkey, err = datastore.Put(ctx, wkey, w); err != nil {
+	if _, err = datastore.Put(ctx, wkey, w); err != nil {
 		ctx.Errorf("Error storing WorkResult: %v", err)
 		return
-	}
-
-	//store all the build errors
-	for _, out := range args.BuildErrors {
-		//create a BuildFailure
-		b := &BuildFailure{
-			ImportPath: out.ImportPath,
-			Revision:   args.Revision,
-			RevDate:    args.RevDate,
-			When:       time.Now(),
-			Output:     out.Error,
-		}
-
-		//store it
-		bkey := datastore.NewIncompleteKey(ctx, "BuildFailure", wkey)
-		if _, err = datastore.Put(ctx, bkey, b); err != nil {
-			ctx.Errorf("Error storing BuildFailure: %v", err)
-			return
-		}
 	}
 
 	//we did it!

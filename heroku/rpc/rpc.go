@@ -7,8 +7,8 @@ import (
 )
 
 type TestResponse struct {
-	Output rpc.Output //the output of the test 
 	ID     string     //the ID for the test
+	Output rpc.Output //the output of the test
 }
 
 type TestRequest struct {
