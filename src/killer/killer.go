@@ -44,7 +44,7 @@ func main() {
 	}
 
 	for {
-		clean_processes(os.Args[0], os.Args[1])
+		clean_processes(os.Args[1], os.Args[2])
 		<-time.After(time.Minute)
 	}
 }

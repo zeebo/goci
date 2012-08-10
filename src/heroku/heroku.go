@@ -21,12 +21,11 @@ func New(app, api string) *Client {
 }
 
 type Process struct {
-	ID       string
-	Command  string
-	Process  string
-	Elapsed  int
-	Attached bool
-	State    string
+	ID      string
+	Command string
+	Process string
+	Elapsed int
+	State   string
 }
 
 func (c *Client) List() (p []*Process, err error) {
