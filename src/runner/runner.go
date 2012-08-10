@@ -107,6 +107,13 @@ func (e env) download(in, fn string) (name string, n int64) {
 }
 
 func main() {
+	//launch a goroutine that will kill the process if we take longer than two
+	//minutes, assuming it gets scheduled
+	go func() {
+		<-time.After(2 * time.Minute)
+		os.Exit(1)
+	}()
+
 	if len(os.Args) != 2 {
 		log.Print("usage: runner <url to binary>")
 		return
