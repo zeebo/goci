@@ -21,8 +21,8 @@ func main() {
 	runner := web.New(
 		env("APP_NAME", "goci"),
 		env("API_KEY", "foo"),
-		env("TRACKER", "http://goci.me/tracker"),
-		env("HOSTED", "http://runner.goci.me"),
+		env("TRACKER", "http://goci.me/rpc/tracker"),
+		env("HOSTED", "http://worker.goci.me/runner/"),
 	)
 	go http.ListenAndServe(":"+env("PORT", "9080"), runner)
 	if err := runner.Announce(); err != nil {
