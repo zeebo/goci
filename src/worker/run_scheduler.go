@@ -19,7 +19,7 @@ func spawn_runner(cmd string) (proc string, err error) {
 	if err != nil {
 		return
 	}
-	proc = p.UPID
+	proc = p.ID
 	return
 }
 
@@ -38,7 +38,7 @@ func cull_runner(id, proc string) func() {
 			return
 		}
 
-		//search for the process with the given UPID
+		//search for the process with the given ID
 		procs, err := hclient.List()
 		if err != nil {
 			log.Printf("%s error culling (list) %s: %s", id, proc, err)
@@ -47,7 +47,7 @@ func cull_runner(id, proc string) func() {
 
 		var pid string
 		for _, p := range procs {
-			if p.UPID == proc {
+			if p.ID == proc {
 				pid = p.Process
 				break
 			}

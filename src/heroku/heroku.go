@@ -21,10 +21,8 @@ func New(app, api string) *Client {
 }
 
 type Process struct {
-	Slug     string
-	UPID     string
+	ID       string
 	Command  string
-	Action   string
 	Process  string
 	Elapsed  int
 	Attached bool
