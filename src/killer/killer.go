@@ -25,9 +25,11 @@ func clean_processes(app, api string) {
 			continue
 		}
 		//only kill processes that are in the run command type
-		if strings.HasPrefix(p.Process, "run") {
+		if !strings.HasPrefix(p.Process, "run") {
 			continue
 		}
+
+		log.Println("killing", p)
 
 		//KEEL IT
 		err := cl.Kill(p.Process)
