@@ -25,7 +25,7 @@ func init() {
 	//add the response queue
 	s.RegisterService(Response{}, "")
 
-	http.Handle("/response", s)
+	http.Handle("/rpc/response", s)
 }
 
 //Response is a service that records Runner responses

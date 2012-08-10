@@ -1,4 +1,4 @@
 cron:
 - description: requeue things
-  url: /queue/requeue
+  url: /workqueue/requeue
   schedule: every 1 minutes

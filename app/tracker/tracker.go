@@ -34,7 +34,7 @@ func init() {
 	s.RegisterService(DefaultTracker, "")
 
 	//add the tracker service to the paths
-	http.Handle("/tracker", s)
+	http.Handle("/rpc/tracker", s)
 }
 
 //Tracker is an rpc for announcing and managing the presence of services
@@ -210,7 +210,7 @@ var lastSeeds = &seeds{c: map[string]int64{}}
 
 //key returns the key used in the map for the set of constrains.
 func (s *seeds) key(GOOS, GOARCH, Type string) string {
-	return strings.Join([]string{GOOS, GOARCH, Type}, ",")
+	return GOOS + "," + GOARCH + "," + Type
 }
 
 //get looks up the cached seed value for the given set of constraints.

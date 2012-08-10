@@ -19,8 +19,8 @@ import (
 
 func init() {
 	//add our handlers including the rpc server
-	http.Handle("/queue/work", httputil.Handler(queueWork))
-	http.Handle("/queue/requeue", httputil.Handler(queueRequeue))
+	http.Handle("/workqueue/work", httputil.Handler(queueWork))
+	http.Handle("/workqueue/requeue", httputil.Handler(queueRequeue))
 }
 
 //Distiller is a type that can be added into the queue. It distills into a work
@@ -55,7 +55,7 @@ func QueueWork(ctx appengine.Context, d Distiller) (err error) {
 
 //addQueue puts the key in the queue to be dispatched.
 func addQueue(ctx appengine.Context, key string) (err error) {
-	t := taskqueue.NewPOSTTask("/queue/work", url.Values{
+	t := taskqueue.NewPOSTTask("/workqueue/work", url.Values{
 		"key": {key},
 	})
 	_, err = taskqueue.Add(ctx, t, "work")
@@ -154,7 +154,7 @@ func queueWork(w http.ResponseWriter, req *http.Request, ctx appengine.Context) 
 	task := &rpc.BuilderTask{
 		Work:     work.Work,
 		Runner:   runner.URL,
-		Response: "http://zeeb.us.to:8081/response",
+		Response: "http://zeeb.us.to:8081/rpc/response",
 		Key:      httputil.ToString(key),
 		ID:       httputil.ToString(id),
 	}
