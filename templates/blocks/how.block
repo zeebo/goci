@@ -72,6 +72,14 @@
 			<pre>&lt;a href="http://goci.me{% reverse "project_detail" "import" "<import path>" %}"&gt;
 	&lt;img src="http://goci.me{% reverse "project_status_image" "import" "<import path>" %}" /&gt;
 &lt;/a&gt;</pre>
+			
+			<h3>Caching</h3>
+			<p>
+			If you're putting it in a github readme or on some site that caches
+			the output of the images, you might try using https. Note that the 
+			SSL cert for https://goci.me is for *.heroku.com, so if you need a valid cert
+			use the domain goci.herokuapp.com.
+			</p>
 		</div>
 	</div>
 </section>
