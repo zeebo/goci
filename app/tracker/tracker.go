@@ -4,18 +4,16 @@
 package tracker
 
 import (
-	"appengine"
-	"appengine/datastore"
-	"appengine/urlfetch"
 	gorpc "code.google.com/p/gorilla/rpc"
 	gojson "code.google.com/p/gorilla/rpc/json"
 	"errors"
-	"httputil"
+	"github.com/zeebo/goci/app/httputil"
+	"github.com/zeebo/goci/app/rpc"
+	"github.com/zeebo/goci/app/rpc/client"
+	"labix.org/v2/mgo"
+	"labix.org/v2/mgo/bson"
 	"math/rand"
 	"net/http"
-	"pinger"
-	"rpc"
-	"rpc/client"
 	"strings"
 	"sync"
 	"time"
@@ -38,9 +36,7 @@ func init() {
 }
 
 //Tracker is an rpc for announcing and managing the presence of services
-type Tracker struct {
-	pinger.Pinger //a Tracker repsonds to ping
-}
+type Tracker struct{}
 
 //Set up a DefaultTracker so it can be called without an rpc layer
 var DefaultTracker = Tracker{}
@@ -78,11 +74,11 @@ func (Tracker) Announce(req *http.Request, args *rpc.AnnounceArgs, rep *rpc.Anno
 		return
 	}
 
-	ctx := appengine.NewContext(req)
+	ctx := httputil.NewContext(req)
 	ctx.Infof("Got announce request from %s", req.RemoteAddr)
 
 	//ping them to make sure we can make valid rpc calls
-	cl := client.New(args.URL, urlfetch.Client(ctx), client.JsonCodec)
+	cl := client.New(args.URL, http.DefaultClient, client.JsonCodec)
 	err = cl.Call("Pinger.Ping", nil, new(rpc.None))
 	if err != nil {
 		ctx.Infof("Failed to Ping the announce.")
@@ -97,9 +93,11 @@ func (Tracker) Announce(req *http.Request, args *rpc.AnnounceArgs, rep *rpc.Anno
 	for seed == 0 {
 		seed = rand.Int63()
 	}
+	key := bson.NewObjectId()
 	switch args.Type {
 	case "Builder":
 		e = &Builder{
+			ID:     key,
 			GOOS:   args.GOOS,
 			GOARCH: args.GOARCH,
 			URL:    args.URL,
@@ -107,6 +105,7 @@ func (Tracker) Announce(req *http.Request, args *rpc.AnnounceArgs, rep *rpc.Anno
 		}
 	case "Runner":
 		e = &Runner{
+			ID:     key,
 			GOOS:   args.GOOS,
 			GOARCH: args.GOARCH,
 			URL:    args.URL,
@@ -117,15 +116,15 @@ func (Tracker) Announce(req *http.Request, args *rpc.AnnounceArgs, rep *rpc.Anno
 	}
 
 	//TODO(zeebo): check if we have the URL already and grab that key to update
-	key := datastore.NewIncompleteKey(ctx, args.Type, nil)
+	//TODO(zeebo): convert to mgo
 
-	//save the service in the datastore
-	if key, err = datastore.Put(ctx, key, e); err != nil {
+	//save the service in the database
+	if err = ctx.DB.C(args.Type).Insert(e); err != nil {
 		return
 	}
 
-	//set the key for the service
-	rep.Key = httputil.ToString(key)
+	//return the hex representation of the key
+	rep.Key = key.Hex()
 	return
 }
 
@@ -135,25 +134,27 @@ func (Tracker) Remove(req *http.Request, args *rpc.RemoveArgs, rep *rpc.None) (e
 	defer rpc.Wrap(&err)
 
 	//create our context
-	ctx := appengine.NewContext(req)
+	ctx := httputil.NewContext(req)
 	ctx.Infof("Got a remove request from %s", req.RemoteAddr)
 
-	//grab the key
-	key := httputil.FromString(args.Key)
+	//get the key from the argument
+	key := bson.ObjectIdHex(args.Key)
 
-	//ensure what we have is a service
-	if !isEntity(key.Kind()) {
-		err = rpc.Errorf("key is not a builder or runner")
+	//make sure its an entity
+	if !isEntity(args.Kind) {
+		err = rpc.Errorf("kind is not Builder or Runner")
 		return
 	}
 
-	//delete it
-	err = datastore.Delete(ctx, key)
+	//remove it from the database
+	err = ctx.DB.C(args.Kind).Remove(bson.M{"_id": key})
 	return
 }
 
 //Builder is an entity that represents a builder in the tracker.
 type Builder struct {
+	ID bson.ObjectId `bson:"_id,omitempty"`
+
 	GOOS, GOARCH string
 	URL          string
 
@@ -163,6 +164,8 @@ type Builder struct {
 
 //Runner is an entity that represents a runner in the tracker.
 type Runner struct {
+	ID bson.ObjectId `bson:"_id,omitempty"`
+
 	GOOS, GOARCH string
 	URL          string
 
@@ -174,27 +177,28 @@ type Runner struct {
 //services matching the criteri
 var ErrNoneAvailable = errors.New("no services available")
 
-func baseQuery(GOOS, GOARCH, Type string, Seed int64) (q *datastore.Query) {
+func baseQuery(db *mgo.Database, GOOS, GOARCH, Type string, Seed int64) (q *mgo.Query) {
 	//check for programmer errors
 	if !isEntity(Type) {
 		panic("type not an entity: " + Type)
 	}
 
-	//set up the base query
-	q = datastore.NewQuery(Type).Limit(1).Order("Seed")
-
+	filters := bson.M{}
 	//filter on GOOS and GOARCH if they are set
 	if GOOS != "" {
-		q = q.Filter("GOOS = ", GOOS)
+		filters["GOOS"] = GOOS
 	}
 	if GOARCH != "" {
-		q = q.Filter("GOARCH = ", GOARCH)
+		filters["GOARCH"] = GOARCH
 	}
-
 	//if we have a Seed value make sure we get one greater than it
 	if Seed > 0 {
-		q = q.Filter("Seed > ", Seed)
+		filters["Seed"] = bson.M{"$gt": Seed}
 	}
+
+	//set up the base query
+	q = db.C(Type).Find(filters).Limit(1).Sort("seed").Select(bson.M{"_id": 1})
+
 	return
 }
 
@@ -234,17 +238,17 @@ func (s *seeds) set(GOOS, GOARCH, Type string, v int64) {
 //getService is a helper function that abstracts the logic of grabbing a service
 //with a key greater than the one given, and looping back to zero if one wasn't
 //found.
-func getService(ctx appengine.Context, GOOS, GOARCH, Type string, s interface{}) (key *datastore.Key, err error) {
+func getService(ctx httputil.Context, GOOS, GOARCH, Type string, s interface{}) (key bson.ObjectId, err error) {
 	//grab the most recent run key
 	seed := lastSeeds.get(GOOS, GOARCH, Type)
 again:
 	ctx.Infof("Finding a %v/%v/%v [%d]", Type, GOOS, GOARCH, seed)
 	//run the query
-	query := baseQuery(GOOS, GOARCH, Type, seed)
-	key, err = query.Run(ctx).Next(s)
+	query := baseQuery(ctx.DB, GOOS, GOARCH, Type, seed)
+	err = query.One(&key)
 
 	//if we didn't find a match
-	if err == datastore.Done {
+	if err == mgo.ErrNotFound {
 
 		//try again if we're limiting on the seed
 		if seed > 0 {
@@ -261,7 +265,7 @@ again:
 
 //getRunner grabs a runner from the set of runners matching the given criteria
 //in a fashion that attempts to distribute the workload.
-func getRunner(ctx appengine.Context, GOOS, GOARCH string) (key *datastore.Key, r *Runner, err error) {
+func getRunner(ctx httputil.Context, GOOS, GOARCH string) (key bson.ObjectId, r *Runner, err error) {
 	r = new(Runner)
 	key, err = getService(ctx, GOOS, GOARCH, "Runner", r)
 	return
@@ -269,7 +273,7 @@ func getRunner(ctx appengine.Context, GOOS, GOARCH string) (key *datastore.Key, 
 
 //getBuilder grabs a builder from the set of runners matching the given criteria
 //in a fashion that attempts to distribute the workload.
-func getBuilder(ctx appengine.Context, GOOS, GOARCH string) (key *datastore.Key, b *Builder, err error) {
+func getBuilder(ctx httputil.Context, GOOS, GOARCH string) (key bson.ObjectId, b *Builder, err error) {
 	b = new(Builder)
 	key, err = getService(ctx, GOOS, GOARCH, "Builder", b)
 	return
@@ -277,7 +281,7 @@ func getBuilder(ctx appengine.Context, GOOS, GOARCH string) (key *datastore.Key,
 
 //LeasePair returns a pair of Builder and Runners that can be used to run tests.
 //It doesn't let you specify the type of runner you want.
-func LeasePair(ctx appengine.Context) (builder, runner *datastore.Key, b *Builder, r *Runner, err error) {
+func LeasePair(ctx httputil.Context) (builder, runner bson.ObjectId, b *Builder, r *Runner, err error) {
 	//grab a runner
 	runner, r, err = getRunner(ctx, "", "")
 	if err != nil {

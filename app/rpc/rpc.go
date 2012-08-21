@@ -46,7 +46,8 @@ type AnnounceReply struct {
 //RemoveArgs is the argument type of the Remove function
 type RemoveArgs struct {
 	//Key is the datastore key that corresponds to the service to be removed
-	Key string
+	Key  string
+	Kind string
 }
 
 //None is an empty rpc element
