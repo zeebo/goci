@@ -1,5 +1,3 @@
-// +build !goci
-
 //package tracker provides tracking/announcing of builders and runners
 package tracker
 
