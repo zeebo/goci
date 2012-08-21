@@ -11,6 +11,7 @@ import (
 
 func init() {
 	http.Handle("/_test/lease", httputil.Handler(lease))
+	http.Handle("/_test/ping", httputil.Handler(ping))
 	// http.Handle("/_test/addwork", httputil.Handler(addwork))
 }
 
@@ -22,6 +23,15 @@ func lease(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *h
 	}
 
 	fmt.Fprintf(w, "%+v\n%+v\n%v\n%v", b, r, bk, rk)
+	return
+}
+
+func ping(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *httputil.Error) {
+	if err := tracker.DefaultTracker.Ping(req, nil, nil); err != nil {
+		e = httputil.Errorf(err, "error sending ping")
+		return
+	}
+	fmt.Fprintf(w, "ping!")
 	return
 }
 

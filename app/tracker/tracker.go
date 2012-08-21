@@ -6,6 +6,7 @@ import (
 	gojson "code.google.com/p/gorilla/rpc/json"
 	"errors"
 	"github.com/zeebo/goci/app/httputil"
+	"github.com/zeebo/goci/app/pinger"
 	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/app/rpc/client"
 	"labix.org/v2/mgo"
@@ -34,7 +35,9 @@ func init() {
 }
 
 //Tracker is an rpc for announcing and managing the presence of services
-type Tracker struct{}
+type Tracker struct {
+	pinger.Pinger
+}
 
 //Set up a DefaultTracker so it can be called without an rpc layer
 var DefaultTracker = Tracker{}
