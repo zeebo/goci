@@ -81,7 +81,10 @@ func (b *Builder) Announce() (err error) {
 
 //Remove removes this Builder from the tracker.
 func (b *Builder) Remove() (err error) {
-	args := &rpc.RemoveArgs{Key: b.key}
+	args := &rpc.RemoveArgs{
+		Key:  b.key,
+		Kind: "Builder",
+	}
 	err = b.tcl.Call("Tracker.Remove", args, new(rpc.None))
 	return
 }
