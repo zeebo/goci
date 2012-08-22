@@ -1,171 +1,196 @@
-// +build !goci
-
 //package queue provides handlers for adding and dispatching work
 package queue
 
 import (
-	"appengine"
-	"appengine/datastore"
-	"appengine/taskqueue"
-	"appengine/urlfetch"
-	"httputil"
+	"fmt"
+	"github.com/zeebo/goci/app/httputil"
+	"github.com/zeebo/goci/app/rpc"
+	"github.com/zeebo/goci/app/rpc/client"
+	"github.com/zeebo/goci/app/tracker"
+	"labix.org/v2/mgo/bson"
+	"math/rand"
 	"net/http"
-	"net/url"
-	"rpc"
-	"rpc/client"
 	"time"
-	"tracker"
 )
 
 func init() {
-	//add our handlers including the rpc server
-	http.Handle("/workqueue/work", httputil.Handler(queueWork))
-	http.Handle("/workqueue/requeue", httputil.Handler(queueRequeue))
+	http.Handle("/queue/dispatch", httputil.Handler(dispatchWork))
 }
 
 //Distiller is a type that can be added into the queue. It distills into a work
-//item that can be sent to builders.
+//item that can be sent to builders. The second item is a string representation
+//of the raw data that is being distilled.
 type Distiller interface {
 	Distill() (rpc.Work, string)
 }
 
 //QueueWork takes a Distiller and adds it into the work queue.
-func QueueWork(ctx appengine.Context, d Distiller) (err error) {
+func QueueWork(ctx httputil.Context, d Distiller) (err error) {
 	//distill and create our work item
 	work, data := d.Distill()
+	wkey := bson.NewObjectId()
 	q := &Work{
+		ID:      wkey,
 		Work:    work,
 		Data:    data,
+		Status:  statusWaiting,
 		Created: time.Now(),
 	}
 
 	//store it in the datastore
-	key := datastore.NewIncompleteKey(ctx, "Work", nil)
-	if key, err = datastore.Put(ctx, key, q); err != nil {
+	if err = ctx.DB.C("Work").Insert(q); err != nil {
 		return
 	}
 
-	//add the key to the queue
-	if err = addQueue(ctx, httputil.ToString(key)); err != nil {
-		return
-	}
+	//send a request to dispatch the queue
+	go http.Get(httputil.Absolute("/queue/dispatch"))
 
 	return
 }
 
-//addQueue puts the key in the queue to be dispatched.
-func addQueue(ctx appengine.Context, key string) (err error) {
-	t := taskqueue.NewPOSTTask("/workqueue/work", url.Values{
-		"key": {key},
-	})
-	_, err = taskqueue.Add(ctx, t, "work")
-	return
-}
+var (
+	lockTime    = 30 * time.Second
+	attemptTime = 10 * time.Minute
+)
 
-//findTaskInfo fetches and deletes the task info with the given id, returning
-//if it was able to do so.
-func FindTaskInfo(ctx appengine.Context, id string) (found bool, err error) {
-	trans := func(c appengine.Context) (err error) {
-		info := new(TaskInfo)
-		key := httputil.FromString(id)
-		if err = datastore.Get(c, key, info); err != nil {
-			return
-		}
-		if err = datastore.Delete(c, key); err != nil {
-			return
-		}
-		found = true
-		return
-	}
-	if err = datastore.RunInTransaction(ctx, trans, nil); err != nil {
-		return
-	}
-	return
-}
-
-//queueRequeue is a cron job that requeues all the tasks that took more than
-//10 minutes to complete.
-func queueRequeue(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *httputil.Error) {
-	//search the datastore for expired TaskInfo and throw the key back into the queue
-	var vals []*TaskInfo
-	keys, err := datastore.NewQuery("TaskInfo").
-		Filter("Created < ", time.Now().Add(-10*time.Minute)).
-		GetAll(ctx, &vals)
-
-	if err != nil {
-		e = httputil.Errorf(err, "error getting keys to be purged")
-		return
-	}
-
-	//bail early if we have no values
-	if len(vals) == 0 {
-		return
-	}
-
-	//delete them
-	if err := datastore.DeleteMulti(ctx, keys); err != nil {
-		e = httputil.Errorf(err, "error deleting keys to be purged")
-	}
-
-	//throw the keys back into the queue
-	for _, info := range vals {
-		if err := addQueue(ctx, info.Key); err != nil {
-			e = httputil.Errorf(err, "error adding info to queue")
-			return
-		}
-	}
-
-	return
-}
-
-//queueWork is the handler that gets called for a queue item. It grabs a builder
+//dispatchWork is the handler that gets called for a queue item. It grabs a builder
 //and runner and dispatches the work item to them, recoding when that operation
 //started.
-func queueWork(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *httputil.Error) {
-	//grab the key of the work item
-	key := httputil.FromString(req.FormValue("key"))
+func dispatchWork(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *httputil.Error) {
+	//generate a unique id for this request
+	name := fmt.Sprint(rand.Int63())
 
-	//grab the work item
-	work := new(Work)
-	if err := datastore.Get(ctx, key, work); err != nil {
-		e = httputil.Errorf(err, "error grabbing work item")
+	//selector is a bson document corresponding to selecting unlocked work items
+	//that are either waiting, or processing and their most recent attempt is
+	//over attemptTime old.
+	selector := bson.M{
+		"$and": bson.M{
+			"lock.expires": bson.M{"$lt": time.Now()},
+			"$or": bson.D{
+				{"status", statusWaiting},
+				{"$and", bson.M{
+					"status":            statusProcessing,
+					"AttemptLog.0.When": bson.M{"$lt": time.Now().Add(-1 * attemptTime)},
+				}},
+			},
+		},
+	}
+	//update acquires the lock for the work item by setting it to now, leasing
+	//the work item to this function for lockTime.
+	update := bson.D{
+		{"$set", bson.M{
+			"lock.expires": time.Now().Add(lockTime),
+			"lock.who":     name,
+		}},
+	}
+
+	//run the query locking documents we're going to use
+	info, err := ctx.DB.C("Work").UpdateAll(selector, update)
+	if err != nil {
+		e = httputil.Errorf(err, "error grabbing work items from the queue")
 		return
 	}
 
+	//bail early if we locked no documents
+	if info.Updated == 0 {
+		ctx.Infof("Locked no Work items. Exiting")
+		return
+	}
+
+	//attempt to unlock all of the documents when the function exits
+	defer ctx.DB.C("Work").UpdateAll(
+		bson.M{"lock.who": name}, //selector
+		bson.M{"$set": bson.M{ //update 
+			"lock.expires": time.Time{},
+		}},
+	)
+
+	//loop over our locked documents and dispatch work to them
+	iter := ctx.DB.C("Work").Find(bson.M{"lock.who": name}).Iter()
+
+	var work Work
+	for iter.Next(&work) {
+		//if the status is waiting or the attemptlog is short enough dispatch
+		//it to a builder
+		if work.Status == statusWaiting || len(work.AttemptLog) < 5 {
+			if err := dispatchWorkItem(ctx, work); err != nil {
+				ctx.Infof("Error dispatching work item: %s", err)
+			}
+			continue
+		}
+
+		//we have a work item with too many attempts, so let's flag it completed
+		//and fire off an rpc call to store it as failed.
+		ctx.Infof("Work item %s had too many attempts", work.ID)
+		resp := &rpc.DispatchResponse{
+			Key:   work.ID.Hex(),
+			Error: "Unable to complete Work item after 5 attempts",
+		}
+		cl := client.New(httputil.Absolute("/response"), http.DefaultClient, client.JsonCodec)
+		if err := cl.Call("Response.DispatchError", resp, new(rpc.None)); err != nil {
+			ctx.Infof("Couldn't store a dispatch error for work item %s: %s", work.ID, err)
+			continue
+		}
+
+		//now flag the work item as completed in the queue
+		if err := ctx.DB.C("Work").Update(bson.M{"_id": work.ID}, bson.M{
+			"$set": bson.M{"status": statusCompleted},
+		}); err != nil {
+			ctx.Infof("Error setting status after dispatching error for work item %s: %s", work.ID, err)
+		}
+	}
+	if err = iter.Err(); err != nil {
+		ctx.Errorf("Error iterating over work items: %s", err)
+		e = httputil.Errorf(err, "Error iterating over work items")
+		return
+	}
+
+	return
+}
+
+func dispatchWorkItem(ctx httputil.Context, work Work) (err error) {
 	//lease a builder and runner
 	_, _, builder, runner, err := tracker.LeasePair(ctx)
 	if err != nil {
-		e = httputil.Errorf(err, "error leasing a pair of workers")
 		return
 	}
 
-	//build the task info
-	id := datastore.NewIncompleteKey(ctx, "TaskInfo", key)
-	info := &TaskInfo{
-		Key:     httputil.ToString(key),
-		Created: time.Now(),
-	}
-	if id, err = datastore.Put(ctx, id, info); err != nil {
-		e = httputil.Errorf(err, "error storing TaskInfo tracker")
-		return
+	//create an attempt
+	a := Attempt{
+		When:    time.Now(),
+		Builder: builder.URL,
+		Runner:  runner.URL,
+		ID:      bson.NewObjectId(),
 	}
 
 	//build the task
 	task := &rpc.BuilderTask{
 		Work:     work.Work,
 		Runner:   runner.URL,
-		Response: "http://zeeb.us.to:8081/rpc/response",
-		Key:      httputil.ToString(key),
-		ID:       httputil.ToString(id),
+		Response: httputil.Absolute("/response"),
+		Key:      work.ID.Hex(),
+		ID:       a.ID.Hex(),
 	}
 
+	//be sure to send off the task first because even if we fail to store the
+	//attempt in the database, we'll just do some extra work. If we stored and
+	//send the task first, we could have an attempt that had no action, which
+	//is worse.
+
 	//send the task off to the builder queue
-	cl := client.New(builder.URL, urlfetch.Client(ctx), client.JsonCodec)
+	cl := client.New(builder.URL, http.DefaultClient, client.JsonCodec)
 	err = cl.Call("BuilderQueue.Push", task, new(rpc.None))
 	if err != nil {
-		e = httputil.Errorf(err, "error pushing task into queue")
 		return
 	}
 
+	//push the new attempt at the start of the array
+	log := append([]Attempt{a}, work.AttemptLog...)
+
+	//store the attempt on the document
+	err = ctx.DB.C("Work").Update(bson.M{"_id": work.ID}, bson.D{
+		{"$set", bson.M{"status": statusProcessing}},
+		{"$set", bson.M{"AttemptLog": log}},
+	})
 	return
 }

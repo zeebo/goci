@@ -120,6 +120,14 @@ type BuilderResponse struct {
 	RevDate  time.Time //the time the revision was commit (if known)
 }
 
+//DispatchResponse is the response from the dispatcher to the response handler
+//saying that it is unable to get a successful response from the work item and
+//it has failed too many times.
+type DispatchResponse struct {
+	Key   string //the key of the work item
+	Error string //the error in the dispatch
+}
+
 //Output is a type that wraps the output of a build, be it the actual output or
 //the error produced.
 type Output struct {

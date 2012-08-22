@@ -8,19 +8,22 @@ import (
 	"net/http"
 )
 
-var baseDb *mgo.Database
+var Config struct {
+	DB     *mgo.Database
+	Domain string
+}
 
-func Init(db *mgo.Database) {
-	baseDb = db
+func Absolute(req string) string {
+	return fmt.Sprintf("http://%s%s", Config.Domain, req)
 }
 
 func NewContext(req *http.Request) Context {
-	if baseDb == nil {
-		panic("httputil.Init not called before creating contexts")
+	if Config.DB == nil {
+		panic("Set httputil.Config.DB before creating contexts")
 	}
 
 	return Context{
-		DB: baseDb.Session.Clone().DB(baseDb.Name),
+		DB: Config.DB.Session.Clone().DB(Config.DB.Name),
 	}
 }
 

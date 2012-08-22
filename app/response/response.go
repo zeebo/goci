@@ -173,3 +173,38 @@ func (Response) Error(req *http.Request, args *rpc.BuilderResponse, resp *rpc.No
 	//we did it!
 	return
 }
+
+//DispatchError is called when there were too many errors attempting to dispatch
+//the work item and the dispatcher gave up trying to send it out. This could
+//happen if there is a misbehabving builder or runner, or if the test takes
+//too long to run and the response window closes.
+func (Response) DispatchError(req *http.Request, args *rpc.DispatchResponse, resp *rpc.None) (err error) {
+	//wrap our error on the way out
+	defer rpc.Wrap(&err)
+
+	//create the context
+	ctx := httputil.NewContext(req)
+	ctx.Infof("Storing a dispatch error")
+	ctx.Infof("%+v", args)
+
+	//get the key of the work item
+	key := bson.ObjectIdHex(args.Key)
+
+	//create a WorkResult
+	w := &WorkResult{
+		ID:      bson.NewObjectId(),
+		WorkID:  key,
+		Success: false,
+		When:    time.Now(),
+		Error:   []byte(args.Error),
+	}
+
+	//store it
+	if err = ctx.DB.C("WorkResult").Insert(w); err != nil {
+		ctx.Errorf("Error storing WorkResult: %v", err)
+		return
+	}
+
+	//we did it!
+	return
+}
