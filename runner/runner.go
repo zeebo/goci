@@ -6,7 +6,7 @@ import (
 	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/app/rpc/client"
 	"github.com/zeebo/goci/environ"
-	hrpc "github.com/zeebo/goci/heroku/rpc"
+	"github.com/zeebo/goci/runner/web"
 	"github.com/zeebo/goci/tarball"
 	"io"
 	"log"
@@ -36,8 +36,8 @@ type responder struct {
 }
 
 //createResponse creates a TestResponse with the given error and output strings
-func (r *responder) createResponse(output string, typ rpc.OutputType) *hrpc.TestResponse {
-	return &hrpc.TestResponse{
+func (r *responder) createResponse(output string, typ rpc.OutputType) *web.TestResponse {
+	return &web.TestResponse{
 		ID: r.id,
 		Output: rpc.Output{
 			ImportPath: r.test.ImportPath,
@@ -49,7 +49,7 @@ func (r *responder) createResponse(output string, typ rpc.OutputType) *hrpc.Test
 }
 
 //post sends the TestResponse to the TestManager
-func (r *responder) post(args *hrpc.TestResponse) {
+func (r *responder) post(args *web.TestResponse) {
 	cl := client.New(r.url, http.DefaultClient, client.JsonCodec)
 	log.Printf("Posting response[%s]: %+v", r.url, args)
 	cl.Call("Runner.Post", args, new(rpc.None))
@@ -70,7 +70,7 @@ func (r *responder) success(e interface{}) {
 //loadTest loads the test field of the responder, returning any errors.
 func (r *responder) loadTest() (err error) {
 	cl := client.New(r.url, http.DefaultClient, client.JsonCodec)
-	args := &hrpc.TestRequest{
+	args := &web.TestRequest{
 		ID:    r.id,
 		Index: r.index,
 	}
