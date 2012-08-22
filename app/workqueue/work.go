@@ -35,7 +35,7 @@ type lock struct {
 
 //define some string constants for statuses
 const (
-	statusWaiting    = "waiting"
-	statusProcessing = "processing"
-	statusCompleted  = "completed"
+	StatusWaiting    = "waiting"
+	StatusProcessing = "processing"
+	StatusCompleted  = "completed"
 )

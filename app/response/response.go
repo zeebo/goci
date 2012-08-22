@@ -6,10 +6,10 @@ import (
 	gojson "code.google.com/p/gorilla/rpc/json"
 	"fmt"
 	"github.com/zeebo/goci/app/httputil"
-	"net/http"
-	// "queue"
 	"github.com/zeebo/goci/app/rpc"
+	"github.com/zeebo/goci/app/workqueue"
 	"labix.org/v2/mgo/bson"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -35,9 +35,22 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 
 	//create our context
 	ctx := httputil.NewContext(req)
+	defer ctx.Close()
 
-	//TODO(zeebo): search for the TaskInfo from the queue
 	//TODO(zeebo): put this in a transaction to skip partial test results
+
+	//update the work item for this response
+	selector := bson.M{
+		"status":          workqueue.StatusProcessing,
+		"attemptlog.0.id": bson.ObjectIdHex(args.ID),
+	}
+	update := bson.M{
+		"$set": bson.M{"status": workqueue.StatusCompleted},
+	}
+	err = ctx.DB.C("Work").Update(selector, update)
+	if err != nil {
+		return
+	}
 
 	//get the key of the work item
 	key := bson.ObjectIdHex(args.Key)
@@ -88,7 +101,7 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 			Revision:     args.Revision,
 			RevDate:      args.RevDate,
 			When:         time.Now(),
-			Output:       []byte(out.Output),
+			Output:       out.Output,
 			Status:       status,
 		}
 
@@ -109,8 +122,22 @@ func (Response) Error(req *http.Request, args *rpc.BuilderResponse, resp *rpc.No
 
 	//create the context
 	ctx := httputil.NewContext(req)
+	defer ctx.Close()
 
-	//TODO(zeebo): search for the task info from the queue
+	//TODO(zeebo): perform all this in a transaction so we dont get partial save
+
+	//update the work item for this response
+	selector := bson.M{
+		"status":          workqueue.StatusProcessing,
+		"attemptlog.0.id": bson.ObjectIdHex(args.ID),
+	}
+	update := bson.M{
+		"$set": bson.M{"status": workqueue.StatusCompleted},
+	}
+	err = ctx.DB.C("Work").Update(selector, update)
+	if err != nil {
+		return
+	}
 
 	//get the key of the work item
 	key := bson.ObjectIdHex(args.Key)
@@ -123,7 +150,7 @@ func (Response) Error(req *http.Request, args *rpc.BuilderResponse, resp *rpc.No
 		When:     time.Now(),
 		Revision: args.Revision,
 		RevDate:  args.RevDate,
-		Error:    []byte(args.Error),
+		Error:    args.Error,
 	}
 
 	//store it
@@ -146,6 +173,7 @@ func (Response) DispatchError(req *http.Request, args *rpc.DispatchResponse, res
 
 	//create the context
 	ctx := httputil.NewContext(req)
+	defer ctx.Close()
 
 	//get the key of the work item
 	key := bson.ObjectIdHex(args.Key)
@@ -156,7 +184,7 @@ func (Response) DispatchError(req *http.Request, args *rpc.DispatchResponse, res
 		WorkID:  key,
 		Success: false,
 		When:    time.Now(),
-		Error:   []byte(args.Error),
+		Error:   args.Error,
 	}
 
 	//store it

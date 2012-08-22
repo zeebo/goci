@@ -34,7 +34,7 @@ func QueueWork(ctx httputil.Context, d Distiller) (err error) {
 		ID:      wkey,
 		Work:    work,
 		Data:    data,
-		Status:  statusWaiting,
+		Status:  StatusWaiting,
 		Created: time.Now(),
 	}
 
@@ -70,9 +70,9 @@ func dispatchWork(w http.ResponseWriter, req *http.Request, ctx httputil.Context
 		"$and": L{
 			bson.M{"lock.expires": bson.M{"$lt": time.Now()}},
 			bson.M{"$or": L{
-				bson.M{"status": statusWaiting},
+				bson.M{"status": StatusWaiting},
 				bson.M{"$and": L{
-					bson.M{"status": statusProcessing},
+					bson.M{"status": StatusProcessing},
 					bson.M{"attemptlog.0.when": bson.M{"$lt": time.Now().Add(-1 * attemptTime)}},
 				}},
 			}},
@@ -115,7 +115,7 @@ func dispatchWork(w http.ResponseWriter, req *http.Request, ctx httputil.Context
 	for iter.Next(&work) {
 		//if the status is waiting or the attemptlog is short enough dispatch
 		//it to a builder
-		if work.Status == statusWaiting || len(work.AttemptLog) < maxAttempts {
+		if work.Status == StatusWaiting || len(work.AttemptLog) < maxAttempts {
 			if err := dispatchWorkItem(ctx, work); err != nil {
 				ctx.Infof("Error dispatching work item: %s", err)
 			}
@@ -137,7 +137,7 @@ func dispatchWork(w http.ResponseWriter, req *http.Request, ctx httputil.Context
 
 		//now flag the work item as completed in the queue
 		err := ctx.DB.C("Work").Update(bson.M{"_id": work.ID}, bson.M{
-			"$set": bson.M{"status": statusCompleted},
+			"$set": bson.M{"status": StatusCompleted},
 		})
 
 		//log if we had an error marking it as completed, but this isn't fatal
@@ -199,7 +199,7 @@ func dispatchWorkItem(ctx httputil.Context, work Work) (err error) {
 
 	//store the attempt on the document
 	err = ctx.DB.C("Work").Update(bson.M{"_id": work.ID}, bson.D{
-		{"$set", bson.M{"status": statusProcessing}},
+		{"$set", bson.M{"status": StatusProcessing}},
 		{"$set", bson.M{"attemptlog": log}},
 	})
 	return

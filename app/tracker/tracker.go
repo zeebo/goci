@@ -33,12 +33,12 @@ func init() {
 	http.Handle("/rpc/tracker", s)
 }
 
-//Tracker is an rpc for announcing and managing the presence of services
+//Tracker is an rpc for announcing and managing the presence of services.
 type Tracker struct {
 	pinger.Pinger
 }
 
-//Set up a DefaultTracker so it can be called without an rpc layer
+//Set up a DefaultTracker so it can be called without an rpc layer.
 var DefaultTracker = Tracker{}
 
 //verify makes sure that the arguments are all specified correctly and returns
@@ -57,6 +57,7 @@ func verify(args *rpc.AnnounceArgs) (err error) {
 	return
 }
 
+//isEntity verifies the kind to be a type of worker process.
 func isEntity(kind string) bool {
 	switch kind {
 	case "Builder", "Runner":
@@ -65,7 +66,7 @@ func isEntity(kind string) bool {
 	return false
 }
 
-//Announce adds the given service into the tracker pool
+//Announce adds the given service into the tracker pool.
 func (Tracker) Announce(req *http.Request, args *rpc.AnnounceArgs, rep *rpc.AnnounceReply) (err error) {
 	//wrap our error on the way out
 	defer rpc.Wrap(&err)
@@ -75,6 +76,7 @@ func (Tracker) Announce(req *http.Request, args *rpc.AnnounceArgs, rep *rpc.Anno
 	}
 
 	ctx := httputil.NewContext(req)
+	defer ctx.Close()
 	ctx.Infof("Got announce request from %s: %+v", req.RemoteAddr, args)
 
 	//ping them to make sure we can make valid rpc calls
@@ -134,6 +136,7 @@ func (Tracker) Remove(req *http.Request, args *rpc.RemoveArgs, rep *rpc.None) (e
 
 	//create our context
 	ctx := httputil.NewContext(req)
+	defer ctx.Close()
 	ctx.Infof("Got a remove request from %s: %+v", req.RemoteAddr, args)
 
 	//get the key from the argument

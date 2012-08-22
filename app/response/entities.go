@@ -15,7 +15,7 @@ type TestResult struct {
 	Revision   string    //revision of the source code
 	RevDate    time.Time //when the revision was commit
 	When       time.Time //when the test result was recorded
-	Output     []byte    //the output of the test
+	Output     string    //the output of the test
 	Status     string    //the status of the build: (Pass/Fail/WontBuild/Error)
 }
 
@@ -30,5 +30,5 @@ type WorkResult struct {
 	Revision string    //the revision of the build (if known)
 	RevDate  time.Time //when the revision was commit (if known)
 	When     time.Time //the time the work response was recorded
-	Error    []byte    //a general error before any code could be built
+	Error    string    //a general error before any code could be built
 }

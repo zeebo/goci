@@ -42,7 +42,7 @@ type Context struct {
 }
 
 //close closes the context, cleaning up any resources it acquired.
-func (c *Context) close() {
+func (c *Context) Close() {
 	c.DB.Session.Close()
 }
 
@@ -73,7 +73,7 @@ type Handler func(http.ResponseWriter, *http.Request, Context) *Error
 //and handles errors returned from a handler.
 func (fn Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c := NewContext(r)
-	defer c.close()
+	defer c.Close()
 
 	//run the handler
 	if e := fn(w, r, c); e != nil {
