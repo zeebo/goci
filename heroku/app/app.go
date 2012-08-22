@@ -1,8 +1,10 @@
 package main
 
 import (
+	"flag"
 	"github.com/zeebo/goci/builder"
 	buweb "github.com/zeebo/goci/builder/web"
+	"github.com/zeebo/goci/environ/loader"
 	ruweb "github.com/zeebo/goci/runner/web"
 	"io/ioutil"
 	"log"
@@ -22,7 +24,25 @@ func env(key, def string) (r string) {
 	return
 }
 
+//config stores the variables parsed by the flag package
+var config struct {
+	env string
+}
+
+//parse flags into our config var
+func init() {
+	flag.StringVar(&config.env, "env", "", "path to environment file")
+	flag.Parse()
+}
+
 func main() {
+	//load up the environment if its specified
+	if config.env != "" {
+		if err := loader.Load(config.env); err != nil {
+			panic(err)
+		}
+	}
+
 	ru := ruweb.New(
 		env("APP_NAME", "goci"),
 		env("API_KEY", "foo"),
