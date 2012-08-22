@@ -38,8 +38,8 @@ func Load(filename string) (err error) {
 			return fmt.Errorf("Invalid line: %q", line)
 		}
 
-		//set the environment variable
-		os.Setenv(line[:pos], line[pos+1:])
+		//set the environment variable stripping the newline character
+		os.Setenv(line[:pos], line[pos+1:len(line)-1])
 	}
 
 	return

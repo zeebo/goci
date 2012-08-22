@@ -75,7 +75,7 @@ func (Tracker) Announce(req *http.Request, args *rpc.AnnounceArgs, rep *rpc.Anno
 	}
 
 	ctx := httputil.NewContext(req)
-	ctx.Infof("Got announce request from %s", req.RemoteAddr)
+	ctx.Infof("Got announce request from %s: %+v", req.RemoteAddr, args)
 
 	//ping them to make sure we can make valid rpc calls
 	cl := client.New(args.URL, http.DefaultClient, client.JsonCodec)
@@ -116,7 +116,6 @@ func (Tracker) Announce(req *http.Request, args *rpc.AnnounceArgs, rep *rpc.Anno
 	}
 
 	//TODO(zeebo): check if we have the URL already and grab that key to update
-	//TODO(zeebo): convert to mgo
 
 	//save the service in the database
 	if err = ctx.DB.C(args.Type).Insert(e); err != nil {
@@ -135,7 +134,7 @@ func (Tracker) Remove(req *http.Request, args *rpc.RemoveArgs, rep *rpc.None) (e
 
 	//create our context
 	ctx := httputil.NewContext(req)
-	ctx.Infof("Got a remove request from %s", req.RemoteAddr)
+	ctx.Infof("Got a remove request from %s: %+v", req.RemoteAddr, args)
 
 	//get the key from the argument
 	key := bson.ObjectIdHex(args.Key)
