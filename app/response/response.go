@@ -1,5 +1,3 @@
-// +build !goci
-
 //package response provides handlers for storing responses
 package response
 
