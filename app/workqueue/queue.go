@@ -1,5 +1,5 @@
-//package queue provides handlers for adding and dispatching work
-package queue
+//package workqueue provides handlers for adding and dispatching work
+package workqueue
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"github.com/zeebo/goci/app/rpc/client"
 	"github.com/zeebo/goci/app/tracker"
 	"labix.org/v2/mgo/bson"
+	"log"
 	"math/rand"
 	"net/http"
 	"time"
@@ -64,16 +65,17 @@ func dispatchWork(w http.ResponseWriter, req *http.Request, ctx httputil.Context
 	//selector is a bson document corresponding to selecting unlocked work items
 	//that are either waiting, or processing and their most recent attempt is
 	//over attemptTime old.
+	type L []interface{}
 	selector := bson.M{
-		"$and": bson.M{
-			"lock.expires": bson.M{"$lt": time.Now()},
-			"$or": bson.D{
-				{"status", statusWaiting},
-				{"$and", bson.M{
-					"status":            statusProcessing,
-					"AttemptLog.0.When": bson.M{"$lt": time.Now().Add(-1 * attemptTime)},
+		"$and": L{
+			bson.M{"lock.expires": bson.M{"$lt": time.Now()}},
+			bson.M{"$or": L{
+				bson.M{"status": statusWaiting},
+				bson.M{"$and": L{
+					bson.M{"status": statusProcessing},
+					bson.M{"attemptlog.0.when": bson.M{"$lt": time.Now().Add(-1 * attemptTime)}},
 				}},
-			},
+			}},
 		},
 	}
 	//update acquires the lock for the work item by setting it to now, leasing
@@ -156,10 +158,12 @@ func dispatchWork(w http.ResponseWriter, req *http.Request, ctx httputil.Context
 
 func dispatchWorkItem(ctx httputil.Context, work Work) (err error) {
 	//lease a builder and runner
-	_, _, builder, runner, err := tracker.LeasePair(ctx)
+	builder, runner, err := tracker.LeasePair(ctx)
 	if err != nil {
 		return
 	}
+
+	log.Printf("Got:\nBuilder: %+v\nRunner: %+v", builder, runner)
 
 	//create an attempt
 	a := Attempt{
@@ -196,7 +200,7 @@ func dispatchWorkItem(ctx httputil.Context, work Work) (err error) {
 	//store the attempt on the document
 	err = ctx.DB.C("Work").Update(bson.M{"_id": work.ID}, bson.D{
 		{"$set", bson.M{"status": statusProcessing}},
-		{"$set", bson.M{"AttemptLog": log}},
+		{"$set", bson.M{"attemptlog": log}},
 	})
 	return
 }
