@@ -51,6 +51,7 @@ func QueueWork(ctx httputil.Context, d Distiller) (err error) {
 var (
 	lockTime    = 30 * time.Second
 	attemptTime = 10 * time.Minute
+	maxAttempts = 5
 )
 
 //dispatchWork is the handler that gets called for a queue item. It grabs a builder
@@ -112,7 +113,7 @@ func dispatchWork(w http.ResponseWriter, req *http.Request, ctx httputil.Context
 	for iter.Next(&work) {
 		//if the status is waiting or the attemptlog is short enough dispatch
 		//it to a builder
-		if work.Status == statusWaiting || len(work.AttemptLog) < 5 {
+		if work.Status == statusWaiting || len(work.AttemptLog) < maxAttempts {
 			if err := dispatchWorkItem(ctx, work); err != nil {
 				ctx.Infof("Error dispatching work item: %s", err)
 			}
@@ -133,12 +134,17 @@ func dispatchWork(w http.ResponseWriter, req *http.Request, ctx httputil.Context
 		}
 
 		//now flag the work item as completed in the queue
-		if err := ctx.DB.C("Work").Update(bson.M{"_id": work.ID}, bson.M{
+		err := ctx.DB.C("Work").Update(bson.M{"_id": work.ID}, bson.M{
 			"$set": bson.M{"status": statusCompleted},
-		}); err != nil {
+		})
+
+		//log if we had an error marking it as completed, but this isn't fatal
+		if err != nil {
 			ctx.Infof("Error setting status after dispatching error for work item %s: %s", work.ID, err)
 		}
 	}
+
+	//check for errors running the iteration
 	if err = iter.Err(); err != nil {
 		ctx.Errorf("Error iterating over work items: %s", err)
 		e = httputil.Errorf(err, "Error iterating over work items")
