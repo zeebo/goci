@@ -1,4 +1,0 @@
-cron:
-- description: requeue things
-  url: /workqueue/requeue
-  schedule: every 1 minutes

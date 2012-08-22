@@ -13,7 +13,6 @@ import (
 	"labix.org/v2/mgo/bson"
 	"math/rand"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 )

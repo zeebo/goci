@@ -26,7 +26,7 @@ func lease(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *h
 	return
 }
 
-func ping(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *httputil.Error) {
+func ping(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *httputil.Error) {
 	if err := tracker.DefaultTracker.Ping(req, nil, nil); err != nil {
 		e = httputil.Errorf(err, "error sending ping")
 		return

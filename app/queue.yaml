@@ -1,5 +1,0 @@
-# list of queues
-
-queue:
-- name: work
-  rate: 1/s
