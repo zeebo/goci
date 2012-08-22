@@ -6,6 +6,7 @@ import (
 	"github.com/zeebo/goci/builder"
 	buweb "github.com/zeebo/goci/builder/web"
 	"github.com/zeebo/goci/environ/loader"
+	rudirect "github.com/zeebo/goci/runner/direct"
 	ruweb "github.com/zeebo/goci/runner/web"
 	"io/ioutil"
 	"labix.org/v2/mgo"
@@ -85,7 +86,18 @@ func main() {
 	} else { //we're running things directly
 		GOOS, GOARCH = env("GOOS", runtime.GOOS), env("GOARCH", runtime.GOARCH)
 
-		//TODO(zeebo): create a direct runner
+		ru := rudirect.New(
+			env("RUNPATH", "runner"),
+			env("TRACKER", "http://goci.me/rpc/tracker"),
+			env("RUNHOSTED", "http://worker.goci.me/runner/"),
+		)
+		http.Handle("/runner/", http.StripPrefix("/runner", ru))
+
+		//announce the runner
+		if err := ru.Announce(); err != nil {
+			panic(err)
+		}
+		defer ru.Remove()
 	}
 
 	//check if we can build things

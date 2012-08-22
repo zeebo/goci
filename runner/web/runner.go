@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+//Runner is an rpc service that runs tests on the heroku dyno grid.
 type Runner struct {
 	app, api string
 	tcl      *client.Client
@@ -23,6 +24,8 @@ type Runner struct {
 	key string
 }
 
+//New returns a new Runner ready to be Announced and run tests on the
+//heroku dyno grid.
 func New(app, api string, tracker, hosted string) *Runner {
 	n := &Runner{
 		app:  app,
@@ -75,7 +78,7 @@ func (r *Runner) Announce() (err error) {
 	return
 }
 
-//Remove removes this Builder from the tracker.
+//Remove removes this Runner from the tracker.
 func (r *Runner) Remove() (err error) {
 	args := &rpc.RemoveArgs{
 		Key:  r.key,
@@ -85,7 +88,7 @@ func (r *Runner) Remove() (err error) {
 	return
 }
 
-//ServeHTTP allows the builder to be hosted like any other http.Handler.
+//ServeHTTP allows the runner to be hosted like any other http.Handler.
 func (r *Runner) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.rpc.ServeHTTP(w, req)
 }

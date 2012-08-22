@@ -145,3 +145,15 @@ const (
 	OutputWontBuild OutputType = "WontBuild"
 	OutputError     OutputType = "Error"
 )
+
+//TestResponse is the args type for the Post method on a Runner.
+type TestResponse struct {
+	ID     string //the ID for the test
+	Output Output //the output of the test
+}
+
+//TestRequest is the args type for the Request methdo on the Runner.
+type TestRequest struct {
+	ID    string //the ID of the test
+	Index int    //the index of the test to be run
+}
