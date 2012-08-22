@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
+	"log"
 	"net/http"
 )
 
@@ -48,6 +49,7 @@ func (c *Context) close() {
 //logf pushes the log message into the capped collection with the given format
 //and severity.
 func (c *Context) logf(severity, format string, items ...interface{}) {
+	log.Printf("%s: %s", severity, fmt.Sprintf(format, items...))
 	c.DB.C("logs").Insert(bson.M{
 		"severity": severity,
 		"text":     fmt.Sprintf(format, items...),

@@ -12,7 +12,7 @@ import (
 func init() {
 	http.Handle("/_test/lease", httputil.Handler(lease))
 	http.Handle("/_test/ping", httputil.Handler(ping))
-	// http.Handle("/_test/addwork", httputil.Handler(addwork))
+	http.Handle("/_test/addwork", httputil.Handler(addwork))
 }
 
 func lease(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *httputil.Error) {
