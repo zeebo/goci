@@ -3,9 +3,9 @@ package test
 import (
 	"fmt"
 	"github.com/zeebo/goci/app/httputil"
-	// "github.com/zeebo/goci/app/queue"
-	// "github.com/zeebo/goci/app/rpc"
+	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/app/tracker"
+	"github.com/zeebo/goci/app/workqueue"
 	"net/http"
 )
 
@@ -16,13 +16,13 @@ func init() {
 }
 
 func lease(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *httputil.Error) {
-	bk, rk, b, r, err := tracker.LeasePair(ctx)
+	b, r, err := tracker.LeasePair(ctx)
 	if err != nil {
 		e = httputil.Errorf(err, "error leasing pair")
 		return
 	}
 
-	fmt.Fprintf(w, "%+v\n%+v\n%v\n%v", b, r, bk, rk)
+	fmt.Fprintf(w, "%+v\n%+v\n", b, r)
 	return
 }
 
@@ -35,24 +35,24 @@ func ping(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *ht
 	return
 }
 
-// func addwork(w http.ResponseWriter, req *http.Request, ctx appengine.Context) (e *httputil.Error) {
-// 	//create our little work item
-// 	q := rpc.Work{
-// 		Revision:   "e9dd26552f10d390b5f9f59c6a9cfdc30ed1431c",
-// 		ImportPath: "github.com/zeebo/irc",
-// 	}
+func addwork(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *httputil.Error) {
+	//create our little work item
+	q := rpc.Work{
+		Revision:   "e9dd26552f10d390b5f9f59c6a9cfdc30ed1431c",
+		ImportPath: "github.com/zeebo/irc",
+	}
 
-// 	q = rpc.Work{
-// 		Revision:    "7e283bf6dbf4c97a00647f873faa0b513ad59fbf",
-// 		ImportPath:  "github.com/zeebo/goci",
-// 		Subpackages: true,
-// 	}
+	q = rpc.Work{
+		Revision:    "7e283bf6dbf4c97a00647f873faa0b513ad59fbf",
+		ImportPath:  "github.com/zeebo/goci",
+		Subpackages: true,
+	}
 
-// 	//add it to the queue
-// 	if err := queue.QueueWork(ctx, q); err != nil {
-// 		e = httputil.Errorf(err, "error adding work item to queue")
-// 		return
-// 	}
+	//add it to the queue
+	if err := workqueue.QueueWork(ctx, q); err != nil {
+		e = httputil.Errorf(err, "error adding work item to queue")
+		return
+	}
 
-// 	return
-// }
+	return
+}

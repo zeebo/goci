@@ -185,18 +185,18 @@ func baseQuery(db *mgo.Database, GOOS, GOARCH, Type string, Seed int64) (q *mgo.
 	filters := bson.M{}
 	//filter on GOOS and GOARCH if they are set
 	if GOOS != "" {
-		filters["GOOS"] = GOOS
+		filters["goos"] = GOOS
 	}
 	if GOARCH != "" {
-		filters["GOARCH"] = GOARCH
+		filters["goarch"] = GOARCH
 	}
 	//if we have a Seed value make sure we get one greater than it
 	if Seed > 0 {
-		filters["Seed"] = bson.M{"$gt": Seed}
+		filters["seed"] = bson.M{"$gt": Seed}
 	}
 
 	//set up the base query
-	q = db.C(Type).Find(filters).Limit(1).Sort("seed").Select(bson.M{"_id": 1})
+	q = db.C(Type).Find(filters).Limit(1).Sort("seed")
 
 	return
 }
@@ -237,14 +237,14 @@ func (s *seeds) set(GOOS, GOARCH, Type string, v int64) {
 //getService is a helper function that abstracts the logic of grabbing a service
 //with a key greater than the one given, and looping back to zero if one wasn't
 //found.
-func getService(ctx httputil.Context, GOOS, GOARCH, Type string, s interface{}) (key bson.ObjectId, err error) {
+func getService(ctx httputil.Context, GOOS, GOARCH, Type string, s interface{}) (err error) {
 	//grab the most recent run key
 	seed := lastSeeds.get(GOOS, GOARCH, Type)
 again:
 	ctx.Infof("Finding a %v/%v/%v [%d]", Type, GOOS, GOARCH, seed)
 	//run the query
 	query := baseQuery(ctx.DB, GOOS, GOARCH, Type, seed)
-	err = query.One(&key)
+	err = query.One(s)
 
 	//if we didn't find a match
 	if err == mgo.ErrNotFound {
@@ -264,25 +264,25 @@ again:
 
 //getRunner grabs a runner from the set of runners matching the given criteria
 //in a fashion that attempts to distribute the workload.
-func getRunner(ctx httputil.Context, GOOS, GOARCH string) (key bson.ObjectId, r *Runner, err error) {
+func getRunner(ctx httputil.Context, GOOS, GOARCH string) (r *Runner, err error) {
 	r = new(Runner)
-	key, err = getService(ctx, GOOS, GOARCH, "Runner", r)
+	err = getService(ctx, GOOS, GOARCH, "Runner", r)
 	return
 }
 
 //getBuilder grabs a builder from the set of runners matching the given criteria
 //in a fashion that attempts to distribute the workload.
-func getBuilder(ctx httputil.Context, GOOS, GOARCH string) (key bson.ObjectId, b *Builder, err error) {
+func getBuilder(ctx httputil.Context, GOOS, GOARCH string) (b *Builder, err error) {
 	b = new(Builder)
-	key, err = getService(ctx, GOOS, GOARCH, "Builder", b)
+	err = getService(ctx, GOOS, GOARCH, "Builder", b)
 	return
 }
 
 //LeasePair returns a pair of Builder and Runners that can be used to run tests.
 //It doesn't let you specify the type of runner you want.
-func LeasePair(ctx httputil.Context) (builder, runner bson.ObjectId, b *Builder, r *Runner, err error) {
+func LeasePair(ctx httputil.Context) (b *Builder, r *Runner, err error) {
 	//grab a runner
-	runner, r, err = getRunner(ctx, "", "")
+	r, err = getRunner(ctx, "", "")
 	if err != nil {
 		ctx.Infof("couldn't lease runner")
 		return
@@ -292,7 +292,7 @@ func LeasePair(ctx httputil.Context) (builder, runner bson.ObjectId, b *Builder,
 	lastSeeds.set("", "", "Runner", r.Seed)
 
 	//grab a builder than can make a build for this runner
-	builder, b, err = getBuilder(ctx, r.GOOS, r.GOARCH)
+	b, err = getBuilder(ctx, r.GOOS, r.GOARCH)
 	if err != nil {
 		ctx.Infof("couldn't lease builder")
 		return
