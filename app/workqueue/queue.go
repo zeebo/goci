@@ -127,7 +127,7 @@ func dispatchWork(w http.ResponseWriter, req *http.Request, ctx httputil.Context
 			Key:   work.ID.Hex(),
 			Error: "Unable to complete Work item after 5 attempts",
 		}
-		cl := client.New(httputil.Absolute("/response"), http.DefaultClient, client.JsonCodec)
+		cl := client.New(httputil.Absolute("/rpc/response"), http.DefaultClient, client.JsonCodec)
 		if err := cl.Call("Response.DispatchError", resp, new(rpc.None)); err != nil {
 			ctx.Infof("Couldn't store a dispatch error for work item %s: %s", work.ID, err)
 			continue
@@ -173,7 +173,7 @@ func dispatchWorkItem(ctx httputil.Context, work Work) (err error) {
 	task := &rpc.BuilderTask{
 		Work:     work.Work,
 		Runner:   runner.URL,
-		Response: httputil.Absolute("/response"),
+		Response: httputil.Absolute("/rpc/response"),
 		Key:      work.ID.Hex(),
 		ID:       a.ID.Hex(),
 	}

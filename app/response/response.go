@@ -37,26 +37,8 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 
 	//create our context
 	ctx := httputil.NewContext(req)
-	ctx.Infof("Storing runner result")
-	ctx.Infof("%+v", args)
 
 	//TODO(zeebo): search for the TaskInfo from the queue
-	/*
-		//make sure the TaskInfo for this request still exists, and if so, remove it
-		found, err := queue.FindTaskInfo(ctx, args.ID)
-
-		if err != nil {
-			ctx.Errorf("error finding task info: %v", err)
-			return
-		}
-
-		//if we didn't find our TaskInfo, just bail
-		if !found {
-			ctx.Errorf("Got a late response")
-			return
-		}
-	*/
-
 	//TODO(zeebo): put this in a transaction to skip partial test results
 
 	//get the key of the work item
@@ -129,26 +111,8 @@ func (Response) Error(req *http.Request, args *rpc.BuilderResponse, resp *rpc.No
 
 	//create the context
 	ctx := httputil.NewContext(req)
-	ctx.Infof("Storing a builder error")
-	ctx.Infof("%+v", args)
 
 	//TODO(zeebo): search for the task info from the queue
-	/*
-		//make sure the TaskInfo for this request still exists, and if so, remove it
-		found, err := queue.FindTaskInfo(ctx, args.ID)
-
-		//make sure we check the error
-		if err != nil {
-			ctx.Errorf("error finding task info: %v", err)
-			return
-		}
-
-		//if we didn't find it, just bail
-		if !found {
-			ctx.Errorf("Got a late response")
-			return
-		}
-	*/
 
 	//get the key of the work item
 	key := bson.ObjectIdHex(args.Key)
@@ -184,8 +148,6 @@ func (Response) DispatchError(req *http.Request, args *rpc.DispatchResponse, res
 
 	//create the context
 	ctx := httputil.NewContext(req)
-	ctx.Infof("Storing a dispatch error")
-	ctx.Infof("%+v", args)
 
 	//get the key of the work item
 	key := bson.ObjectIdHex(args.Key)
