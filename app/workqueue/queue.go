@@ -48,7 +48,6 @@ func QueueWork(ctx httputil.Context, d Distiller) (err error) {
 }
 
 var (
-	lockTime    = 30 * time.Second
 	attemptTime = 10 * time.Minute
 	maxAttempts = 5
 )
@@ -136,10 +135,12 @@ func dispatchWorkItem(ctx httputil.Context, work Work) (err error) {
 		Assert: bson.M{
 			"revision": work.Revision,
 		},
-		Change: bson.D{
-			{"$inc", bson.M{"revision": 1}},
-			{"$set", bson.M{"attemptlog": log}},
-			{"$set", bson.M{"status": StatusProcessing}},
+		Change: bson.M{
+			"$inc": bson.M{"revision": 1},
+			"$set": bson.M{
+				"attemptlog": log,
+				"status":     StatusProcessing,
+			},
 		},
 	}}
 

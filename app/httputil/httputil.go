@@ -21,6 +21,9 @@ var Config struct {
 func init() {
 	Config.Domain = "localhost:9080"
 	Config.Txn = "txns"
+
+	//set the display logs to include filename/num
+	log.SetFlags(log.Lshortfile)
 }
 
 //Absolute returns an absolute url for a given path.
