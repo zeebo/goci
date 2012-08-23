@@ -9,6 +9,7 @@ import (
 	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/app/workqueue"
 	"labix.org/v2/mgo/bson"
+	"labix.org/v2/mgo/txn"
 	"net/http"
 	"strings"
 	"time"
@@ -37,40 +38,31 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 	ctx := httputil.NewContext(req)
 	defer ctx.Close()
 
-	//TODO(zeebo): put this in a transaction to skip partial test results
-
-	//update the work item for this response
-	selector := bson.M{
-		"status":          workqueue.StatusProcessing,
-		"attemptlog.0.id": bson.ObjectIdHex(args.ID),
-	}
-	update := bson.M{
-		"$set": bson.M{"status": workqueue.StatusCompleted},
-	}
-	err = ctx.DB.C("Work").Update(selector, update)
-	if err != nil {
-		return
-	}
-
-	//get the key of the work item
-	key := bson.ObjectIdHex(args.Key)
-
-	//create a WorkResult
+	//build the keys we need to reference
+	key := bson.ObjectIdHex(args.key)
 	wkey := bson.NewObjectId()
-	w := &WorkResult{
-		ID:       wkey,
-		WorkID:   key,
-		Success:  true,
-		Revision: args.Revision,
-		RevDate:  args.RevDate,
-		When:     time.Now(),
-	}
 
-	//store it
-	if err = ctx.DB.C("WorkResult").Insert(w); err != nil {
-		ctx.Errorf("Error storing WorkResult: %v", err)
-		return
-	}
+	ops := []txn.Operation{{ //make sure we have the given work item
+		Collection: "Work",
+		DocId:      key,
+		Assert: bson.M{
+			"status":          workqueue.StatusProcessing,
+			"attemptlog.0.id": bson.ObjectIdHex(args.ID),
+		},
+		Change: bson.M{
+			"$set": bson.M{"status": workqueue.StatusCompleted},
+		},
+	}, { //insert the work result
+		Collection: "WorkResult",
+		DocId:      wkey,
+		Insert: WorkResult{
+			WorkID:   key,
+			Success:  true,
+			Revision: args.Revision,
+			RevDate:  args.RevDate,
+			When:     time.Now(),
+		},
+	}}
 
 	//store the test results
 	for _, out := range args.Tests {
@@ -93,23 +85,27 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 			return
 		}
 
-		//make a TestResult
-		t := &TestResult{
-			ID:           bson.NewObjectId(),
-			WorkResultID: wkey,
-			ImportPath:   out.ImportPath,
-			Revision:     args.Revision,
-			RevDate:      args.RevDate,
-			When:         time.Now(),
-			Output:       out.Output,
-			Status:       status,
-		}
+		//add the test result to the operation
+		ops = append(ops, txn.Operation{
+			Collection: "TestResult",
+			DocId:      bson.NewObjectId(),
+			Insert: TestResult{
+				WorkResultID: wkey,
+				ImportPath:   out.ImportPath,
+				Revision:     args.Revision,
+				RevDate:      args.RevDate,
+				When:         time.Now(),
+				Output:       out.Output,
+				Status:       status,
+			},
+		})
+	}
 
-		//store it
-		if err = ctx.DB.C("TestResult").Insert(t); err != nil {
-			ctx.Errorf("Error storing TestResult: %v", err)
-			return
-		}
+	//run the transaction
+	err = ctx.R.Run(ops, nil, nil)
+	if err == txn.ErrAborted {
+		ctx.Infof("Lost the race inserting result.")
+		err = nil
 	}
 
 	return
@@ -124,42 +120,39 @@ func (Response) Error(req *http.Request, args *rpc.BuilderResponse, resp *rpc.No
 	ctx := httputil.NewContext(req)
 	defer ctx.Close()
 
-	//TODO(zeebo): perform all this in a transaction so we dont get partial save
-
-	//update the work item for this response
-	selector := bson.M{
-		"status":          workqueue.StatusProcessing,
-		"attemptlog.0.id": bson.ObjectIdHex(args.ID),
-	}
-	update := bson.M{
-		"$set": bson.M{"status": workqueue.StatusCompleted},
-	}
-	err = ctx.DB.C("Work").Update(selector, update)
-	if err != nil {
-		return
-	}
-
 	//get the key of the work item
 	key := bson.ObjectIdHex(args.Key)
 
-	//create a WorkResult
-	w := &WorkResult{
-		ID:       bson.NewObjectId(),
-		WorkID:   key,
-		Success:  false,
-		When:     time.Now(),
-		Revision: args.Revision,
-		RevDate:  args.RevDate,
-		Error:    args.Error,
+	ops := []txn.Operation{{ //make sure we have the given work item
+		Collection: "Work",
+		DocId:      key,
+		Assert: bson.M{
+			"status":          workqueue.StatusProcessing,
+			"attemptlog.0.id": bson.ObjectIdHex(args.ID),
+		},
+		Change: bson.M{
+			"$set": bson.M{"status": workqueue.StatusCompleted},
+		},
+	}, { //insert the work result
+		Collection: "WorkResult",
+		DocId:      bson.NewObjectId(),
+		Insert: WorkResult{
+			WorkID:   key,
+			Success:  false,
+			Revision: args.Revision,
+			RevDate:  args.RevDate,
+			When:     time.Now(),
+			Error:    args.Error,
+		},
+	}}
+
+	//run the transaction
+	err = ctx.R.Run(ops, nil, nil)
+	if err == txn.ErrAborted {
+		ctx.Infof("Lost the race inserting result.")
+		err = nil
 	}
 
-	//store it
-	if err = ctx.DB.C("WorkResult").Insert(w); err != nil {
-		ctx.Errorf("Error storing WorkResult: %v", err)
-		return
-	}
-
-	//we did it!
 	return
 }
 

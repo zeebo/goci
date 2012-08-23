@@ -14,9 +14,14 @@ type Work struct {
 	Data       string    //the raw data that came in
 	Created    time.Time //when the item was received
 	Status     string    //the current status of the work item
+	Dispatch   dispatch  //the info about the last dispatch
 	AttemptLog []Attempt //the attempts building the work item
+}
 
-	Lock lock //lock for the document
+//dispatch represents the info of the last dispatch
+type dispatch struct {
+	When time.Time //when it was dispatched
+	Name string    //who dispatched it
 }
 
 //Attempt represents an attempt to build a Work item
@@ -27,15 +32,10 @@ type Attempt struct {
 	ID      bson.ObjectId //a random ID for the attempt
 }
 
-//lock represents a lock on a document
-type lock struct {
-	Expires time.Time //when the lock expires
-	Who     string    //who owns the lock
-}
-
 //define some string constants for statuses
 const (
-	StatusWaiting    = "waiting"
-	StatusProcessing = "processing"
-	StatusCompleted  = "completed"
+	StatusWaiting     = "waiting"
+	StatusDispatching = "dispatching"
+	StatusProcessing  = "processing"
+	StatusCompleted   = "completed"
 )

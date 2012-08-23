@@ -5,19 +5,22 @@ import (
 	"fmt"
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
+	"labix.org/v2/mgo/txn"
 	"log"
 	"net/http"
 )
 
 //Config is the package level config for httputil.
 var Config struct {
-	DB     *mgo.Database
-	Domain string
+	DB     *mgo.Database //Database to use
+	Txn    string        //name of transaction collection
+	Domain string        //domain name of website
 }
 
 //set some defaults for the config
 func init() {
 	Config.Domain = "localhost:9080"
+	Config.Txn = "txns"
 }
 
 //Absolute returns an absolute url for a given path.
@@ -31,14 +34,18 @@ func NewContext(req *http.Request) Context {
 		panic("Set httputil.Config.DB before creating contexts")
 	}
 
+	db := Config.DB.Session.Clone().DB(Config.DB.Name)
+
 	return Context{
-		DB: Config.DB.Session.Clone().DB(Config.DB.Name),
+		DB: db,
+		R:  txn.NewRunner(db.C(Config.Txn)),
 	}
 }
 
 //Context represents the set of information a request needs to execute.
 type Context struct {
 	DB *mgo.Database
+	R  *txn.Runner
 }
 
 //close closes the context, cleaning up any resources it acquired.

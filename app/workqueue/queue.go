@@ -8,6 +8,7 @@ import (
 	"github.com/zeebo/goci/app/rpc/client"
 	"github.com/zeebo/goci/app/tracker"
 	"labix.org/v2/mgo/bson"
+	"labix.org/v2/mgo/txn"
 	"log"
 	"math/rand"
 	"net/http"
@@ -29,9 +30,8 @@ type Distiller interface {
 func QueueWork(ctx httputil.Context, d Distiller) (err error) {
 	//distill and create our work item
 	work, data := d.Distill()
-	wkey := bson.NewObjectId()
 	q := &Work{
-		ID:      wkey,
+		ID:      bson.NewObjectId(),
 		Work:    work,
 		Data:    data,
 		Status:  StatusWaiting,
@@ -62,54 +62,25 @@ func dispatchWork(w http.ResponseWriter, req *http.Request, ctx httputil.Context
 	//generate a unique id for this request
 	name := fmt.Sprint(rand.Int63())
 
-	//selector is a bson document corresponding to selecting unlocked work items
-	//that are either waiting, or processing and their most recent attempt is
-	//over attemptTime old.
+	//find all the documents that are waiting or (processing and their attempt is
+	//taking too long)
 	type L []interface{}
 	selector := bson.M{
-		"$and": L{
-			bson.M{"lock.expires": bson.M{"$lt": time.Now()}},
-			bson.M{"$or": L{
-				bson.M{"status": StatusWaiting},
-				bson.M{"$and": L{
-					bson.M{"status": StatusProcessing},
-					bson.M{"attemptlog.0.when": bson.M{"$lt": time.Now().Add(-1 * attemptTime)}},
-				}},
+		"$or": L{
+			bson.M{"status": StatusWaiting},
+			bson.M{"$and": L{
+				bson.M{"status": StatusProcessing},
+				bson.M{"attemptlog.0.when": bson.M{"$lt": time.Now().Add(-1 * attemptTime)}},
 			}},
 		},
 	}
-	//update acquires the lock for the work item by setting it to now, leasing
-	//the work item to this function for lockTime.
-	update := bson.D{
-		{"$set", bson.M{
-			"lock.expires": time.Now().Add(lockTime),
-			"lock.who":     name,
-		}},
-	}
+	iter := ctx.DB.C("Work").Find(selector).Iter()
 
-	//run the query locking documents we're going to use
-	info, err := ctx.DB.C("Work").UpdateAll(selector, update)
-	if err != nil {
-		e = httputil.Errorf(err, "error grabbing work items from the queue")
-		return
-	}
-
-	//bail early if we locked no documents
-	if info.Updated == 0 {
-		ctx.Infof("Locked no Work items. Exiting")
-		return
-	}
-
-	//attempt to unlock all of the documents when the function exits
-	defer ctx.DB.C("Work").UpdateAll(
-		bson.M{"lock.who": name}, //selector
-		bson.M{"$set": bson.M{ //update 
-			"lock.expires": time.Time{},
-		}},
-	)
+	//for each document run in a transaction to update the status to dispatching
+	//and set the owner to this process.
 
 	//loop over our locked documents and dispatch work to them
-	iter := ctx.DB.C("Work").Find(bson.M{"lock.who": name}).Iter()
+	// iter := ctx.DB.C("Work").Find(bson.M{"lock.who": name}).Iter()
 
 	var work Work
 	for iter.Next(&work) {
