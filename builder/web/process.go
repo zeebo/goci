@@ -21,9 +21,10 @@ func (b *Builder) process(task rpc.BuilderTask) {
 
 		//build our response
 		resp := &rpc.BuilderResponse{
-			Key:   task.Key,
-			ID:    task.ID,
-			Error: err.Error(),
+			Key:     task.Key,
+			ID:      task.ID,
+			WorkRev: task.WorkRev,
+			Error:   err.Error(),
 
 			//these fields may be zero if we didn't get that far
 			Revision: task.Work.Revision,
@@ -44,6 +45,7 @@ func (b *Builder) process(task rpc.BuilderTask) {
 	req := &rpc.RunnerTask{
 		Key:      task.Key,
 		ID:       task.ID,
+		WorkRev:  task.WorkRev,
 		Revision: task.Work.Revision,
 		RevDate:  revDate,
 		Response: task.Response,

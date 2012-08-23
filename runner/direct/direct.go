@@ -158,6 +158,7 @@ func (r *Runner) process(task rpc.RunnerTask) {
 	resp := &rpc.RunnerResponse{
 		Key:      task.Key,
 		ID:       task.ID,
+		WorkRev:  task.WorkRev,
 		Revision: task.Revision,
 		RevDate:  task.RevDate,
 		Tests:    outs,

@@ -14,28 +14,21 @@ type Work struct {
 	Data       string    //the raw data that came in
 	Created    time.Time //when the item was received
 	Status     string    //the current status of the work item
-	Dispatch   dispatch  //the info about the last dispatch
 	AttemptLog []Attempt //the attempts building the work item
-}
-
-//dispatch represents the info of the last dispatch
-type dispatch struct {
-	When time.Time //when it was dispatched
-	Name string    //who dispatched it
+	Revision   int       //the revision number of the work item
 }
 
 //Attempt represents an attempt to build a Work item
 type Attempt struct {
+	ID      bson.ObjectId //a random id for the test attempt
 	When    time.Time     //when the attempt was started
 	Builder string        //the builder the attempt was for
 	Runner  string        //the runner the attempt was for
-	ID      bson.ObjectId //a random ID for the attempt
 }
 
 //define some string constants for statuses
 const (
-	StatusWaiting     = "waiting"
-	StatusDispatching = "dispatching"
-	StatusProcessing  = "processing"
-	StatusCompleted   = "completed"
+	StatusWaiting    = "waiting"
+	StatusProcessing = "processing"
+	StatusCompleted  = "completed"
 )

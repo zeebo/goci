@@ -39,7 +39,7 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 	defer ctx.Close()
 
 	//build the keys we need to reference
-	key := bson.ObjectIdHex(args.key)
+	key := bson.ObjectIdHex(args.Key)
 	wkey := bson.NewObjectId()
 
 	ops := []txn.Operation{{ //make sure we have the given work item
@@ -48,9 +48,11 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 		Assert: bson.M{
 			"status":          workqueue.StatusProcessing,
 			"attemptlog.0.id": bson.ObjectIdHex(args.ID),
+			"revision":        args.WorkRev,
 		},
 		Change: bson.M{
 			"$set": bson.M{"status": workqueue.StatusCompleted},
+			"$inc": bson.M{"revision": 1},
 		},
 	}, { //insert the work result
 		Collection: "WorkResult",
@@ -102,7 +104,7 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 	}
 
 	//run the transaction
-	err = ctx.R.Run(ops, nil, nil)
+	err = ctx.R.Run(ops, bson.NewObjectId(), nil)
 	if err == txn.ErrAborted {
 		ctx.Infof("Lost the race inserting result.")
 		err = nil
@@ -129,9 +131,11 @@ func (Response) Error(req *http.Request, args *rpc.BuilderResponse, resp *rpc.No
 		Assert: bson.M{
 			"status":          workqueue.StatusProcessing,
 			"attemptlog.0.id": bson.ObjectIdHex(args.ID),
+			"revision":        args.WorkRev,
 		},
 		Change: bson.M{
 			"$set": bson.M{"status": workqueue.StatusCompleted},
+			"$inc": bson.M{"revision": 1},
 		},
 	}, { //insert the work result
 		Collection: "WorkResult",
@@ -147,7 +151,7 @@ func (Response) Error(req *http.Request, args *rpc.BuilderResponse, resp *rpc.No
 	}}
 
 	//run the transaction
-	err = ctx.R.Run(ops, nil, nil)
+	err = ctx.R.Run(ops, bson.NewObjectId(), nil)
 	if err == txn.ErrAborted {
 		ctx.Infof("Lost the race inserting result.")
 		err = nil
@@ -171,21 +175,34 @@ func (Response) DispatchError(req *http.Request, args *rpc.DispatchResponse, res
 	//get the key of the work item
 	key := bson.ObjectIdHex(args.Key)
 
-	//create a WorkResult
-	w := &WorkResult{
-		ID:      bson.NewObjectId(),
-		WorkID:  key,
-		Success: false,
-		When:    time.Now(),
-		Error:   args.Error,
+	ops := []txn.Operation{{ //make sure we have the given work item
+		Collection: "Work",
+		DocId:      key,
+		Assert: bson.M{
+			"status":   workqueue.StatusProcessing,
+			"revision": args.WorkRev,
+		},
+		Change: bson.M{
+			"$set": bson.M{"status": workqueue.StatusCompleted},
+			"$inc": bson.M{"revision": 1},
+		},
+	}, { //insert the work result
+		Collection: "WorkResult",
+		DocId:      bson.NewObjectId(),
+		Insert: WorkResult{
+			WorkID:  key,
+			Success: false,
+			When:    time.Now(),
+			Error:   args.Error,
+		},
+	}}
+
+	//run the transaction
+	err = ctx.R.Run(ops, bson.NewObjectId(), nil)
+	if err == txn.ErrAborted {
+		ctx.Infof("Lost the race inserting result.")
+		err = nil
 	}
 
-	//store it
-	if err = ctx.DB.C("WorkResult").Insert(w); err != nil {
-		ctx.Errorf("Error storing WorkResult: %v", err)
-		return
-	}
-
-	//we did it!
 	return
 }

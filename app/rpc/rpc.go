@@ -77,7 +77,8 @@ func (w Work) Distill() (Work, string) {
 type BuilderTask struct {
 	Work     Work   //the Work item to be completed
 	Key      string //the datastore key for the Work item (forward to runner)
-	ID       string //the ID of the TaskInfo in the datastore (forward to runner)
+	ID       string //the id of the test (forward to runner)
+	WorkRev  int    //the revision of the work item (forward to runner)
 	Runner   string //the rpc url of the runner for this task
 	Response string //the rpc url of the response (forward to the runner)
 }
@@ -85,7 +86,8 @@ type BuilderTask struct {
 //RunnerTask is a task sent by a Builder to a runner
 type RunnerTask struct {
 	Key        string    //the key of the work item to pass into response
-	ID         string    //the id of the task to pass into response
+	ID         string    //the ID of the test
+	WorkRev    int       //the revision of the work item
 	Revision   string    //the revision we ended up testing to pass into response
 	RevDate    time.Time //the time this revision was made to pass into response
 	Tests      []RunTest //the set of binarys to be executed
@@ -104,7 +106,8 @@ type RunTest struct {
 //RunnerResponse is the response from the Runner to the tracker
 type RunnerResponse struct {
 	Key      string    //the datastore key for the Work item
-	ID       string    //the ID of the TaskInfo in the datastore
+	ID       string    //the ID of the test
+	WorkRev  int       //the revision of the work item
 	Revision string    //the revision we ended up testing
 	RevDate  time.Time //the time this revision was made
 	Tests    []Output  //the list of tests
@@ -114,7 +117,8 @@ type RunnerResponse struct {
 //reason.
 type BuilderResponse struct {
 	Key      string    //the key of the work item
-	ID       string    //the id of the task
+	ID       string    //the ID of the test
+	WorkRev  int       //the expected revision of work item
 	Error    string    //the error in setting up the builds
 	Revision string    //the revision of the work item (if known)
 	RevDate  time.Time //the time the revision was commit (if known)
@@ -124,8 +128,9 @@ type BuilderResponse struct {
 //saying that it is unable to get a successful response from the work item and
 //it has failed too many times.
 type DispatchResponse struct {
-	Key   string //the key of the work item
-	Error string //the error in the dispatch
+	Key     string //the key of the work item
+	Error   string //the error in the dispatch
+	WorkRev int    //the revision of the work document
 }
 
 //Output is a type that wraps the output of a build, be it the actual output or
