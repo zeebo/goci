@@ -129,13 +129,13 @@ func dispatchWorkItem(ctx httputil.Context, work Work) (err error) {
 	log := append([]Attempt{a}, work.AttemptLog...)
 
 	//transactionally acquire ownership of the document
-	ops := []txn.Operation{{
-		Collection: "Work",
-		DocId:      work.ID,
+	ops := []txn.Op{{
+		C:  "Work",
+		Id: work.ID,
 		Assert: bson.M{
 			"revision": work.Revision,
 		},
-		Change: bson.M{
+		Update: bson.M{
 			"$inc": bson.M{"revision": 1},
 			"$set": bson.M{
 				"attemptlog": log,

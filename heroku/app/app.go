@@ -13,7 +13,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -41,25 +40,6 @@ func init() {
 	flag.Parse()
 }
 
-//parseDatabase takes the input environment string and parses it into what
-//should be passed into mgo and the database name to use
-func parseDatabase(s string) (dial, dbname string) {
-	u, err := url.Parse(s)
-	if err != nil {
-		panic(err)
-	}
-
-	dbname = u.Path[1:]
-
-	//if we werent given any auth strip off the pat
-	if u.User == nil || u.User.String() == "" {
-		u.Path = ""
-	}
-
-	dial = u.String()
-	return
-}
-
 func main() {
 	//load up the environment if its specified
 	if config.env != "" {
@@ -68,13 +48,13 @@ func main() {
 		}
 	}
 
-	//stub in a dummy database connection
-	dial, dbname := parseDatabase(env("DATABASE", "mongodb://localhost/gocitest"))
-	sess, err := mgo.Dial(dial)
+	//connect to the mongo database.
+	sess, err := mgo.Dial(env("DATABASE", "mongodb://localhost/gocitest"))
 	if err != nil {
 		panic(err)
 	}
-	httputil.Config.DB = sess.DB(dbname)
+	//empty implies whatever was specified in dial.
+	httputil.Config.DB = sess.DB("")
 
 	//start the server (listen first for internal requests)
 	l, err := net.Listen("tcp", "0.0.0.0:"+env("PORT", "9080"))

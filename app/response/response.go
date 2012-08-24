@@ -42,21 +42,21 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 	key := bson.ObjectIdHex(args.Key)
 	wkey := bson.NewObjectId()
 
-	ops := []txn.Operation{{ //make sure we have the given work item
-		Collection: "Work",
-		DocId:      key,
+	ops := []txn.Op{{ //make sure we have the given work item
+		C:  "Work",
+		Id: key,
 		Assert: bson.M{
 			"status":          workqueue.StatusProcessing,
 			"attemptlog.0.id": bson.ObjectIdHex(args.ID),
 			"revision":        args.WorkRev,
 		},
-		Change: bson.M{
+		Update: bson.M{
 			"$set": bson.M{"status": workqueue.StatusCompleted},
 			"$inc": bson.M{"revision": 1},
 		},
 	}, { //insert the work result
-		Collection: "WorkResult",
-		DocId:      wkey,
+		C:  "WorkResult",
+		Id: wkey,
 		Insert: WorkResult{
 			WorkID:   key,
 			Success:  true,
@@ -88,9 +88,9 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 		}
 
 		//add the test result to the operation
-		ops = append(ops, txn.Operation{
-			Collection: "TestResult",
-			DocId:      bson.NewObjectId(),
+		ops = append(ops, txn.Op{
+			C:  "TestResult",
+			Id: bson.NewObjectId(),
 			Insert: TestResult{
 				WorkResultID: wkey,
 				ImportPath:   out.ImportPath,
@@ -125,21 +125,21 @@ func (Response) Error(req *http.Request, args *rpc.BuilderResponse, resp *rpc.No
 	//get the key of the work item
 	key := bson.ObjectIdHex(args.Key)
 
-	ops := []txn.Operation{{ //make sure we have the given work item
-		Collection: "Work",
-		DocId:      key,
+	ops := []txn.Op{{ //make sure we have the given work item
+		C:  "Work",
+		Id: key,
 		Assert: bson.M{
 			"status":          workqueue.StatusProcessing,
 			"attemptlog.0.id": bson.ObjectIdHex(args.ID),
 			"revision":        args.WorkRev,
 		},
-		Change: bson.M{
+		Update: bson.M{
 			"$set": bson.M{"status": workqueue.StatusCompleted},
 			"$inc": bson.M{"revision": 1},
 		},
 	}, { //insert the work result
-		Collection: "WorkResult",
-		DocId:      bson.NewObjectId(),
+		C:  "WorkResult",
+		Id: bson.NewObjectId(),
 		Insert: WorkResult{
 			WorkID:   key,
 			Success:  false,
@@ -175,20 +175,20 @@ func (Response) DispatchError(req *http.Request, args *rpc.DispatchResponse, res
 	//get the key of the work item
 	key := bson.ObjectIdHex(args.Key)
 
-	ops := []txn.Operation{{ //make sure we have the given work item
-		Collection: "Work",
-		DocId:      key,
+	ops := []txn.Op{{ //make sure we have the given work item
+		C:  "Work",
+		Id: key,
 		Assert: bson.M{
 			"status":   workqueue.StatusProcessing,
 			"revision": args.WorkRev,
 		},
-		Change: bson.M{
+		Update: bson.M{
 			"$set": bson.M{"status": workqueue.StatusCompleted},
 			"$inc": bson.M{"revision": 1},
 		},
 	}, { //insert the work result
-		Collection: "WorkResult",
-		DocId:      bson.NewObjectId(),
+		C:  "WorkResult",
+		Id: bson.NewObjectId(),
 		Insert: WorkResult{
 			WorkID:  key,
 			Success: false,
