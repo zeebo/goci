@@ -1,4 +1,4 @@
-//package httputil provides handler types for appengine requests
+//package httputil provides handler types for requests
 package httputil
 
 import (
