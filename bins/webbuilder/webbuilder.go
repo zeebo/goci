@@ -4,6 +4,7 @@ import (
 	"github.com/zeebo/goci/builder"
 	"github.com/zeebo/goci/builder/web"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,12 +20,24 @@ func env(key, def string) (r string) {
 }
 
 func main() {
+	hosted := env("HOSTED", "")
+	if hosted == "" {
+		panic("don't know where the builder lives. Please set the HOSTED env var.")
+	}
+
 	bu := web.New(
 		builder.New(env("GOOS", ""), env("GOARCH", ""), ""),
 		env("TRACKER", "http://goci.me/rpc/tracker"),
-		env("HOSTED", "http://worker.goci.me/builder/"),
+		hosted,
 	)
-	go http.ListenAndServe(":"+env("PORT", "9080"), bu)
+
+	l, err := net.Listen("tcp", "0.0.0.0:"+env("PORT", "9080"))
+	if err != nil {
+		panic(err)
+	}
+	defer l.Close()
+	go http.Serve(l, bu)
+
 	if err := bu.Announce(); err != nil {
 		panic(err)
 	}

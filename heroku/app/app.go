@@ -105,7 +105,9 @@ func main() {
 	//set up the httputil domain so we can build absolute urls
 	httputil.Config.Domain = env("DOMAIN", "localhost:9080")
 
-	//start the server (listen first for internal requests)
+	//start the server.
+	//we can't use listenandserve because the scheduler might not give it the
+	//opportunity to set up the listen socket before we attempt to announce.
 	l, err := net.Listen("tcp", "0.0.0.0:"+env("PORT", "9080"))
 	if err != nil {
 		panic(err)
