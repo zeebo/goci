@@ -9,6 +9,8 @@ Environment variables:
 	* DIRECTRUN: Set to have goci run tests locally (dangerous. for dev)
 	* RUNPATH: Path to the github.com/zeebo/goci/runner binary for directrun
 	* DATABASE: URL to the mongo database
+	* TEMPLATES: Path to where the templates for the frontend live
+	* STATIC: Path to where the static files for the frontend live
 
 Accepts the -env argument which if specified will clear the provided environment
 and load the environment from the file. Example env file:

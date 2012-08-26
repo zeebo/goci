@@ -5,6 +5,4 @@ import (
 	"net/http"
 )
 
-//Handler is the net/http Handler for the frontend. It expects the urls to have
-//any prefix stripped before handling the request.
-var Handler http.Handler = new(http.ServeMux)
+var mux = http.NewServeMux()

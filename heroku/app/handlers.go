@@ -36,10 +36,16 @@ func init() {
 func addFrontend() (err error) {
 	//tell it where the templates live and compile them
 	frontend.Config.Templates = env("TEMPLATES", "")
-	if err = frontend.Compile(); err != nil {
-		return err
+	frontend.Config.Static = env("STATIC", "")
+
+	//compile the handler
+	handler, err := frontend.Compile()
+
+	if err != nil {
+		return
 	}
 
 	//add it in
-	http.Handle("/", frontend.Handler)
+	http.Handle("/", handler)
+	return
 }
