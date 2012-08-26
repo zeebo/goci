@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/zeebo/goci/app/frontend"
 	"github.com/zeebo/goci/app/httputil"
 	"github.com/zeebo/goci/app/rpc/router"
 	"github.com/zeebo/goci/builder"
@@ -102,10 +103,10 @@ func main() {
 		}
 	}
 
-	//add the frontend
-	if err := addFrontend(); err != nil {
-		panic(err)
-	}
+	//configure the frontend
+	frontend.Config.Templates = env("TEMPLATES", "./templates")
+	frontend.Config.Static = env("STATIC", "./static")
+	frontend.Config.Debug = env("DEBUG", "") != ""
 
 	//connect to the mongo database.
 	sess, err := mgo.Dial(env("DATABASE", "mongodb://localhost/gocitest"))
