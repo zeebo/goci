@@ -30,6 +30,14 @@ func env(key, def string) (r string) {
 	return
 }
 
+//mustEnv returns the environment variable and panics if its empty
+func mustEnv(key string) (r string) {
+	if r = os.Getenv(key); r == "" {
+		panic("must specify env variable: " + key)
+	}
+	return
+}
+
 //config stores the variables parsed by the flag package
 var config struct {
 	env string
@@ -53,8 +61,8 @@ type Service interface {
 func newWebRunner() Service {
 	//create a runner
 	ru := ruweb.New(
-		env("APP_NAME", "goci"),
-		env("API_KEY", "foo"),
+		mustEnv("APP_NAME"),
+		mustEnv("API_KEY"),
 		httputil.Absolute(router.Lookup("Tracker")),
 		httputil.Absolute("/runner/"),
 	)
@@ -64,7 +72,7 @@ func newWebRunner() Service {
 //newDirectRunner returns a service for running tests on the local machine.
 func newDirectRunner() Service {
 	ru := rudirect.New(
-		env("RUNPATH", "runner"),
+		mustEnv("RUNPATH"),
 		httputil.Absolute(router.Lookup("Tracker")),
 		httputil.Absolute("/runner/"),
 	)
@@ -108,12 +116,12 @@ func main() {
 	httputil.Config.DB = sess.DB("")
 
 	//set up the httputil domain so we can build absolute urls
-	httputil.Config.Domain = env("DOMAIN", "localhost:9080")
+	httputil.Config.Domain = mustEnv("DOMAIN")
 
 	//start the server.
 	//we can't use listenandserve because the scheduler might not give it the
 	//opportunity to set up the listen socket before we attempt to announce.
-	l, err := net.Listen("tcp", "0.0.0.0:"+env("PORT", "9080"))
+	l, err := net.Listen("tcp", "0.0.0.0:"+mustEnv("PORT"))
 	if err != nil {
 		panic(err)
 	}
