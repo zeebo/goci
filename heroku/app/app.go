@@ -94,6 +94,11 @@ func main() {
 		}
 	}
 
+	//add the frontend
+	if err := addFrontend(); err != nil {
+		panic(err)
+	}
+
 	//connect to the mongo database.
 	sess, err := mgo.Dial(env("DATABASE", "mongodb://localhost/gocitest"))
 	if err != nil {

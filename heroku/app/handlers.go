@@ -31,7 +31,15 @@ func init() {
 	router.Serve(tracker.Tracker{}, "Tracker", "/rpc/tracker")
 }
 
-//add the frontend
-func init() {
+//add the frontend to the DefaultServeMux. Should be called after environment
+//has been loaded.
+func addFrontend() (err error) {
+	//tell it where the templates live and compile them
+	frontend.Config.Templates = env("TEMPLATES", "")
+	if err = frontend.Compile(); err != nil {
+		return err
+	}
+
+	//add it in
 	http.Handle("/", frontend.Handler)
 }
