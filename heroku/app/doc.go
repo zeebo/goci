@@ -4,9 +4,7 @@ Environment variables:
 
 	* APP_NAME: Name of the app for the runner to send requests
 	* API_KEY: Heroku api key for the runner to send requests
-	* TRACKER: URL of the tracker for builder/runner
-	* RUNHOSTED: URL of the runner to announce
-	* BUILDHOSTED: URL of the builder to announce
+	* DOMAIN: The domain of the hosted page to build absolute urls
 	* PORT: The port for the webserver to listen on
 	* DIRECTRUN: Set to have goci run tests locally (dangerous. for dev)
 	* RUNPATH: Path to the github.com/zeebo/goci/runner binary for directrun

@@ -2,8 +2,6 @@
 package response
 
 import (
-	gorcp "code.google.com/p/gorilla/rpc"
-	gojson "code.google.com/p/gorilla/rpc/json"
 	"fmt"
 	"github.com/zeebo/goci/app/httputil"
 	"github.com/zeebo/goci/app/rpc"
@@ -14,17 +12,6 @@ import (
 	"strings"
 	"time"
 )
-
-func init() {
-	//create a new rpc server
-	s := gorcp.NewServer()
-	s.RegisterCodec(gojson.NewCodec(), "application/json")
-
-	//add the response queue
-	s.RegisterService(Response{}, "")
-
-	http.Handle("/rpc/response", s)
-}
 
 //Response is a service that records Runner responses
 type Response struct{}

@@ -2,8 +2,6 @@
 package tracker
 
 import (
-	gorpc "code.google.com/p/gorilla/rpc"
-	gojson "code.google.com/p/gorilla/rpc/json"
 	"errors"
 	"github.com/zeebo/goci/app/httputil"
 	"github.com/zeebo/goci/app/pinger"
@@ -19,18 +17,6 @@ import (
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
-}
-
-func init() {
-	//create the rpc server
-	s := gorpc.NewServer()
-	s.RegisterCodec(gojson.NewCodec(), "application/json")
-
-	//add the tracker
-	s.RegisterService(DefaultTracker, "")
-
-	//add the tracker service to the paths
-	http.Handle("/rpc/tracker", s)
 }
 
 //Tracker is an rpc for announcing and managing the presence of services.

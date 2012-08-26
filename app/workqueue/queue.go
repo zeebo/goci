@@ -5,6 +5,7 @@ import (
 	"github.com/zeebo/goci/app/httputil"
 	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/app/rpc/client"
+	"github.com/zeebo/goci/app/rpc/router"
 	"github.com/zeebo/goci/app/tracker"
 	"labix.org/v2/mgo/bson"
 	"labix.org/v2/mgo/txn"
@@ -13,8 +14,10 @@ import (
 	"time"
 )
 
+const handleUrl = "/queue/dispatch"
+
 func init() {
-	http.Handle("/queue/dispatch", httputil.Handler(dispatchWork))
+	http.Handle(handleUrl, httputil.Handler(dispatchWork))
 }
 
 //Distiller is a type that can be added into the queue. It distills into a work
@@ -42,7 +45,7 @@ func QueueWork(ctx httputil.Context, d Distiller) (err error) {
 	}
 
 	//send a request to dispatch the queue
-	go http.Get(httputil.Absolute("/queue/dispatch"))
+	go http.Get(httputil.Absolute(handleUrl))
 
 	return
 }
@@ -83,7 +86,8 @@ func dispatchWork(w http.ResponseWriter, req *http.Request, ctx httputil.Context
 			}
 
 			//send it off to the response rpc
-			cl := client.New(httputil.Absolute("/rpc/response"), http.DefaultClient, client.JsonCodec)
+			respUrl := httputil.Absolute(router.Lookup("Response"))
+			cl := client.New(respUrl, http.DefaultClient, client.JsonCodec)
 			if err := cl.Call("Response.DispatchError", args, new(rpc.None)); err != nil {
 				ctx.Infof("Couldn't store a dispatch error for work item %s: %s", work.ID, err)
 			}
@@ -160,7 +164,7 @@ func dispatchWorkItem(ctx httputil.Context, work Work) (err error) {
 		ID:       a.ID.Hex(),
 		WorkRev:  work.Revision + 1,
 		Runner:   runner.URL,
-		Response: httputil.Absolute("/rpc/response"),
+		Response: httputil.Absolute(router.Lookup("Response")),
 	}
 
 	//send the task off to the builder queue
