@@ -1,4 +1,4 @@
-//webrunner is a program that runs go tests on the heroku dyno mesh
+//webrunner is a program that runs go tests on the heroku dyno mesh or locally
 /*
 webrunner gets all of its arguments from the environment. Here is a summary of
 the environment variables it looks for (all panics will only occur if the variable is needed):
