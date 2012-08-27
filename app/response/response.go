@@ -3,9 +3,9 @@ package response
 
 import (
 	"fmt"
+	"github.com/zeebo/goci/app/entities"
 	"github.com/zeebo/goci/app/httputil"
 	"github.com/zeebo/goci/app/rpc"
-	"github.com/zeebo/goci/app/workqueue"
 	"labix.org/v2/mgo/bson"
 	"labix.org/v2/mgo/txn"
 	"net/http"
@@ -33,18 +33,18 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 		C:  "Work",
 		Id: key,
 		Assert: bson.M{
-			"status":          workqueue.StatusProcessing,
+			"status":          entities.WorkStatusProcessing,
 			"attemptlog.0.id": bson.ObjectIdHex(args.ID),
 			"revision":        args.WorkRev,
 		},
 		Update: bson.M{
-			"$set": bson.M{"status": workqueue.StatusCompleted},
+			"$set": bson.M{"status": entities.WorkStatusCompleted},
 			"$inc": bson.M{"revision": 1},
 		},
 	}, { //insert the work result
 		C:  "WorkResult",
 		Id: wkey,
-		Insert: WorkResult{
+		Insert: entities.WorkResult{
 			WorkID:   key,
 			Success:  true,
 			Revision: args.Revision,
@@ -52,6 +52,9 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 			When:     time.Now(),
 		},
 	}}
+
+	//operations for notifications
+	var nots []txn.Op
 
 	//store the test results
 	for _, out := range args.Tests {
@@ -75,10 +78,11 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 		}
 
 		//add the test result to the operation
+		tid := bson.NewObjectId()
 		ops = append(ops, txn.Op{
 			C:  "TestResult",
-			Id: bson.NewObjectId(),
-			Insert: TestResult{
+			Id: tid,
+			Insert: entities.TestResult{
 				WorkResultID: wkey,
 				ImportPath:   out.ImportPath,
 				Revision:     args.Revision,
@@ -88,13 +92,38 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 				Status:       status,
 			},
 		})
+
+		//skip if we don't have a notification
+		if out.Config.NotifyOn == "" {
+			continue
+		}
+
+		//add in the notification
+		nots = append(nots, txn.Op{
+			C:  "Notification",
+			Id: bson.NewObjectId(),
+			Insert: entities.Notification{
+				Test:   tid,
+				Config: out.Config,
+				Status: entities.NotifStatusWaiting,
+			},
+		})
+
 	}
+
+	//append the notification operations
+	ops = append(ops, nots...)
 
 	//run the transaction
 	err = ctx.R.Run(ops, bson.NewObjectId(), nil)
 	if err == txn.ErrAborted {
 		ctx.Infof("Lost the race inserting result.")
 		err = nil
+	}
+
+	//tell it to dispatch notifications
+	if len(nots) > 0 {
+		go http.Get(httputil.Absolute("/notifications/dispatch"))
 	}
 
 	return
@@ -116,18 +145,18 @@ func (Response) Error(req *http.Request, args *rpc.BuilderResponse, resp *rpc.No
 		C:  "Work",
 		Id: key,
 		Assert: bson.M{
-			"status":          workqueue.StatusProcessing,
+			"status":          entities.WorkStatusProcessing,
 			"attemptlog.0.id": bson.ObjectIdHex(args.ID),
 			"revision":        args.WorkRev,
 		},
 		Update: bson.M{
-			"$set": bson.M{"status": workqueue.StatusCompleted},
+			"$set": bson.M{"status": entities.WorkStatusCompleted},
 			"$inc": bson.M{"revision": 1},
 		},
 	}, { //insert the work result
 		C:  "WorkResult",
 		Id: bson.NewObjectId(),
-		Insert: WorkResult{
+		Insert: entities.WorkResult{
 			WorkID:   key,
 			Success:  false,
 			Revision: args.Revision,
@@ -166,17 +195,17 @@ func (Response) DispatchError(req *http.Request, args *rpc.DispatchResponse, res
 		C:  "Work",
 		Id: key,
 		Assert: bson.M{
-			"status":   workqueue.StatusProcessing,
+			"status":   entities.WorkStatusProcessing,
 			"revision": args.WorkRev,
 		},
 		Update: bson.M{
-			"$set": bson.M{"status": workqueue.StatusCompleted},
+			"$set": bson.M{"status": entities.WorkStatusCompleted},
 			"$inc": bson.M{"revision": 1},
 		},
 	}, { //insert the work result
 		C:  "WorkResult",
 		Id: bson.NewObjectId(),
-		Insert: WorkResult{
+		Insert: entities.WorkResult{
 			WorkID:  key,
 			Success: false,
 			When:    time.Now(),

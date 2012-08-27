@@ -2,6 +2,7 @@
 package workqueue
 
 import (
+	"github.com/zeebo/goci/app/entities"
 	"github.com/zeebo/goci/app/httputil"
 	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/app/rpc/client"
@@ -31,11 +32,11 @@ type Distiller interface {
 func QueueWork(ctx httputil.Context, d Distiller) (err error) {
 	//distill and create our work item
 	work, data := d.Distill()
-	q := &Work{
+	q := &entities.Work{
 		ID:      bson.NewObjectId(),
 		Work:    work,
 		Data:    data,
-		Status:  StatusWaiting,
+		Status:  entities.WorkStatusWaiting,
 		Created: time.Now(),
 	}
 
@@ -50,7 +51,7 @@ func QueueWork(ctx httputil.Context, d Distiller) (err error) {
 	return
 }
 
-var (
+const (
 	attemptTime = 10 * time.Minute
 	maxAttempts = 5
 )
@@ -64,16 +65,16 @@ func dispatchWork(w http.ResponseWriter, req *http.Request, ctx httputil.Context
 	type L []interface{}
 	selector := bson.M{
 		"$or": L{
-			bson.M{"status": StatusWaiting},
+			bson.M{"status": entities.WorkStatusWaiting},
 			bson.M{
-				"status":            StatusProcessing,
+				"status":            entities.WorkStatusProcessing,
 				"attemptlog.0.when": bson.M{"$lt": time.Now().Add(-1 * attemptTime)},
 			},
 		},
 	}
 	iter := ctx.DB.C("Work").Find(selector).Iter()
 
-	var work Work
+	var work entities.Work
 	for iter.Next(&work) {
 		//if its a processing task with too many attempts, store it as a dispatch
 		//error.
@@ -112,7 +113,7 @@ func dispatchWork(w http.ResponseWriter, req *http.Request, ctx httputil.Context
 	return
 }
 
-func dispatchWorkItem(ctx httputil.Context, work Work) (err error) {
+func dispatchWorkItem(ctx httputil.Context, work entities.Work) (err error) {
 	//lease a builder and runner
 	builder, runner, err := tracker.LeasePair(ctx)
 	if err != nil {
@@ -122,7 +123,7 @@ func dispatchWorkItem(ctx httputil.Context, work Work) (err error) {
 	log.Printf("Got:\nBuilder: %+v\nRunner: %+v", builder, runner)
 
 	//create an attempt
-	a := Attempt{
+	a := entities.WorkAttempt{
 		When:    time.Now(),
 		Builder: builder.URL,
 		Runner:  runner.URL,
@@ -130,7 +131,7 @@ func dispatchWorkItem(ctx httputil.Context, work Work) (err error) {
 	}
 
 	//push the new attempt at the start of the array
-	log := append([]Attempt{a}, work.AttemptLog...)
+	log := append([]entities.WorkAttempt{a}, work.AttemptLog...)
 
 	//transactionally acquire ownership of the document
 	ops := []txn.Op{{
@@ -143,7 +144,7 @@ func dispatchWorkItem(ctx httputil.Context, work Work) (err error) {
 			"$inc": bson.M{"revision": 1},
 			"$set": bson.M{
 				"attemptlog": log,
-				"status":     StatusProcessing,
+				"status":     entities.WorkStatusProcessing,
 			},
 		},
 	}}
