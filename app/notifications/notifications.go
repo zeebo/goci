@@ -2,11 +2,14 @@
 package notifications
 
 import (
+	"fmt"
+	"github.com/agl/xmpp"
 	"github.com/zeebo/goci/app/entities"
 	"github.com/zeebo/goci/app/httputil"
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 	"labix.org/v2/mgo/txn"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -238,6 +241,7 @@ func dispatchNotificationItem(ctx httputil.Context, n *entities.Notification) (e
 }
 
 func sendUrlNotification(ctx httputil.Context, u string, test entities.TestResult) (err error) {
+	//exit early if we have no url
 	if u == "" {
 		return
 	}
@@ -247,10 +251,35 @@ func sendUrlNotification(ctx httputil.Context, u string, test entities.TestResul
 }
 
 func sendJabberNotification(ctx httputil.Context, u string, test entities.TestResult) (err error) {
+	//exit early if we have no url
 	if u == "" {
 		return
 	}
 
+	//make sure we have configuration values
+	if Config.Username == "" || Config.Domain == "" || Config.Password == "" {
+		ctx.Errorf("Unable to send notification (%s): configuration not specified", test.ImportPath)
+		return
+	}
+
 	ctx.Infof("Send jabber notification (%s): %s", test.ImportPath, u)
+
+	//open a tcp connection to the jabber server
+	netConn, err := net.Dial("tcp", "talk.google.com:5222")
+	if err != nil {
+		return
+	}
+	defer netConn.Close()
+
+	//use that connection in the xmpp config and dial out
+	config := &xmpp.Config{Conn: netConn}
+	conn, err := xmpp.Dial("", Config.Username, Config.Domain, Config.Password, config)
+	if err != nil {
+		return
+	}
+
+	//send off the message
+	message := fmt.Sprintf("%s @ %s status is now %s", test.ImportPath, test.Revision, test.Status)
+	err = conn.Send(u, message)
 	return
 }

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/zeebo/goci/app/frontend"
 	"github.com/zeebo/goci/app/httputil"
+	"github.com/zeebo/goci/app/notifications"
 	"github.com/zeebo/goci/app/rpc/router"
 	"github.com/zeebo/goci/builder"
 	buweb "github.com/zeebo/goci/builder/web"
@@ -107,6 +108,11 @@ func main() {
 	frontend.Config.Templates = env("TEMPLATES", "./templates")
 	frontend.Config.Static = env("STATIC", "./static")
 	frontend.Config.Debug = env("DEBUG", "") != ""
+
+	//configure the notifications
+	notifications.Config.Username = mustEnv("XMPPUSER")
+	notifications.Config.Password = mustEnv("XMPPPASS")
+	notifications.Config.Domain = mustEnv("XMPPDOMAIN")
 
 	//connect to the mongo database.
 	sess, err := mgo.Dial(env("DATABASE", "mongodb://localhost/gocitest"))

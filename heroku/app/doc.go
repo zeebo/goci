@@ -12,6 +12,9 @@ Environment variables:
 	* TEMPLATES: Path to where the templates for the frontend live. Default "./templates"
 	* STATIC: Path to where the static files for the frontend live Default "./static"
 	* DEBUG: If set, will recompile the templates every invocation.
+	* XMPPUSER: Username for sending XMPP notifications
+	* XMPPPASS: Password for sending XMPP notifications
+	* XMPPDOMAIN: Domain for sending XMPP notifications
 
 Accepts the -env argument which if specified will clear the provided environment
 and load the environment from the file. Example env file:
