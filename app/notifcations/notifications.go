@@ -78,7 +78,7 @@ func dispatchNotifications(w http.ResponseWriter, req *http.Request, ctx httputi
 
 		//update the thing as being done
 		ops := []txn.Op{{
-			C:  "Notifcation",
+			C:  "Notification",
 			Id: n.ID,
 			Assert: bson.M{
 				"revision": n.Revision,

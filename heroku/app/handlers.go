@@ -12,8 +12,9 @@ import (
 	_ "net/http/pprof"                 //add pprof support
 
 	//normal handlers
-	"github.com/zeebo/goci/app/frontend"    //load up the web frontend for people
-	_ "github.com/zeebo/goci/app/workqueue" //handle queuing/dispatching work
+	"github.com/zeebo/goci/app/frontend"        //load up the web frontend for people
+	_ "github.com/zeebo/goci/app/notifications" //handle notifications
+	_ "github.com/zeebo/goci/app/workqueue"     //handle queuing/dispatching work
 	"net/http"
 )
 

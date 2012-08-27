@@ -8,6 +8,7 @@ import (
 	"labix.org/v2/mgo/txn"
 	"log"
 	"net/http"
+	"os"
 )
 
 //Config is the package level config for httputil.
@@ -16,6 +17,9 @@ var Config struct {
 	Txn    string        //name of transaction collection
 	Domain string        //domain name of website
 }
+
+//internal logger
+var logger = log.New(os.Stdout, "", log.Lshortfile)
 
 //set some defaults for the config
 func init() {
@@ -59,7 +63,7 @@ func (c *Context) Close() {
 //logf pushes the log message into the capped collection with the given format
 //and severity.
 func (c *Context) logf(severity, format string, items ...interface{}) {
-	log.Printf("%s: %s", severity, fmt.Sprintf(format, items...))
+	logger.Output(3, fmt.Sprintf("%s: %s", severity, fmt.Sprintf(format, items...)))
 	c.DB.C("logs").Insert(bson.M{
 		"severity": severity,
 		"text":     fmt.Sprintf(format, items...),
