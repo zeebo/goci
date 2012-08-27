@@ -242,7 +242,7 @@ func sendUrlNotification(ctx httputil.Context, u string, test entities.TestResul
 		return
 	}
 
-	ctx.Infof("Send url notification:", u)
+	ctx.Infof("Send url notification (%s): %s", test.ImportPath, u)
 	return
 }
 
@@ -251,6 +251,6 @@ func sendJabberNotification(ctx httputil.Context, u string, test entities.TestRe
 		return
 	}
 
-	ctx.Infof("Send jabber notification:", u)
+	ctx.Infof("Send jabber notification (%s): %s", test.ImportPath, u)
 	return
 }

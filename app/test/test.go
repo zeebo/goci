@@ -37,10 +37,15 @@ func ping(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *ht
 
 func addwork(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *httputil.Error) {
 	//create our little work item
+	// q := rpc.Work{
+	// 	Revision:    "7d401890e4bea430b7d54a5ecd8ea50f2aea6eb2",
+	// 	ImportPath:  "github.com/zeebo/goci",
+	// 	Subpackages: true,
+	// }
+
 	q := rpc.Work{
-		Revision:    "7d401890e4bea430b7d54a5ecd8ea50f2aea6eb2",
-		ImportPath:  "github.com/zeebo/goci",
-		Subpackages: true,
+		Revision:   "e9dd26552f10d390b5f9f59c6a9cfdc30ed1431c",
+		ImportPath: "github.com/zeebo/irc",
 	}
 
 	//add it to the queue

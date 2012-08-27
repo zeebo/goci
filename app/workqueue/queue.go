@@ -153,6 +153,7 @@ func dispatchWorkItem(ctx httputil.Context, work entities.Work) (err error) {
 	if err == txn.ErrAborted {
 		ctx.Infof("Lost the race dispatching a work item")
 		err = nil
+		return
 	}
 	if err != nil {
 		return
