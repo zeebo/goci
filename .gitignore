@@ -7,5 +7,6 @@
 !*.md
 !*.yaml
 !*.sh
+!.goci
 !.heroku
 !Procfile
