@@ -2,6 +2,8 @@
 package notifications
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/agl/xmpp"
 	"github.com/zeebo/goci/app/entities"
@@ -247,6 +249,20 @@ func sendUrlNotification(ctx httputil.Context, u string, test entities.TestResul
 	}
 
 	ctx.Infof("Send url notification (%s): %s", test.ImportPath, u)
+
+	//set up the json payload
+	var buf bytes.Buffer
+	if err = json.NewEncoder(&buf).Encode(test); err != nil {
+		return
+	}
+
+	//send off the request
+	req, err := http.NewRequest("POST", u, &buf)
+	if err != nil {
+		return
+	}
+	_, err = http.DefaultClient.Do(req)
+
 	return
 }
 

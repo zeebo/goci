@@ -34,8 +34,8 @@ const (
 //TestResult is an entity type that describes the sucessful running of a test
 //and the output it generated.
 type TestResult struct {
-	ID           bson.ObjectId `bson:"_id,omitempty"`
-	WorkResultID bson.ObjectId //key of the work result that this came from
+	ID           bson.ObjectId `bson:"_id,omitempty" json:"-"`
+	WorkResultID bson.ObjectId `json:"-"` //key of the work result that this came from
 
 	ImportPath string    //import path of the test
 	Revision   string    //revision of the source code
