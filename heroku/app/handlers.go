@@ -10,6 +10,7 @@ import (
 	"expvar"                           //for some exported variables
 	_ "github.com/zeebo/goci/app/test" //simple test handlers
 	_ "net/http/pprof"                 //add pprof support
+	"runtime"                          //for gomaxprocs
 
 	//normal handlers
 	"github.com/zeebo/goci/app/frontend"        //load up the web frontend for people
@@ -21,9 +22,13 @@ import (
 //services returns the names of the services and satisfies the expvar.Func type
 func services() interface{} { return router.Services() }
 
+//gomaxprocs returns GOMAXPROCS and is an expvar.Func type
+func gomaxprocs() interface{} { return runtime.GOMAXPROCS(-1) }
+
 //add our exported vars
 func init() {
 	expvar.Publish("Services", expvar.Func(services))
+	expvar.Publish("Gomaxprocs", expvar.Func(gomaxprocs))
 }
 
 //add our rpc services
