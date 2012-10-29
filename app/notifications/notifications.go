@@ -257,11 +257,7 @@ func sendUrlNotification(ctx httputil.Context, u string, test entities.TestResul
 	}
 
 	//send off the request
-	req, err := http.NewRequest("POST", u, &buf)
-	if err != nil {
-		return
-	}
-	_, err = http.DefaultClient.Do(req)
+	_, err = http.Post(u, "application/json", &buf)
 
 	return
 }
