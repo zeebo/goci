@@ -24,8 +24,6 @@ type HookMessage struct {
 }
 
 type Repository struct {
-	Website      string
-	Fork         bool
 	Name         string
 	SCM          string
 	Absolute_URL string

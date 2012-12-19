@@ -58,7 +58,7 @@ var (
 		FCurrent:  "parents --template {node}",
 		FDate:     "parents --template {date|rfc822date} -r {rev}",
 
-		Format: time.RFC822Z,
+		Format: time.RFC1123Z,
 	}
 )
 
