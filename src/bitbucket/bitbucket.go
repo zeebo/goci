@@ -24,6 +24,7 @@ type HookMessage struct {
 }
 
 type Repository struct {
+	Website      *string
 	Name         string
 	SCM          string
 	Absolute_URL string
@@ -123,7 +124,10 @@ func (h *HookMessage) ProjectName() string {
 }
 
 func (h *HookMessage) Link() string {
-	return h.Repository.Website
+	if h.Repository.Website == nil {
+		return ""
+	}
+	return *h.Repository.Website
 }
 
 //ensure our HookMessage is a valid work item
