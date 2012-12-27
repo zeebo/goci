@@ -2,7 +2,7 @@
 /*
 Environment variables:
 
-	* DIRECTRUN: Set to have goci run tests locally. If set, APP_NAME and API_KEY aren't required but RUNPATH
+	* DIRECTRUN: Set to have goci run tests locally. If set, APP_NAME and API_KEY aren't required but RUNPATH is
 	* APP_NAME: Name of the app for the runner to send requests. Panics if required and empty.
 	* API_KEY: Heroku api key for the runner to send requests. Panics if required and empty.
 	* RUNPATH: Path to the github.com/zeebo/goci/runner binary for directrun. Panics if required and empty.

@@ -1,25 +1,21 @@
 {{ define "content" }}
 <section id="recent">
   <div class="page-header">
-    <h1>Recent Test Results</h1>
+    <h1>Tested Packages</h1>
   </div>
   <div class="row">
     <div class="span12">
       <table class="table">
         <thead>
           <th>Project</th>
-          <th>Revision</th>
-          <th>Date</th>
-          <th>Tested</th>
+          <th>Latest Revision Date</th>
           <th>Status</th>
         </thead>
         {{ range . }}
         <tr>
           <td><a href="http://godoc.org/{{.ImportPath}}">{{.ImportPath}}</a></td>
-          <td><span class="fixed">{{.Revision}}</span></td>
-          <td><span class="date">{{ .RevDate.Format "Jan 2, 2006 3:04:05 PM" }}</span></td>
-          <td><span class="date">{{ .When.Format "Jan 2, 2006 3:04:05 PM" }}</span></td>
-          <td><a href="/result/{{.ImportPath}}@{{.Revision}}">{{.Status}}</a></td>
+          <td><span class="date">{{ .Value.When.Format "Jan 2, 2006 3:04:05 PM" }}</span></td>
+          <td><a href="/result/{{.ImportPath}}">{{.Value.Status}}</a></td>
         </tr>
         {{ end }}
       </table>

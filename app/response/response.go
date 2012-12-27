@@ -64,14 +64,14 @@ func (Response) Post(req *http.Request, args *rpc.RunnerResponse, resp *rpc.None
 		switch out.Type {
 		case rpc.OutputSuccess:
 			if strings.HasSuffix(out.Output, "\nPASS\n") {
-				status = "Pass"
+				status = entities.TestStatusPass
 			} else {
-				status = "Fail"
+				status = entities.TestStatusFail
 			}
 		case rpc.OutputWontBuild:
-			status = "WontBuild"
+			status = entities.TestStatusWontBuild
 		case rpc.OutputError:
-			status = "Error"
+			status = entities.TestStatusError
 		default:
 			err = fmt.Errorf("unknown output type: %s", out.Type)
 			return

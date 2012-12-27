@@ -16,6 +16,8 @@ var Config struct {
 	DB     *mgo.Database //Database to use
 	Txn    string        //name of transaction collection
 	Domain string        //domain name of website
+
+	ContextFunc func(req *http.Request) Context //function to create contexts
 }
 
 //internal logger
@@ -25,6 +27,7 @@ var logger = log.New(os.Stdout, "", log.Lshortfile)
 func init() {
 	Config.Domain = "localhost:9080"
 	Config.Txn = "txns"
+	Config.ContextFunc = NewContext
 
 	//set the display logs to include filename/num
 	log.SetFlags(log.Lshortfile)
@@ -38,7 +41,7 @@ func Absolute(req string) string {
 //NewContext returns a new context for the given request.
 func NewContext(req *http.Request) Context {
 	if Config.DB == nil {
-		panic("Set httputil.Config.DB before creating contexts")
+		panic("Didn't set httputil.Config.DB before creating contexts")
 	}
 
 	db := Config.DB.Session.Clone().DB(Config.DB.Name)
@@ -57,7 +60,9 @@ type Context struct {
 
 //close closes the context, cleaning up any resources it acquired.
 func (c *Context) Close() {
-	c.DB.Session.Close()
+	if c.DB != nil {
+		c.DB.Session.Close()
+	}
 }
 
 //logf pushes the log message into the capped collection with the given format
@@ -83,10 +88,9 @@ func (c *Context) Infof(format string, items ...interface{}) {
 //Handler is a http.Handler for a specific funciton signature.
 type Handler func(http.ResponseWriter, *http.Request, Context) *Error
 
-//ServeHTTP makes Handler a http.Handler. It allocates and cleans up a context
-//and handles errors returned from a handler.
-func (fn Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	c := NewContext(r)
+//Perform runs the http request through the Handler
+func Perform(w http.ResponseWriter, r *http.Request, fn Handler) {
+	c := Config.ContextFunc(r)
 	defer c.Close()
 
 	//run the handler
@@ -94,6 +98,12 @@ func (fn Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, e.Message, e.Code)
 		c.Errorf("[%d] %s (%v)", e.Code, e.Message, e.Error)
 	}
+}
+
+//ServeHTTP makes Handler a http.Handler. It allocates and cleans up a context
+//and handles errors returned from a handler.
+func (fn Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	Perform(w, r, fn)
 }
 
 //Error is an error type specific to http requests.

@@ -168,6 +168,7 @@ func dispatchNotificationItem(ctx httputil.Context, n *entities.Notification) (e
 	if err == txn.ErrAborted {
 		ctx.Infof("Lost the race dispatching a notification")
 		err = nil
+		return
 	}
 	if err != nil {
 		return

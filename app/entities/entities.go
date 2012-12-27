@@ -45,6 +45,13 @@ type TestResult struct {
 	Status     string    //the status of the build: (Pass/Fail/WontBuild/Error)
 }
 
+const (
+	TestStatusPass      = "Pass"
+	TestStatusFail      = "Fail"
+	TestStatusWontBuild = "WontBuild"
+	TestStatusError     = "Error"
+)
+
 //WorkResult is an entity type that represents the result of the work item being
 //run through the queue. It records any build failures or other errors in
 //generating the test results.
