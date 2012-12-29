@@ -13,10 +13,10 @@ var Mux = pat.New()
 //register all the handlers with the serve mux
 func init() {
 	Mux.Add("GET", "/static/", http.StripPrefix("/static", http.FileServer(Config)))
-	Mux.Add("GET", "/work/{key:.+}", httputil.Handler(specifc_work))
+	Mux.Add("GET", "/work/{key:.+}", httputil.Handler(specificWork))
 	Mux.Add("GET", "/work", httputil.Handler(work))
-	Mux.Add("GET", "/result/{import:[^@]+}@{rev:.*}", httputil.Handler(specific_import_result))
-	Mux.Add("GET", "/result/{import:[^@]+}", httputil.Handler(import_result))
+	Mux.Add("GET", "/result/{import:[^@]+}@{rev:.*}", httputil.Handler(specificImportResult))
+	Mux.Add("GET", "/result/{import:[^@]+}", httputil.Handler(importResult))
 	Mux.Add("GET", "/result", httputil.Handler(result))
 	Mux.Add("GET", "/image/{import:.+}", httputil.Handler(image))
 	Mux.Add("GET", "/how", httputil.Handler(how))

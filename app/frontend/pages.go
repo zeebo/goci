@@ -4,6 +4,7 @@ import (
 	"github.com/zeebo/goci/app/entities"
 	"github.com/zeebo/goci/app/httputil"
 	"labix.org/v2/mgo"
+	"labix.org/v2/mgo/bson"
 	"net/http"
 	"net/url"
 	"sort"
@@ -43,6 +44,7 @@ func index(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *h
 	err := ctx.DB.C("TestResult").Find(nil).Sort("-when").Limit(20).All(&res)
 	if err != nil {
 		e = httputil.Errorf(err, "couldn't query for test results")
+		return
 	}
 
 	w.Header().Set("Content-Type", "text/html")
@@ -54,23 +56,36 @@ func index(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *h
 
 //work shows recent work items
 func work(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *httputil.Error) {
+	var res []entities.WorkResult
+	err := ctx.DB.C("WorkResult").Find(nil).Sort("-when").Limit(20).All(&res)
+	if err != nil {
+		e = httputil.Errorf(err, "couldn't query for work results")
+		return
+	}
+
 	w.Header().Set("Content-Type", "text/html")
-	if err := T("index/index.html").Execute(w, nil); err != nil {
+	if err := T("work/work.html").Execute(w, res); err != nil {
 		e = httputil.Errorf(err, "error executing index template")
 	}
 	return
 }
 
-//specific_work shows a work item with the given key
-func specifc_work(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *httputil.Error) {
+//specificWork shows a work item with the given key
+func specificWork(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *httputil.Error) {
 	w.Header().Set("Content-Type", "text/html")
 	if err := req.ParseForm(); err != nil {
 		e = httputil.Errorf(err, "error parsing form")
 		return
 	}
 
-	key := grab(req.Form, "key")
-	if err := T("index/index.html").Execute(w, key); err != nil {
+	id := bson.ObjectIdHex(grab(req.Form, "key"))
+	var work *entities.Work
+	if err := ctx.DB.C("Work").FindId(id).One(&work); err != nil {
+		e = httputil.Errorf(err, "error grabbing work item")
+		return
+	}
+
+	if err := T("work/specific_work.html").Execute(w, work); err != nil {
 		e = httputil.Errorf(err, "error executing index template")
 	}
 	return
@@ -80,14 +95,14 @@ func specifc_work(w http.ResponseWriter, req *http.Request, ctx httputil.Context
 func result(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *httputil.Error) {
 	w.Header().Set("Content-Type", "text/html")
 
-	if err := T("index/index.html").Execute(w, nil); err != nil {
+	if err := T("result/result.html").Execute(w, nil); err != nil {
 		e = httputil.Errorf(err, "error executing index template")
 	}
 	return
 }
 
-//import_result shows recent result items for an import path
-func import_result(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *httputil.Error) {
+//importResult shows recent result items for an import path
+func importResult(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *httputil.Error) {
 	w.Header().Set("Content-Type", "text/html")
 	if err := req.ParseForm(); err != nil {
 		e = httputil.Errorf(err, "error parsing form")
@@ -95,14 +110,14 @@ func import_result(w http.ResponseWriter, req *http.Request, ctx httputil.Contex
 	}
 
 	imp := grab(req.Form, "import")
-	if err := T("index/index.html").Execute(w, imp); err != nil {
+	if err := T("result/import_result.html").Execute(w, imp); err != nil {
 		e = httputil.Errorf(err, "error executing index template")
 	}
 	return
 }
 
-//specific_import_result shows a result item for an import path and given revision
-func specific_import_result(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *httputil.Error) {
+//specificImportResult shows a result item for an import path and given revision
+func specificImportResult(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *httputil.Error) {
 	w.Header().Set("Content-Type", "text/html")
 	if err := req.ParseForm(); err != nil {
 		e = httputil.Errorf(err, "error parsing form")
@@ -110,7 +125,7 @@ func specific_import_result(w http.ResponseWriter, req *http.Request, ctx httput
 	}
 
 	imp, rev := grab(req.Form, "import"), grab(req.Form, "rev")
-	if err := T("index/index.html").Execute(w, struct{ Imp, Rev string }{imp, rev}); err != nil {
+	if err := T("result/specific_import_result.html").Execute(w, []string{imp, rev}); err != nil {
 		e = httputil.Errorf(err, "error executing index template")
 	}
 	return
@@ -125,9 +140,7 @@ func image(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *h
 	}
 
 	imp := grab(req.Form, "import")
-	if err := T("index/index.html").Execute(w, imp); err != nil {
-		e = httputil.Errorf(err, "error executing index template")
-	}
+	_ = imp
 	return
 }
 
@@ -183,7 +196,7 @@ func pkg(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *htt
 func how(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *httputil.Error) {
 	w.Header().Set("Content-Type", "text/html")
 
-	if err := T("index/index.html").Execute(w, nil); err != nil {
+	if err := T("how/how.html").Execute(w, nil); err != nil {
 		e = httputil.Errorf(err, "error executing index template")
 	}
 	return

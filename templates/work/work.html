@@ -1,0 +1,27 @@
+{{ define "content" }}
+<section id="recent">
+  <div class="page-header">
+    <h1>Recent Work Items</h1>
+  </div>
+  <div class="row">
+    <div class="span12">
+      <table class="table">
+        <thead>
+          <th>Work ID</th>
+          <th>Date</th>
+          <th>Ran</th>
+          <th>Success</th>
+        </thead>
+        {{ range . }}
+        <tr>
+          <td><span class="fixed"><a href="/work/{{.WorkID.Hex}}">{{.WorkID.Hex}}</a></span></td>
+          <td><span class="date">{{if .RevDate.IsZero}}Unknown{{else}}{{ .RevDate.Format "Jan 2, 2006 3:04:05 PM" }}{{end}}</span></td>
+          <td><span class="date">{{if .When.IsZero}}Unknown{{else}}{{ .When.Format "Jan 2, 2006 3:04:05 PM" }}{{end}}</span></td>
+          <td><a href="/work/{{.WorkID.Hex}}">{{if .Success}}Success{{else}}Failure{{end}}</a></td>
+        </tr>
+        {{ end }}
+      </table>
+    </div>
+  </div>
+</section>
+{{ end }}

@@ -1,0 +1,107 @@
+{{ define "content" }}
+<section id="info">
+<div class="row">
+  <div class="span12">
+    <h2>Info</h2>
+    <div class="well">
+      <p>
+      GoCI tests packages by interfacing with the source control hosting
+      website's post-commit hook mechanism. Just add the url corresponding
+      to the source control hosting site you are using to the post-commit
+      hook area, and push a commit. This area is usually found in the admin
+      or project settings portion of the website. Happy testing!
+      </p>
+    </div>
+  </div>
+</div>
+</section>
+
+<section id="hooks">
+<div class="row">
+  <div class="span12">
+    <h2>URLs</h2>
+    <table class="table">
+      <thead>
+        <th>Website</th>
+        <th>URL</th>
+      </thead>
+      <tr>
+        <td>Github</td>
+        <td>http://goci.me</td>
+      </tr>
+      <tr>
+        <td>BitBucket</td>
+        <td>http://goci.me</td>
+      </tr>
+      <tr>
+        <td>Google Code (git)</td>
+        <td>http://goci.me</td>
+      </tr>
+      <tr>
+        <td>Google Code (hg)</td>
+        <td>http://goci.me</td>
+      </tr>
+      <tr>
+        <td>Arbitrary "go get"</td>
+        <td>Send a POST request to http://goci.me</td>
+      </tr>
+    </table>
+  </div>
+</div>
+</section>
+
+<section id="images">
+  <div class="row">
+    <div class="span12">
+      <h2>Images</h2>
+      <div class="well">
+        <p>
+        If you would like to include an image of the current build status of
+        your project on your website or source control page, you just have to
+        point an image at
+        </p>
+
+        <pre>http://goci.me</pre>
+
+        <p>
+        Please be kind enough to link back to somewhere on goci.me. Here's a
+        nice little template to help:
+        </p>
+
+        <pre>&lt;a href="http://goci.me"&gt;
+    &lt;img src="http://goci.me" /&gt;
+  &lt;/a&gt;</pre>
+
+        <h3>Caching</h3>
+        <p>
+        If you're putting it in a github readme or on some site that caches
+        the output of the images, you might try using https. Note that the
+        SSL cert for https://goci.me is for *.heroku.com, so if you need a valid cert
+        use the domain goci.herokuapp.com.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="buildtags">
+  <div class="row">
+    <div class="span12">
+      <h2>Build Tags</h2>
+      <div class="well">
+        <p>All of the code compiled by GoCI is passed a build tag of "goci".
+        This allows you to optionally include/exclude portions of your binary
+        or portions of your tests to be run on GoCI. For example if you have
+        some tests that require a C library that is not installed, you can
+        disable it with a build directive of</p>
+
+        <pre>// +build !goci</pre>
+
+        <p>If you would like more information about build tags and what they
+        can do for you, visit the <a href="http://golang.org/pkg/go/build">
+        go/build</a> documentation.</p>
+      </div>
+    </div>
+  </div>
+</section>
+{{ end }}

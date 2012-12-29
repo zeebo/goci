@@ -63,7 +63,7 @@ type Work struct {
 	Subpackages bool
 
 	//VCSHint is an optional parameter that specifies the version control system
-	//used by the package. If set to the empty string, we will search for the 
+	//used by the package. If set to the empty string, we will search for the
 	//system by looking for the metadata directory.
 	VCSHint string
 }
@@ -105,7 +105,7 @@ type RunTest struct {
 
 //RunnerResponse is the response from the Runner to the tracker
 type RunnerResponse struct {
-	Key      string    //the datastore key for the Work item
+	Key      string    //the key for the Work item
 	ID       string    //the ID of the test
 	WorkRev  int       //the revision of the work item
 	Revision string    //the revision we ended up testing
