@@ -3,18 +3,21 @@ package builder
 import (
 	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/environ"
+	"github.com/zeebo/goci/gotool"
 	"github.com/zeebo/goci/tarball"
+	"github.com/zeebo/goci/vcs"
 	"strings"
 	"testing"
+	"time"
 )
 
 func testMode(r environ.TestRun) (environ.TestEnv, func()) {
-	prevWorld, prevTarbWorld := World, tarball.World
+	p1, p2, p3, p4 := World, tarball.World, vcs.World, gotool.World
 	tw := environ.NewTest(3)
 	tw.SetRun(r)
-	World, tarball.World = tw, tw
+	World, tarball.World, vcs.World, gotool.World = tw, tw, tw, tw
 	return tw, func() {
-		World, tarball.World = prevWorld, prevTarbWorld
+		World, tarball.World, vcs.World, gotool.World = p1, p2, p3, p4
 	}
 }
 
@@ -24,14 +27,14 @@ func testRun(c environ.Command) (error, bool) {
 	case "hg":
 		switch {
 		case c.Args[1] == "parents" && c.Args[3] == "{date|rfc822date}": //date
-			c.W.Write([]byte(vcsHg.Format))
+			c.W.Write([]byte(time.RFC822Z))
 		case c.Args[1] == "parents" && c.Args[3] == "{node}":
 			c.W.Write([]byte(`revision`))
 		}
 	case "git":
 		switch {
 		case c.Args[1] == "log": //date
-			c.W.Write([]byte(vcsGit.Format))
+			c.W.Write([]byte("Mon, 2 Jan 2006 15:04:05 -0700"))
 		case c.Args[1] == "rev-parse":
 			c.W.Write([]byte(`revision`))
 		}
@@ -39,7 +42,7 @@ func testRun(c environ.Command) (error, bool) {
 		switch {
 		case c.Args[1] == "log":
 			c.W.Write([]byte(`timestamp: `))
-			c.W.Write([]byte(vcsBzr.Format))
+			c.W.Write([]byte("Mon 2006-01-02 15:04:05 -0700"))
 		case c.Args[1] == "revision-info":
 			c.W.Write([]byte(`120 foobar revision`))
 		}

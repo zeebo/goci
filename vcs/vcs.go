@@ -1,4 +1,4 @@
-package builder
+package vcs
 
 import (
 	"bytes"
@@ -11,23 +11,37 @@ import (
 	"time"
 )
 
-type vcs interface {
+type VCS interface {
 	Checkout(dir, rev string) (err error)
 	Clone(repo, dir string) (err error)
 	Current(dir string) (rev string, err error)
 	Date(dir, rev string) (t time.Time, err error)
 }
 
-var vcsMap = map[string]vcs{
-	"git": vcsGit,
-	"hg":  vcsHg,
-	"bzr": vcsBzr,
+var vcsMap = map[VCSType]VCS{
+	Git: vcsGit,
+	HG:  vcsHg,
+	Bzr: vcsBzr,
 }
 
-//findVcs looks for the metadata folder inside of a given path
-func findVcs(path string) (v vcs) {
+type VCSType string
+
+const (
+	Git VCSType = "git"
+	HG  VCSType = "hg"
+	Bzr VCSType = "bzr"
+)
+
+//New returns a new vcs for the given type.
+func New(typ VCSType) VCS {
+	return vcsMap[typ]
+}
+
+//FindVCS looks for the metadata folder inside of a given path and returns a
+//VCS object to interact with it.
+func FindVCS(path string) (v VCS) {
 	for name, vcs := range vcsMap {
-		p := fp.Join(path, "."+name)
+		p := fp.Join(path, "."+string(name))
 		if World.Exists(p) {
 			v = vcs
 			return
@@ -87,7 +101,7 @@ var vcsBzr = &vcsInfo{
 	},
 }
 
-type vcsError struct {
+type VCSError struct {
 	Msg    string
 	Vcs    *vcsInfo
 	Err    error
@@ -95,12 +109,12 @@ type vcsError struct {
 	Output string
 }
 
-func (v *vcsError) Error() string {
+func (v *VCSError) Error() string {
 	return fmt.Sprintf("%s: %v\nvcs: %s\nargs: %s\noutput: %s", v.Msg, v.Err, v.Vcs.Name, v.Args, v.Output)
 }
 
 func vcsErrorf(err error, v *vcsInfo, args []string, out string, msg string) error {
-	return &vcsError{
+	return &VCSError{
 		Msg:    msg,
 		Vcs:    v,
 		Err:    err,

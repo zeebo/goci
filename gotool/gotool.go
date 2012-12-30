@@ -1,29 +1,28 @@
-package builder
+package gotool
 
 import (
 	"bytes"
 	"fmt"
 	"github.com/zeebo/goci/environ"
-	"github.com/zeebo/goci/tarball"
 	"io"
 	p "path"
 	fp "path/filepath"
 	"strings"
 )
 
-type cmdError struct {
+type CmdError struct {
 	Msg    string
 	Err    error
 	Args   []string
 	Output string
 }
 
-func (t *cmdError) Error() string {
+func (t *CmdError) Error() string {
 	return fmt.Sprintf("%s: %v\nargs: %s\noutput: %s", t.Msg, t.Err, t.Args, t.Output)
 }
 
 func cmdErrorf(err error, args []string, buf string, format string, vals ...interface{}) error {
-	return &cmdError{
+	return &CmdError{
 		Msg:    fmt.Sprintf(format, vals...),
 		Err:    err,
 		Args:   args,
@@ -35,37 +34,38 @@ const listTemplate = `{{ range .TestImports }}{{ . }}
 {{ end }}{{ range .XTestImports }}{{ . }}
 {{ end }}`
 
-func pack(dir, out string) (err error) {
-	err = tarball.CompressFile(dir, out)
-	return
+type Gotool struct {
+	Env    []string
+	GOROOT string
+	GOPATH string
 }
 
-//goCmd uses the builders goroot variable to get a path to the go command with
-//the correct environment
-func (b Builder) goCmd(buf io.Writer, dir string, args ...string) (p environ.Proc) {
+//Cmd uses the goroot variable to get a path to the go command with the correct
+//environment
+func (g *Gotool) Cmd(buf io.Writer, dir string, args ...string) (p environ.Proc) {
 	cmd := environ.Command{
 		W:    buf,
 		Dir:  dir,
-		Env:  b.env,
-		Path: fp.Join(b.goroot, "bin", "go"),
+		Env:  g.Env,
+		Path: fp.Join(g.GOROOT, "bin", "go"),
 		Args: args,
 	}
 	return World.Make(cmd)
 }
 
-//goRun is a convenience wrapper that builds and executes a command, returning
+//Run is a convenience wrapper that builds and executes a command, returning
 //an error that wraps all the output.
-func (b Builder) goRun(dir string, msg string, args ...string) (s string, err error) {
+func (g *Gotool) Run(dir string, msg string, args ...string) (s string, err error) {
 	var buf bytes.Buffer
-	if e, ok := b.goCmd(&buf, dir, args...).Run(); !ok {
+	if e, ok := g.Cmd(&buf, dir, args...).Run(); !ok {
 		err = cmdErrorf(e, args, buf.String(), "error %s", msg)
 	}
 	s = buf.String()
 	return
 }
 
-//goGet runs a go get on the given import paths
-func (b Builder) goGet(download bool, path ...string) (err error) {
+//Get runs a go get on the given import paths
+func (g *Gotool) Get(download bool, path ...string) (err error) {
 	//build the arguments
 	args := []string{"go", "get", "-v"}
 	if download {
@@ -74,20 +74,20 @@ func (b Builder) goGet(download bool, path ...string) (err error) {
 	args = append(args, "-tags", "goci")
 	args = append(args, path...)
 
-	_, err = b.goRun("", "building code + deps", args...)
+	_, err = g.Run("", "building code + deps", args...)
 	return
 }
 
-//goList runs a list on the given import paths and returns the paths that match
+//List runs a list on the given import paths and returns the paths that match
 //the list query as well as all
-func (b Builder) goList(path string) (paths, testpaths []string, err error) {
-	s, err := b.goRun(b.gopath, "listing package", "go", "list", path)
+func (g *Gotool) List(path string) (paths, testpaths []string, err error) {
+	s, err := g.Run(g.GOPATH, "listing package", "go", "list", path)
 	if err != nil {
 		return
 	}
 	paths = parseImports(s)
 
-	s, err = b.goRun(b.gopath, "listing package", "go", "list", "-f", listTemplate, path)
+	s, err = g.Run(g.GOPATH, "listing package", "go", "list", "-f", listTemplate, path)
 	if err != nil {
 		return
 	}
@@ -96,20 +96,22 @@ func (b Builder) goList(path string) (paths, testpaths []string, err error) {
 	return
 }
 
-func (b Builder) goTest(path string) (bin string, err error) {
+//Test creates a test binary for the import path. exeSuffix should be ".exe"
+//if running on windows, and "" otherwise.
+func (g *Gotool) Test(exeSuffix, path string) (bin string, err error) {
 	dir, err := World.TempDir("build")
 	if err != nil {
 		return
 	}
 
-	_, err = b.goRun(dir, "building test", "go", "test", "-c", "-tags", "goci", path)
+	_, err = g.Run(dir, "building test", "go", "test", "-c", "-tags", "goci", path)
 	if err != nil {
 		return
 	}
 
 	//what the go tool does from inspecting the source
 	_, elem := p.Split(path)
-	bin = fp.Join(dir, elem+".test"+b.exeSuffix())
+	bin = fp.Join(dir, elem+".test"+exeSuffix)
 	return
 }
 

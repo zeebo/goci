@@ -1,23 +1,8 @@
-package builder
+package gotool
 
 import (
-	"os"
 	"sort"
 )
-
-func env(key, def string) string {
-	if k := os.Getenv(key); k != "" {
-		return k
-	}
-	return def
-}
-
-func mustEnv(key string) string {
-	if k := os.Getenv(key); k != "" {
-		return k
-	}
-	panic("key not found in environment: " + key)
-}
 
 //unique sorts and uniques the slice in place.
 func unique(in []string) (out []string) {

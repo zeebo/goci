@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/environ"
+	"github.com/zeebo/goci/gotool"
+	"github.com/zeebo/goci/tarball"
+	"github.com/zeebo/goci/vcs"
 	"io"
 	"os"
 	p "path"
@@ -17,7 +20,6 @@ type LocalWorld interface {
 	Exists(string) bool
 	LookPath(string) (string, error)
 	TempDir(string) (string, error)
-	Make(environ.Command) environ.Proc
 	Open(string) (io.ReadCloser, error)
 }
 
@@ -87,6 +89,15 @@ func (b Builder) GOOS() string { return b.goos }
 //GOARCH returns the GOARCH the builder will make binaries for.
 func (b Builder) GOARCH() string { return b.goarch }
 
+//tool returns a gotool for the builder
+func (b Builder) tool() *gotool.Gotool {
+	return &gotool.Gotool{
+		Env:    b.env,
+		GOROOT: b.goroot,
+		GOPATH: b.gopath,
+	}
+}
+
 //Cleanup removes any temporary files created by the Builder. It is intended to
 //be called after all work items the Builder will ever create have been created,
 //like during the exit of a program.
@@ -151,8 +162,10 @@ func (b Builder) Build(w *rpc.Work) (builds []Build, revDate time.Time, err erro
 	b.env = append(b.env, b.baseEnv...)
 	b.env = append(b.env, fmt.Sprintf("GOPATH=%s", b.gopath))
 
+	tool := b.tool()
+
 	//get the import path (just download the package)
-	if err = b.goGet(true, w.ImportPath); err != nil {
+	if err = tool.Get(true, w.ImportPath); err != nil {
 		return
 	}
 
@@ -160,13 +173,13 @@ func (b Builder) Build(w *rpc.Work) (builds []Build, revDate time.Time, err erro
 	packDir := fp.Join(b.gopath, "src", w.ImportPath)
 
 	//set up the vcs
-	var v vcs
+	var v vcs.VCS
 
 	//check the hint for the vcs and fallback on searching the directories
-	if vc, ok := vcsMap[w.VCSHint]; ok {
+	if vc := vcs.New(vcs.VCSType(w.VCSHint)); vc != nil {
 		v = vc
 	} else {
-		v = findVcs(packDir)
+		v = vcs.FindVCS(packDir)
 	}
 
 	//if we don't have a vcs then we can't continue
@@ -198,7 +211,7 @@ func (b Builder) Build(w *rpc.Work) (builds []Build, revDate time.Time, err erro
 	if w.Subpackages {
 		path = p.Join(path, "...")
 	}
-	paths, testpaths, err := b.goList(path)
+	paths, testpaths, err := tool.List(path)
 	if err != nil {
 		return
 	}
@@ -212,7 +225,7 @@ func (b Builder) Build(w *rpc.Work) (builds []Build, revDate time.Time, err erro
 	//download, update and install all the deps this revision imports, ignoring
 	//the errors returned so that we get the build errors when trying to build
 	//the individual tests.
-	b.goGet(false, deppaths...)
+	b.tool().Get(false, deppaths...)
 
 	//build each of the tests
 	for _, tpath := range paths {
@@ -249,7 +262,7 @@ func (b Builder) build(baseImport, subImport string) (bu Build) {
 	}
 
 	//build the test
-	bu.BinaryPath, err = b.goTest(subImport)
+	bu.BinaryPath, err = b.tool().Test(b.exeSuffix(), subImport)
 	if err != nil {
 		bu.Error = err.Error()
 		return
@@ -268,7 +281,7 @@ func (b Builder) build(baseImport, subImport string) (bu Build) {
 	packDir := fp.Join(b.gopath, "src", subImport)
 
 	//pack the source code
-	if err = pack(packDir, bu.SourcePath); err != nil {
+	if err = tarball.CompressFile(packDir, bu.SourcePath); err != nil {
 		bu.Error = err.Error()
 		return
 	}
