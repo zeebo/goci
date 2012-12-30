@@ -1,14 +1,9 @@
 package frontend
 
 import (
-	"github.com/zeebo/goci/app/entities"
 	"github.com/zeebo/goci/app/httputil"
-	"labix.org/v2/mgo"
-	"labix.org/v2/mgo/bson"
 	"net/http"
 	"net/url"
-	"sort"
-	"time"
 )
 
 type (
@@ -39,9 +34,9 @@ func index(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *h
 		notFound(w, req)
 		return
 	}
+	m := newManager(ctx)
 
-	var res []entities.TestResult
-	err := ctx.DB.C("TestResult").Find(nil).Sort("-when").Limit(20).All(&res)
+	res, err := m.Index()
 	if err != nil {
 		e = httputil.Errorf(err, "couldn't query for test results")
 		return
@@ -56,8 +51,9 @@ func index(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *h
 
 //work shows recent work items
 func work(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *httputil.Error) {
-	var res []entities.WorkResult
-	err := ctx.DB.C("WorkResult").Find(nil).Sort("-when").Limit(20).All(&res)
+	m := newManager(ctx)
+
+	res, err := m.Work(0, 20)
 	if err != nil {
 		e = httputil.Errorf(err, "couldn't query for work results")
 		return
@@ -77,10 +73,10 @@ func specificWork(w http.ResponseWriter, req *http.Request, ctx httputil.Context
 		e = httputil.Errorf(err, "error parsing form")
 		return
 	}
+	m := newManager(ctx)
 
-	id := bson.ObjectIdHex(grab(req.Form, "key"))
-	var work *entities.Work
-	if err := ctx.DB.C("Work").FindId(id).One(&work); err != nil {
+	work, err := m.SpecificWork(grab(req.Form, "key"))
+	if err != nil {
 		e = httputil.Errorf(err, "error grabbing work item")
 		return
 	}
@@ -144,48 +140,17 @@ func image(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *h
 	return
 }
 
-var pkgListJob = &mgo.MapReduce{
-	Map: `function() { emit(this.importpath, {
-			when: this.revdate,
-			status: this.status
-		});
-	}`,
-	Reduce: `function(key, values) {
-		var result = values.shift();
-		values.forEach(function(value) {
-			if (result.when < value.when) {
-				result = value;
-			}
-		});
-		return result;
-	}`,
-}
-
-type pkgListJobResult []*struct {
-	ImportPath string `bson:"_id"`
-	Value      struct {
-		When   time.Time
-		Status string
-	}
-}
-
-func (p pkgListJobResult) Len() int      { return len(p) }
-func (p pkgListJobResult) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
-func (p pkgListJobResult) Less(i, j int) bool {
-	return p[i].Value.When.After(p[j].Value.When)
-}
-
 //pkg displays a list of import paths tested by goci
 func pkg(w http.ResponseWriter, req *http.Request, ctx httputil.Context) (e *httputil.Error) {
-	w.Header().Set("Content-Type", "text/html")
+	m := newManager(ctx)
 
-	var res pkgListJobResult
-	_, err := ctx.DB.C("TestResult").Find(nil).MapReduce(pkgListJob, &res)
+	res, err := m.Packages()
 	if err != nil {
 		e = httputil.Errorf(err, "error grabbing package list")
 		return
 	}
-	sort.Sort(res)
+
+	w.Header().Set("Content-Type", "text/html")
 	if err := T("pkg/pkg.html").Execute(w, res); err != nil {
 		e = httputil.Errorf(err, "error executing index template")
 	}

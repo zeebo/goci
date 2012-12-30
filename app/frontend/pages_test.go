@@ -1,6 +1,7 @@
 package frontend
 
 import (
+	"github.com/zeebo/goci/app/entities"
 	"github.com/zeebo/goci/app/httputil"
 	"html/template"
 	"net/http"
@@ -16,11 +17,25 @@ func makeGETRequest(path string) *http.Request {
 	return req
 }
 
+type testQueryManager struct{}
+
+func (testQueryManager) Index() ([]entities.TestResult, error)               { return nil, nil }
+func (testQueryManager) SpecificWork(string) (*entities.Work, error)         { return nil, nil }
+func (testQueryManager) Work(skip, limit int) ([]entities.WorkResult, error) { return nil, nil }
+func (testQueryManager) Packages() (pkgListJobResult, error)                 { return nil, nil }
+
 func init() {
 	//stub out contextfunc for tests
 	httputil.Config.ContextFunc = func(*http.Request) (c httputil.Context) { return }
+
+	//stub out the template func
 	T = func(unused string) *template.Template {
 		return template.Must(template.New("").Parse("{{.}}"))
+	}
+
+	//stub out the query manager
+	newManager = func(httputil.Context) queryManager {
+		return testQueryManager{}
 	}
 }
 
@@ -34,7 +49,7 @@ func TestIndex(t *testing.T) {
 
 func TestSpecificWork(t *testing.T) {
 	rec := httptest.NewRecorder()
-	Mux.ServeHTTP(rec, makeGETRequest("/work/foo"))
+	Mux.ServeHTTP(rec, makeGETRequest("/work/50dfac94346bea11bb000001"))
 	if rec.Code != 200 {
 		t.Fatal("Invalid response code:", rec.Code)
 	}
