@@ -2,8 +2,8 @@
 package router
 
 import (
-	"code.google.com/p/gorilla/rpc"
-	"code.google.com/p/gorilla/rpc/json"
+	"github.com/gorilla/rpc"
+	"github.com/gorilla/rpc/json"
 	"net/http"
 	"sort"
 )

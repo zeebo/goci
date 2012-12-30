@@ -1,7 +1,7 @@
 package client
 
 import (
-	"code.google.com/p/gorilla/rpc/json"
+	"github.com/gorilla/rpc/json"
 	"io"
 )
 

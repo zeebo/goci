@@ -2,7 +2,7 @@
 package frontend
 
 import (
-	"code.google.com/p/gorilla/pat"
+	"github.com/gorilla/pat"
 	"github.com/zeebo/goci/app/httputil"
 	"net/http"
 )

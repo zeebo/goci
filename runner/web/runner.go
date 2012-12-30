@@ -1,8 +1,8 @@
 package web
 
 import (
-	gorpc "code.google.com/p/gorilla/rpc"
-	"code.google.com/p/gorilla/rpc/json"
+	gorpc "github.com/gorilla/rpc"
+	"github.com/gorilla/rpc/json"
 	"github.com/zeebo/goci/app/pinger"
 	"github.com/zeebo/goci/app/rpc"
 	"github.com/zeebo/goci/app/rpc/client"
