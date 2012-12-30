@@ -18,7 +18,7 @@ import (
 
 type LocalWorld interface {
 	Exists(string) bool
-	LookPath(string) (string, error)
+	// LookPath(string) (string, error)
 	TempDir(string) (string, error)
 	Open(string) (io.ReadCloser, error)
 }
