@@ -5,11 +5,22 @@
 		<h2>Info</h2>
 		<div class="well">
 			<p>
-			GoCI tests packages by interfacing with the source control hosting 
+			GoCI tests packages by interfacing with the source control hosting
 			website's post-commit hook mechanism. Just add the url corresponding
 			to the source control hosting site you are using to the post-commit
 			hook area, and push a commit. This area is usually found in the admin
 			or project settings portion of the website. Happy testing!
+			</p>
+		</div>
+	</div>
+</div>
+
+<div class="row-fluid">
+	<div class="span12">
+		<h2>Contribute</h2>
+		<div class="well">
+			<p>
+			GoCI is developed open source at <a href="http://github.com/zeebo/goci">github.com/zeebo/goci</a>.
 			</p>
 		</div>
 	</div>
@@ -72,11 +83,11 @@
 			<pre>&lt;a href="http://goci.me{% reverse "project_detail" "import" "<import path>" %}"&gt;
 	&lt;img src="http://goci.me{% reverse "project_status_image" "import" "<import path>" %}" /&gt;
 &lt;/a&gt;</pre>
-			
+
 			<h3>Caching</h3>
 			<p>
 			If you're putting it in a github readme or on some site that caches
-			the output of the images, you might try using https. Note that the 
+			the output of the images, you might try using https. Note that the
 			SSL cert for https://goci.me is for *.heroku.com, so if you need a valid cert
 			use the domain goci.herokuapp.com.
 			</p>
