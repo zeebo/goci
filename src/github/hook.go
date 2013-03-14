@@ -28,7 +28,7 @@ type Repository struct {
 	Pledie, Description string
 	Watchers, Forks     int
 	Private             bool
-	Owner               Author
+	// Owner               Author
 }
 
 type Author struct {
