@@ -11,4 +11,4 @@ http://goci.me/how
 
 ## Build status
 
-Currently ![](http://goci.me/project/image/github.com/zeebo/goci)
+Currently ![](https://goci.herokuapp.com/project/image/github.com/zeebo/goci)
