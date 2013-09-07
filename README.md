@@ -9,6 +9,6 @@ the layout like a gopath or projects that are packages in the main directory
 
 http://goci.me/how
 
-## Build status
+## Status
 
-Currently ![](https://goci.herokuapp.com/project/image/github.com/zeebo/goci)
+[![Build Status](https://goci.herokuapp.com/project/image/github.com/zeebo/goci)](http://goci.me/project/github.com/zeebo/goci)
