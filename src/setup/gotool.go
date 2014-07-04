@@ -52,7 +52,7 @@ func toolDownload() (err error) {
 	//tarball will be cleaned by os.RemoveAll
 
 	//create the request for the tarball
-	dlpath := fmt.Sprintf("http://golang.org/dl/go1.3.%s-%s.tar.gz", runtime.GOOS, runtime.GOARCH)
+	dlpath := fmt.Sprintf("https://storage.googleapis.com/golang/go1.3.%s-%s.tar.gz", runtime.GOOS, runtime.GOARCH)
 	log.Println("downloading", dlpath, "to", tbPath)
 	resp, err := http.Get(dlpath)
 	if err != nil {
