@@ -1,13 +1,14 @@
 package worker
 
 import (
-	"builder"
 	"bytes"
 	"encoding/gob"
 	"fmt"
 	"log"
 	fp "path/filepath"
 	"time"
+
+	"builder"
 )
 
 type Bytes []byte

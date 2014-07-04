@@ -3,11 +3,13 @@ package worker
 import (
 	"crypto/rand"
 	"fmt"
-	"heroku"
-	"labix.org/v2/mgo"
 	"log"
 	"net/url"
 	"path"
+
+	"labix.org/v2/mgo"
+
+	"heroku"
 )
 
 type Config struct {

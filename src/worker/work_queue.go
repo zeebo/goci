@@ -1,13 +1,15 @@
 package worker
 
 import (
-	"builder"
 	"bytes"
 	"encoding/gob"
-	"labix.org/v2/mgo"
-	"labix.org/v2/mgo/bson"
 	"log"
 	"time"
+
+	"labix.org/v2/mgo"
+	"labix.org/v2/mgo/bson"
+
+	"builder"
 )
 
 const queue_size = 100

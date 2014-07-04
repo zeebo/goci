@@ -1,9 +1,11 @@
 package main
 
 import (
-	"code.google.com/p/gorilla/sessions"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/sessions"
+
 	"worker"
 )
 

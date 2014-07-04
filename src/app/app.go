@@ -1,13 +1,15 @@
 package main
 
 import (
-	"code.google.com/p/gorilla/pat"
-	"code.google.com/p/gorilla/sessions"
 	"log"
 	"net/http"
 	"net/url"
 	"path/filepath"
+
+	"github.com/gorilla/pat"
+	"github.com/gorilla/sessions"
 	"thegoods.biz/tmplmgr"
+
 	"worker"
 )
 

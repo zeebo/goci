@@ -2,8 +2,9 @@ package worker
 
 import (
 	"sync"
-	"labix.org/v2/mgo"
 	"time"
+
+	"labix.org/v2/mgo"
 )
 
 func GetRecentWork(ctx *Context, limit int) (ws []*Work, err error) {

@@ -1,8 +1,9 @@
 package main
 
 import (
-	_ "env" //env hooks
 	"log"
+
+	_ "env"            //env hooks
 	_ "net/http/pprof" //debug + profiling
 )
 

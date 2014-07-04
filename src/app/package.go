@@ -1,9 +1,10 @@
 package main
 
 import (
-	"builder"
 	"encoding/gob"
 	"net/url"
+
+	"builder"
 )
 
 type Package struct {

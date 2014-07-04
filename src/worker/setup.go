@@ -1,13 +1,15 @@
 package worker
 
 import (
+	"io/ioutil"
+	"log"
+	"sync"
+
+	"labix.org/v2/mgo"
+
 	"builder"
 	"heroku"
-	"io/ioutil"
-	"labix.org/v2/mgo"
-	"log"
 	"setup"
-	"sync"
 )
 
 var (

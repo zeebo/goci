@@ -5,8 +5,9 @@ import (
 	"log"
 	"net/http"
 	"sync"
-	"thegoods.biz/httpbuf"
 	"time"
+
+	"thegoods.biz/httpbuf"
 )
 
 type runner interface {
