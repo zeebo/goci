@@ -5,10 +5,7 @@ github/bitbucket/google code post commit hooks on projects that have
 the layout like a gopath or projects that are packages in the main directory
 (regular, go gettable projects).
 
-## How to use
+# Status
 
-http://goci.me/how
-
-## Status
-
-[![Build Status](https://goci.herokuapp.com/project/image/github.com/zeebo/goci)](http://goci.me/project/github.com/zeebo/goci)
+GoCI is no longer maintained and the service has been shut down. You should
+use travis-ci now.
